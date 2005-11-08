@@ -8,8 +8,13 @@
 
 `include "74181.v"
 `include "74182.v"
+`include "memory.v"
+`include "rom.v"
 
-module caddr;
+module caddr ( int, clk ) ;
+
+input int;
+input clk;
 
 wire[13:0] npc;
 wire[13:0] dpc;
@@ -21,10 +26,404 @@ reg[48:0] ir;
 wire[31:0] a;
 reg[31:0] latched_amem;
 
-// page actl
 
 reg[9:0] wadr;
 reg destd, destmd;
+
+wire apass, apass_n;
+wire amemenb_n, apassenb_n, apassenb;
+wire awp_n;
+
+wire wp1, wp2, wp3, wp3_n, wp4, tpwp_n;
+
+wire[9:0] aadr;
+wire[9:0] aadr_n;
+
+wire[7:0] aeqm_bits;
+wire aeqm;
+wire[32:0] alu;
+
+wire divposlasttime_n, divsubcond, divaddcond, aluadd, alusub, mulnop_n;
+wire mul_n, div_n, specalu_n;
+
+wire iralu;
+wire[1:0] osel;
+
+wire[3:0] aluf;
+wire alumode_n, alumode, cin0_n;
+
+wire[31:0] amem;
+
+wire aparok;
+
+wire dfall_n, dispenb, ignpopj_n, jfalse, jcalf, jretf, jret, iwrite;
+wire ipopj_n, popj_n, srcspcpopreal_n;
+wire spop_n, spush_n;
+
+wire popj;
+
+wire spcwpass_n, spcwpass, spcpass_n;
+wire swp_n, spcenb, spcdrive_n, spcdrive, spcnt_n;
+
+reg inop, spushd, iwrited; 
+wire inop_n, spushd_n, iwrited_n;
+wire n, pcs1, pcs0;
+
+wire nopa_n, nopa, nop, nop_n;
+
+// page DRAM0-2
+wire[10:0] dadr_n;
+wire dr, dp, dn;
+wire daddr0;
+wire[6:0] dmask;
+wire dwe_n;
+
+// page DSPCTL
+wire dparh_n, dparl, dpareven, dparok, dmapbenb_n, dispwr;
+reg[9:0] dc;
+wire[11:0] prompc_n;
+
+// page FLAG
+wire statbit_n, ilong_n, aluneg;
+wire pgf_or_int, pgf_or_int_or_sb, sint;
+
+wire[2:0] conds;
+wire jcond;
+reg lc_byte_mode, prog_unibus_reset, int_enable, sequence_break;
+
+// page IOR
+wire[47:0] iob;
+wire[31:0] ob;
+
+// page IPAR
+wire[3:0] ipar;
+wire iparity, iparok;
+
+// page L
+wire lparl, lparm_n, lparity, lparity_n;
+
+// page LC
+reg[25:0] lc;
+wire[3:0] lca;
+wire lcry3;
+
+wire lcdrive_n, lcdrive;
+wire sh4_n, sh3_n;
+
+wire[31:0] mf;
+
+wire lc0b, next_instr, newlc_in_n, have_wrong_word, last_byte_in_word;
+wire needfetch, ifetch_n, spcmung, spc1a, lcinc, lcinc_n;
+wire newlc_n;
+
+reg newlc, sintr, next_instrd;
+
+wire int;
+
+wire lc_modifies_mrot_n, inst_in_left_half, inst_in_2nd_or_4th_quarter;
+
+wire[13:0] wpc;
+
+// page MCTL
+wire mpass, mpass_n, mpassl, mpassl_n, mpassm_n;
+wire srcm, mwp_n;
+wire[4:0] madr_n;
+
+// page MD
+reg[31:0] md_n;
+reg mdhaspar, mdpar;
+wire mddrive_n, mdgetspar, mdclk;
+wire mempar_in;
+
+wire loadmd, ignpar_n;
+
+// page MDS
+wire[31:0] mds_n;
+wire[31:0] mem;
+wire mempar_out;
+
+wire mdparodd;
+
+// page MF
+wire mfenb, mfdrive, mfdrive_n;
+
+// page MLATCH
+reg[31:0] mmem_latched;
+wire mmemparity;
+
+wire mmemparok;
+wire[31:0] m;
+
+// page MMEM
+wire[31:0] mmem;
+
+wire[31:0] a_bitsel;
+
+wire[31:0] msk;
+
+wire dcdrive, opcdrive_n, zero16, zero12_drive, zero16_drive, zero16_drive_n;
+
+// page PDL
+wire pdlparity;
+wire[31:0] pdl;
+wire[9:0] pdla_n;
+
+// page PDLCTL
+wire[9:0] pdla;
+wire pdlp_n, pdlwrite;
+wire pwp_n, pdlenb, pdldrive_n, pdlcnt_n;
+wire pdlwrited_n, pwidx, imodd_n;
+wire destspcd;
+reg pdlwrited, pwidx_n, imodd, destspcd_n;
+
+// page PDLPTR
+wire pidrive, ppdrive_n;
+reg[9:0]pdlidx;
+
+// page Q
+reg[31:0] q;
+wire qs1, qs0, srcq, qdrive;
+
+// page SHIFT0-1
+wire[31:0] sa;
+wire[31:0] r;
+
+// page SMCTL
+wire mr_n, sr_n, s1, s0;
+wire[4:0] mskr;
+
+wire s4, s4_n, s3, s2;
+wire[4:0] mskl;
+
+// page SOURCE
+wire irbyte_n, irdisp_n, irjump_n, iralu_n;
+wire irdisp, irjump;
+
+wire[3:0] funct;
+wire funct2_n;
+
+wire srcq_n, srcopc_n, srcpdltop_n, srcpdlpop_n,
+	srcpdlidx_n, srcpdlptr_n, srcspc_n, srcdc_n;
+wire srcspcpop_n, srclc_n, srcmd_n, srcmap_n, srcvma_n;
+
+wire srclc;
+wire imod;
+
+wire destmem_n, destvma_n, destmdr_n, dest, destm;
+wire destintctl_n, destlc_n;
+wire destimod1_n, destimod0_n, destspc_n, destpdlp_n,
+	destpdlx_n, destpdl_x_n, destpdl_p_n, destpdltop_n;
+
+wire destspc;
+
+// page SPC
+reg[4:0] spcptr;
+
+wire [18:0] spcw;
+wire [18:0] spco;
+
+wire spcopar;
+
+// page SPCPAR
+wire spcwpar, spcwparl_n, spcwparh, spcparok;
+
+
+wire[15:0] spy;
+wire halt_n;
+
+wire mdparerr, parerr_n, memparok_n, memparok, trap_n, trap;
+reg boot_trap;
+
+wire mdpareven;
+
+// page VCTRL1
+reg memstart, mbusy_sync;
+wire memop_n, memprepare, memstart_n, musy_sync_n;
+
+reg wrcyc, wmapd, mbusy;
+wire rdcyc, pfw_n, pfr_n, vmaok_n, wmapd_n, memrq;
+
+wire set_rd_in_progess, mfinish_n;
+reg rd_in_progress;
+
+wire memack_n, memgrant_n;
+
+wire mfinishd_n, rdfinish_n;
+wire wait_n;
+
+// page VCTRL2
+wire mapwr0d, mapwr1d, vm0wp_n, vm1wp_n;
+wire vmaenb_n, vmasel;
+wire memdrive_n, mdsel, use_md;
+wire wmap_n, memwr_n, memrd_n;
+
+wire lm_drive_enb;
+
+wire wmap;
+
+// page VMA
+wire[31:0] vma_n;
+reg[31:0] vma_latched;
+wire vmadrive_n;
+
+wire[31:0] vma;
+
+// page VMAS
+wire[31:0] vmas;
+
+wire[23:8] mapi;
+wire[12:8] mapi_n;
+
+wire[4:0] vmap_n;
+
+// page VMEM0 - virtual memory map stage 0
+wire srcmap, use_map_n;
+wire vmoparck, v0parok, vm0pari, vmoparodd;
+
+wire vmopar;
+
+wire[23:0] vmo_n;
+wire[23:0] vmo;
+
+wire[4:0] vmap;
+
+wire vm1mpar, vm1lpar;
+
+wire mapdrive_n;
+wire vm0par, vm0parm, vm0parl, adrpar_n;
+
+wire[48:0] i;
+wire[48:0] iprom;
+wire[48:0] iram;
+reg[47:0] spy_ir;
+
+wire ramdisable, promdisabled_n;
+
+reg opcinh, opcclk, lpc_hold;
+wire opcinh_n, opcclk_n, lpc_hold_n;
+
+reg ldstat, idebug, nop11, step;
+wire ldstat_n, idebug_n, nop11_n, step_n;
+
+reg run;
+wire run_n;
+
+wire machrun, machrun_n, ssdone_n, stat_ovf, stathalt_n;
+
+wire spcoparok, vm0parok, pdlparok;
+
+wire lowerhighok_n, highok, ldmode;
+wire prog_reset_n, reset, reset_n;
+wire err, errhalt_n;
+wire bus_reset_n, bus_power_reset_n;
+wire power_reset;
+wire clock_reset_n, prog_boot, boot_n;
+
+// controlled by rc circuit at power up
+reg boot1_n, boot2_n;
+
+wire prog_bus_reset;
+
+reg power_reset_n;
+
+wire busint_lm_reset_n;
+
+wire opcclka, opcinha;
+
+// page PCTL
+wire promenable_n, promce_n, bottom_1k;
+
+reg mparity;
+reg[31:0] pdl_latched;
+
+// page SPCLCH
+reg[18:0] spco_latched;
+reg spcpar;
+
+// page OLORD1 
+reg promdisable;
+reg trapenb;
+reg stathenb;
+reg errstop;
+reg speed1, speed0;
+
+reg srun, sstep, ssdone, promdisabled;
+
+reg speed0a, speed1a;
+reg sspeed0, sspeed1;
+
+// page OLORD2
+
+reg ape_n, mpe_n, pdlpe_n, dpe_n, ipe_n, spe_n, higherr_n, mempe_n;
+reg v0pe_n, v1pe_n, statstop, halted_n;
+
+// page L
+reg[31:0] l;
+
+// page NPC
+reg[13:0] pc;
+
+// page OPCS
+reg[13:0] opc;
+
+// page PDLPTR
+reg[9:0] pdlptr;
+
+// page SPCW
+reg[13:0] reta;
+
+reg[10:0] mcycle_delay;
+
+// page IWR
+reg[48:0] iwr;
+
+reg[13:0] lpc;
+
+reg[23:22] lvmo_n;
+reg[21:8] pma;
+
+
+// SPY 0
+wire[3:0] eadr;
+
+wire spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
+	spu_nc_n,spy_irh_n, spy_irm_n, spy_irl_n;
+
+wire spy_sth_n, spy_stl_n, spy_ah_n, spy_al_n,
+	spy_mh_n, spy_ml_n, spy_flag2_n, spy_flag1_n;
+
+wire ldmode_n, ldopc_n, ldclk_n, lddbirh_n, lddbirm_n, lddbirl_n;
+
+wire dbread;
+
+// clocks
+wire CLK1, CLK2, CLK3, CLK4, CLK5, MCLK1, MCLK5;
+//wire clk0_n, mclk0_n;
+wire mclk0_n;
+
+reg osc50mhz;
+wire osc0, hifreq1, hifreq2, hf_n , hfdlyd, hftomm;
+wire clk_n, mclk_n, tpclk, tpclk_n, lclk, lclk_n, wp, lwp_n;
+wire tse, ltse, ltse_n;
+wire tpr0_n, tpr0a, tpr0d, tpr0d_n;
+wire tpr1a, tpr1d_n;
+wire tpwp, sone_n, tprend_n;
+
+reg tpr1, tpr1_n, ff1d;
+reg tpr6_n, tpr5, tpr5_n, tpr4, tpr4_n, tpr3, tpr3_n, tpr2, tpr2_n;
+reg tpw0, tpw0_n, tpw1, tpw1_n, tpw2, tpw2_n, tpw3, tpw3_n;
+
+wire tpwpor1, tpwpiram;
+wire tptse, tptsef, tptsef_n, maskc, ff1, ff1_n;
+reg tendly_n, hangs_n, crbs_n;
+wire hang_n;
+wire iwe_n;
+
+reg sspeed1a, sspeed0a;
+
+// *******************************************************************
+
+// page actl
 
 always @(posedge CLK3)
   begin
@@ -39,21 +438,14 @@ always @(posedge CLK3)
 initial
     wadr = 0;
 
-wire apass, apass_n;
-
 assign apass = destd && ( ir[41:32] == wadr[9:0] );
 assign apass_n = ! apass;
-
-wire amemenb_n, apassenb_n, apassenb;
 
 assign amemenb_n  = ! (apass_n & tse);
 assign apassenb_n  = ! (tse & apass);
 assign apassenb  = tse & apass;
 
-wire awp_n;
-
 // xxx we can remove this, right?
-wire wp1, wp2, wp3, wp3_n, wp4, tpwp_n;
 assign tpwp_n = ~tpwp;
 assign wp1 = ~tpwp_n;
 assign wp2 = ~tpwp_n;
@@ -61,9 +453,6 @@ assign wp3 = ~tpwp_n;
 assign wp4 = ~tpwp_n;
 
 assign awp_n = wp3 & destd;
-
-wire[9:0] aadr;
-wire[9:0] aadr_n;
 
 assign aadr = CLK3 ? { ir[41:32] } : wadr;
 assign aadr_n = ~aadr;
@@ -75,16 +464,14 @@ always @( amem or CLK3 )
   if (CLK3)
     latched_amem <= amem;
 
-assign a = amemenb_n ? l : latched_amem;
+assign a = amemenb_n  == 0 ? latched_amem :
+	apassenb_n == 0 ? l : 4'hffff;
 
 // page ALU0-1
 
-wire[7:0] aeqm_bits;
-wire aeqm;
-
-wire[32:0] alu;
-
 assign aeqm = aeqm_bits == { 8'b00000000 };
+
+wire[2:0] nc_alu;
 
 ic_74S181  i_ALU1_2A03 (
   .B({3'b0,a[31]}),
@@ -92,7 +479,7 @@ ic_74S181  i_ALU1_2A03 (
   .S(aluf[3:0]),
   .CIN_N(cin32_n),
   .M(alumode),
-  .F({3'b0,alu[32]})
+  .F({nc_alu,alu[32]})
 );
 
 ic_74S181  i_ALU1_2A08 (
@@ -101,8 +488,7 @@ ic_74S181  i_ALU1_2A08 (
   .S(aluf[3:0]),
   .CIN_N(cin28_n),
   .M(alumode),
-//  .F(alu[31:28]),
-  .F({alu[31],alu[30],alu[29],alu[28]}),
+  .F(alu[31:28]),
   .AEB(aeqm_bits[7]),
   .X(xout31),
   .Y(yout31)
@@ -112,10 +498,9 @@ ic_74S181  i_ALU1_2B08 (
   .B(a[27:24]),
   .A(m[27:24]),
   .S(aluf[3:0]),
-  .CIN_N(cin28_n),
+  .CIN_N(cin24_n),
   .M(alumode),
-//  .F(alu[27:24]),
-  .F({alu[27],alu[26],alu[25],alu[24]}),
+  .F(alu[27:24]),
   .AEB(aeqm_bits[6]),
   .X(xout27),
   .Y(yout27)
@@ -127,8 +512,7 @@ ic_74S181  i_ALU1_2A13 (
   .S(aluf[3:0]),
   .CIN_N(cin20_n),
   .M(alumode),
-//  .F(alu[23:20]),
-  .F({alu[23],alu[22],alu[21],alu[20]}),
+  .F(alu[23:20]),
   .AEB(aeqm_bits[5]),
   .X(xout23),
   .Y(yout23)
@@ -138,10 +522,9 @@ ic_74S181  i_ALU1_2B13 (
   .B(a[19:16]),
   .A(m[19:16]),
   .S(aluf[3:0]),
-  .CIN_N(cin20_n),
+  .CIN_N(cin16_n),
   .M(alumode),
-//  .F(alu[19:16]),
-  .F({alu[19],alu[18],alu[17],alu[16]}),
+  .F(alu[19:16]),
   .AEB(aeqm_bits[4]),
   .X(xout19),
   .Y(yout19)
@@ -153,8 +536,7 @@ ic_74S181  i_ALU0_2A23 (
   .S(aluf[3:0]),
   .CIN_N(cin12_n),
   .M(alumode),
-//  .F({alu[15:12]}),
-  .F({alu[15],alu[14],alu[13],alu[12]}),
+  .F({alu[15:12]}),
   .AEB(aeqm_bits[3]),
   .X(xout15),
   .Y(yout15)
@@ -166,8 +548,7 @@ ic_74S181  i_ALU0_2B23 (
   .S(aluf[3:0]),
   .CIN_N(cin8_n),
   .M(alumode),
-//  .F(alu[11:8]),
-  .F({alu[11],alu[10],alu[9],alu[8]}),
+  .F(alu[11:8]),
   .AEB(aeqm_bits[2]),
   .X(xout11),
   .Y(yout11)
@@ -179,8 +560,7 @@ ic_74S181  i_ALU0_2A28 (
   .S(aluf[3:0]),
   .CIN_N(cin4_n),
   .M(alumode),
-//  .F(alu[7:4]),
-  .F({alu[7],alu[6],alu[5],alu[4]}),
+  .F(alu[7:4]),
   .AEB(aeqm_bits[1]),
   .X(xout7),
   .Y(yout7)
@@ -192,8 +572,7 @@ ic_74S181  i_ALU0_2B28 (
   .S(aluf[3:0]),
   .CIN_N(cin0_n),
   .M(alumode),
-//  .F(alu[3:0]),
-  .F({alu[3],alu[2],alu[1],alu[0]}),
+  .F(alu[3:0]),
   .AEB(aeqm_bits[0]),
   .X(xout3),
   .Y(yout3)
@@ -231,9 +610,6 @@ ic_74S182  i_ALUC4_2A18 (
   .CIN_N(cin0_n)
 );
 
-wire divposlasttime_n, divsubcond, divaddcond, aluadd, alusub, mulnop_n;
-wire mul_n, div_n, specalu_n;
-
 
 assign divposlasttime_n  = ! (q[0] | ir[6]);
 assign divsubcond = ! (div_n  | divposlasttime_n );
@@ -247,17 +623,9 @@ assign mulnop_n = mul_n | q[0];
 assign alusub = !(mulnop_n & !(!a[31] & divsubcond) &
 	        !(divaddcond & a[31]) & irjump_n);
 
-wire iralu;
-assign iralu = ~iralu_n;
-
-wire[1:0] osel;
-
 assign osel[1] = ! (ir[13] & iralu);
 assign osel[0] = ! (ir[12] & iralu);
 
-
-wire[3:0] aluf;
-wire alumode_n, cin0_n;
 
 assign aluf =
 	{aluadd,alusub} == 2'b00 ? { !ir[3], !ir[4], ir[6], ir[5] } :
@@ -271,6 +639,8 @@ assign alumode_n =
 	{aluadd,alusub} == 2'b10 ? 1'b1 :
 	                           1'b0;
 
+assign alumode = ~alumode_n;
+
 assign cin0_n =
 	{aluadd,alusub} == 2'b00 ? !ir[2] :
 	{aluadd,alusub} == 2'b01 ? 1'b1 :
@@ -280,8 +650,6 @@ assign cin0_n =
 
 // page AMEM0-1
 
-wire[31:0] amem;
-
 part_1kx32ram  i_AMEM (
   .A(aadr_n),
   .DO(amem),
@@ -290,14 +658,9 @@ part_1kx32ram  i_AMEM (
   .CE_N(1'b0)
 );
 
-wire aparok;
 assign aparok = 1;
 
 // page CONTRL
-
-wire dfall_n, dispenb, ignpopj_n, jfalse, jcalf, jretf, jret, iwrite;
-wire ipopj_n, popj_n, srcspcpopreal_n;
-wire spop_n, spush_n;
 
 assign dfall_n  = ! (dr & dp);
 assign dispenb = irdisp & funct2_n;
@@ -312,7 +675,6 @@ assign iwrite = irjump & ir[8] & ir[9];
 assign ipopj_n  = ! (ir[42] & nop_n );
 assign popj_n  = ipopj_n  & iwrited_n ;
 
-wire popj;
 assign popj = ~popj_n;
 
 assign srcspcpopreal_n  = srcspcpop_n  | nop;
@@ -331,9 +693,6 @@ assign spush_n = ! (
 	(irjump & ~ir[6] & ir[8] & jcond)
 	);
 
-wire spcwpass_n, spcwpass, spcpass_n;
-wire swp_n, spcenb, spcdrive_n, spcdrive, spcnt_n;
-
 assign spcwpass_n = !(spushd & tse);
 assign spcwpass = spushd & tse;
 assign spcpass_n = !(spushd_n & tse);
@@ -343,11 +702,6 @@ assign spcenb = !(srcspc_n & srcspcpop_n);
 assign spcdrive_n = !(spcenb & tse);
 assign spcdrive = spcenb & tse;
 assign spcnt_n = spush_n & spop_n;
-
-reg inop, spushd, iwrited; 
-wire inop_n, spushd_n, iwrited_n;
-
-wire n, pcs1, pcs0;
 
 assign inop_n = ~inop;
 assign spushd_n = ~spushd;
@@ -359,6 +713,14 @@ always @(posedge CLK3)
     spushd <= ~spush_n;
     iwrited <= iwrite;
   end
+
+always @(reset_n)
+  if (reset_n == 0)
+    begin
+      inop <= 0;
+      spushd <= 0;
+      iwrited <= 0;
+    end
 
 initial
   begin
@@ -374,27 +736,27 @@ initial
 // 10 2 dpc
 // 11 3 ipc
 
-assign pcs1 = 
+assign pcs1 = !(
 	(popj & ignpopj_n) |
 	(jfalse & ~jcond) |
 	(irjump & ~ir[6] & jcond) |
-	(dispenb & dr & ~dp);
+	(dispenb & dr & ~dp)
+	);
 
-assign pcs0 = 
+assign pcs0 = !(
 	(popj) |
 	(dispenb & dfall_n) |
 	(jretf & ~jcond) |
-	(jret & ~ir[6] & jcond);
+	(jret & ~ir[6] & jcond)
+	);
 
 assign n =
 	!(trap_n & 
-	  ((iwrited) |
-	   (dispenb & dn) |
-	   (jfalse & ~jcond & ir[7]) |
-	   (irjump & ~ir[6] & jcond & ir[7]))
+	  !((iwrited) |
+	    (dispenb & dn) |
+	    (jfalse & ~jcond & ir[7]) |
+	    (irjump & ~ir[6] & jcond & ir[7]))
 	 );
-
-wire nopa_n, nopa, nop, nop_n;
 
 assign nopa_n  = inop_n & nop11_n;
 assign nopa  = ~nopa_n;
@@ -404,23 +766,17 @@ assign nop_n = ~nop;
 
 // page DRAM0-2
 
-wire[10:0] dadr_n;
-wire dr, dp, dn;
-wire daddr0;
-wire[6:0] dmask;
-wire dwe_n;
-
 // dadr  10 9  8  7  6  5  4  3  2  1  0
 // -------------------------------------
 // ir    22 21 20 19 18 17 16 15 14 13 d
 // dmask x  x  x  x  6  5  4  3  2  1  x
 // r     x  x  x  x  6  5  4  3  2  1  x
 
-assign daddr0 =
+assign daddr0 = !(
 	(ir[8] & vmo[18]) |
 	(ir[9] & vmo[19]) |
 	(dmapbenb_n & dmask[0] & r[0]) |
-	(ir[12]);
+	(ir[12]));
 
 assign dadr_n = !( { ir[22:13], daddr0 } |
 	   ({ 4'b0000, dmask[6:1], 1'b0 } &
@@ -438,16 +794,12 @@ part_2kx17ram  i_DRAM (
 
 // page DSPCTL
 
-wire dparh_n, dparl, dpareven, dparok, dmapbenb_n, dispwr;
-
 assign dparh_n = 1;
 assign dparl = 0;
 assign dpareven = dparh_n  ^ dparl;
 assign dparok = !(dpareven & dispenb);
 assign dmapbenb_n  = !(ir[8] | ir[9]);
 assign dispwr = !(irdisp_n | funct2_n);
-
-reg[9:0] dc;
 
 always @(posedge CLK3)
   if (irdisp_n == 0)
@@ -464,9 +816,6 @@ part_32x8prom  i_DMASK (
 
 // page FLAG
 
-wire statbit_n, ilong_n, aluneg;
-wire pgf_or_int, pgf_or_int_or_sb, sint;
-
 assign statbit_n = !(nopa_n & ir[46]);
 assign ilong_n  = !(nopa_n & ir[45]);
 
@@ -475,9 +824,6 @@ assign aluneg = !(aeqm | ~alu[32]);
 assign pgf_or_int = sint | vmaok_n;
 assign pgf_or_int_or_sb = (sequence_break | sint) | vmaok_n;
 assign sint = sintr & int_enable;
-
-wire[2:0] conds;
-wire jcond;
 
 assign conds = ir[2:0] & ir[5];
 
@@ -490,8 +836,6 @@ assign jcond =
 	conds == 3'b101 ? pgf_or_int :
 	conds == 3'b110 ? pgf_or_int_or_sb :
 	                  1'b1;
-
-reg lc_byte_mode, prog_unibus_reset, int_enable, sequence_break;
 
 always @(posedge CLK3)
   begin
@@ -512,9 +856,6 @@ initial
 
 // page IOR
 
-wire[47:0] iob;
-wire[31:0] ob;
-
 // iob 47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32 31 30 29 28 27 26
 // i   47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32 31 30 29 28 27 26
 // ob  21 20 19 18 17 16 15 14 13 12 11 10 9  8  7  6  5  4  3  2  1  0  
@@ -526,9 +867,6 @@ wire[31:0] ob;
 assign iob = i[47:0] | { ob[21:0], ob[25:0] };
 
 // page IPAR
-
-wire[3:0] ipar;
-wire iparity, iparok;
 
 assign ipar = 4'b0000;
 assign iparity = 0;
@@ -542,12 +880,14 @@ always @(posedge CLK3)
     ir[25:0] <= destimod0_n ? i[25:0] : iob[25:0]; 
   end
 
+always @(reset_n)
+  if (reset_n == 0)
+    ir <= 49'b0;
+
 initial
-  ir = 0;
+  ir = 49'b0;
 
 // page IWR
-
-reg[47:0] iwr;
 
 always @(posedge CLK2)
   begin
@@ -565,17 +905,17 @@ initial
 
 // page L
 
-reg[31:0] l;
-
 always @(posedge CLK3)
   begin
     l <= ob;
   end
 
+always @(reset_n)
+  if (reset_n == 0)
+    l <= 0;
+
 initial
    l = 0;
-
-wire lparl, lparm_n, lparity, lparity_n;
 
 assign lparl = 0;
 assign lparm_n = 0;
@@ -584,11 +924,6 @@ assign lparity_n = 1;
 
 
 // page LC
-
-reg[25:0] lc;
-
-wire[3:0] lca;
-wire lcry3;
 
 always @(posedge CLK1)
   begin
@@ -622,12 +957,8 @@ always @(posedge CLK2)
     lc[3:0] <= destlc_n == 0 ? ob[3:0] : lca[3:0];
   end
 
-wire lcdrive_n, lcdrive;
-
 assign lcdrive_n  = !(srclc & tse);
 assign lcdrive = srclc & tse;
-
-wire[31:0] mf;
 
 // mux MF
 assign mf =
@@ -660,10 +991,6 @@ assign mf =
 
 // page LCC
 
-wire lc0b, next_instr, newlc_in_n, have_wrong_word, last_byte_in_word;
-wire needfetch, ifetch_n, spcmung, spc1a, lcinc, lcinc_n;
-wire newlc_n;
-
 assign lc0b = lc[0] & lc_byte_mode;
 assign next_instr  = !(spop_n | !(srcspcpopreal_n & spc[14]));
 
@@ -679,11 +1006,8 @@ assign spc1a = spcmung | spc[1];
 assign lcinc = next_instrd | (irdisp & ir[24]);
 assign lcinc_n = !(next_instrd | (irdisp & ir[24]));
 
-reg newlc, sintr, next_instrd;
-
 //external
-wire int;
-assign int = 0;
+//assign int = 0;
 
 always @(posedge CLK3)
   begin
@@ -710,8 +1034,6 @@ initial
   end
 
 // mustn't depend on nop
-wire lc_modifies_mrot_n, inst_in_left_half, inst_in_2nd_or_4th_quarter;
-wire sh4_n, sh3_n;
 
 assign lc_modifies_mrot_n  = !(ir[10] & ir[11]);
 
@@ -733,8 +1055,6 @@ assign sh3_n  = ~ir[3] ^ inst_in_2nd_or_4th_quarter;
 
 //page LPC
 
-reg[13:0] lpc;
-
 always @(posedge CLK4)
   begin
     if (lpc_hold == 0)
@@ -744,15 +1064,9 @@ always @(posedge CLK4)
 initial
   lpc = 0;
 
-wire[13:0] wpc;
-
 assign wpc = (irdisp & ir[25]) ? lpc : pc;
 
 // page MCTL
-
-wire mpass, mpass_n, mpassl, mpassl_n, mpassm_n;
-wire srcm, mwp_n;
-wire[4:0] madr_n;
 
 assign mpass = { 1'b1, ir[30:26] } == { destmd, wadr[4:0] };
 assign mpass_n = ~mpass;
@@ -769,15 +1083,10 @@ assign madr_n = CLK4 ? ir[30:26] : wadr[4:0];
 
 // page MD
 
-reg[31:0] md_n;
-reg mdhaspar, mdpar;
-wire mddrive_n, mdgetspar, mdclk;
-
 // external
-wire mempar_in;
 assign mempar_in = 0;
 
-always @(posedge MDCLK)
+always @(posedge mdclk)
   begin
     md_n <= mds_n;
     mdhaspar <= mdgetspar;
@@ -789,7 +1098,6 @@ initial
 
 //loadmd - external input (from dram?)
 //ignpar_n - external input (from dram?)
-wire loadmd, ignpar_n;
 assign loadmd = 0;
 assign ignpar_n = 1;
 
@@ -799,13 +1107,8 @@ assign mdclk = !(loadmd | (~CLK2 & ~destmdr_n));
 
 // page MDS
 
-wire[31:0] mds_n;
-wire[31:0] mem;
-wire mempar_out;
-
 assign mds_n = mdsel ? ob : mem;
 
-wire mdparodd;
 assign mdparodd = 1;
 
 assign mempar_out = mdparodd;
@@ -817,18 +1120,12 @@ assign mem =
 		         32'b0;
 
 // page MF
-
-wire mfenb, mfdrive, mfdrive_n;
-
 assign mfenb = ~srcm & !(spcenb | pdlenb);
 assign mfdrive = mfenb & tse;
 assign mfdrive_n  = !(mfenb & tse);
 
 // page MLATCH
 
-reg[31:0] mmem_latched;
-
-wire mmemparity;
 assign mmemparity = 0;
 
 always @(posedge CLK4)
@@ -837,12 +1134,9 @@ always @(posedge CLK4)
     mparity <= mmemparity;
   end
 
-wire mmemparok;
 assign mmemparok = 1;
 
 // mux M
-wire[31:0] m;
-
 assign m = 
 	mpassm_n == 0 ? mmem_latched :
 	pdldrive_n == 0 ? pdl_latched :
@@ -852,13 +1146,12 @@ assign m =
 
 // page MMEM
 
-wire[31:0] mmem;
-
-part_2kx32ram  i_MMEM (
+part_32x32ram  i_MMEM (
   .A(madr_n),
   .I(l),
   .D(mmem),
   .WCLK_N(mwp_n),
+  .WE_N(1'b0),
   .CE(1'b1)
 );
 
@@ -879,7 +1172,6 @@ part_2kx32ram  i_MMEM (
 //  1  1  0   1      1 0  1 
 //  1  1  1   1      1 0  1
 
-wire[31:0] a_bitsel;
 
 assign a_bitsel = (msk & r) | (~msk & a);
 
@@ -887,13 +1179,12 @@ assign ob =
 	osel == 2'b00 ? a_bitsel :
 	osel == 2'b01 ? alu :
 	osel == 2'b10 ? alu[32:1] :
-	              /* 2'b11 */{alu[30:0],q[31]};
+	     /* 2'b11 */{alu[30:0],q[31]};
+
 
 // page MSKG4
 
-reg[31:0] msk;
-
-part_prom  i_MSKG4 (
+part_32x32prom i_MSKG4 (
   .O(msk),
   .A(mskr),
   .CE_N(1'b0)
@@ -902,27 +1193,27 @@ part_prom  i_MSKG4 (
 // page NPC
 
 assign npc = 
-    {trap,pcs1,pcs0} == 2'b000 ? { spc[13:1], spc1a } :
-    {trap,pcs1,pcs0} == 2'b001 ? { ir[25:12] } :
-    {trap,pcs1,pcs0} == 2'b010 ? dpc :
-    {trap,pcs1,pcs0} == 2'b011 ? ipc :
-                      /* 2'b111 */ 14'b0;
-
-reg[13:0] pc;
+    {trap,pcs1,pcs0} == 3'b000 ? { spc[13:1], spc1a } :
+    {trap,pcs1,pcs0} == 3'b001 ? { ir[25:12] } :
+    {trap,pcs1,pcs0} == 3'b010 ? dpc :
+    {trap,pcs1,pcs0} == 3'b011 ? ipc :
+                     /* 3'b111 */ 14'b0;
 
 always @(posedge CLK4)
   begin
     pc <= npc;
   end
 
+always @(reset_n)
+  if (reset_n == 0)
+    pc <= 0;
+
 initial
   pc = 0;
 
-assign ipc = pc + 1;
+assign ipc = pc + 1'b1;
 
 // page OPCD
-
-wire dcdrive, opcdrive_n, zero16, zero12_drive, zero16_drive, zero16_drive_n;
 
 assign dcdrive = ~srcdc_n & tse;
 assign opcdrive_n  = !(~srcopc_n & tse);
@@ -935,13 +1226,11 @@ assign zero16_drive_n  = !(zero16 & tse);
 
 // page PDL
 
-wire pdlparity;
-
 assign pdlparity = 0;
 
-wire[31:0] pdl;
+assign pdla_n = ~pdla;
 
-part_1kx32ram  i_PDL (
+part_1kx32ram i_PDL (
   .A(pdla_n),
   .DO(pdl),
   .DI(l),
@@ -950,14 +1239,6 @@ part_1kx32ram  i_PDL (
 );
 
 // page PDLCTL
-
-wire[9:0] pdla;
-wire pdlp_n, pdlwrite;
-wire pwp_n, pdlenb, pdldrive_n, pdlcnt_n;
-wire pdlwrited_n, pwidx, imodd_n;
-wire destspcd;
-
-reg pdlwrited, pwidx_n, imodd, destspcd_n;
 
 assign pdla = pdlp_n ? pdlidx : pdlptr;
 
@@ -1004,12 +1285,8 @@ assign pdlcnt_n  = (srcpdlpop_n | nop) & destpdl_p_n;
 
 // page PDLPTR
 
-wire pidrive, ppdrive_n;
-
 assign pidrive = tse & ~srcpdlidx_n;
 assign ppdrive_n  = !(tse & ~srcpdlptr_n);
-
-reg[9:0]pdlidx;
 
 always @(posedge CLK3)
   begin
@@ -1019,9 +1296,7 @@ always @(posedge CLK3)
 initial
   pdlidx = 0;
 
-reg[9:0] pdlptr;
-
-always @(posedge CLK3)
+always @(posedge CLK3 or negedge destpdlp_n)
   begin
      if (destpdlp_n == 0)
       pdlptr <= ob[9:0];
@@ -1029,16 +1304,13 @@ always @(posedge CLK3)
       if (pdlcnt_n == 0)
         begin
           if (srcpdlpop_n)
-            pdlptr = pdlptr - 1;
+            pdlptr <= pdlptr - 1'b1;
           else
-            pdlptr = pdlptr + 1;
+            pdlptr <= pdlptr + 1'b1;
         end
   end
 
 // page PLATCH
-
-reg mparity;
-reg[31:0] pdl_latched;
 
 always @(posedge CLK4)
   begin
@@ -1047,9 +1319,6 @@ always @(posedge CLK4)
   end
 
 // page Q
-
-reg[31:0] q;
-wire qs1, qs0, srcq, qdrive;
 
 always @(posedge CLK2)
   begin
@@ -1068,9 +1337,6 @@ assign qdrive = srcq & tse;
 
 // page SHIFT0-1
 
-wire[31:0] sa;
-wire[31:0] r;
-
 assign sa =
 	{s1,s0} == 2'b00 ? m :
 	{s1,s0} == 2'b01 ? { m[30:0], m[31] } : 
@@ -1078,20 +1344,20 @@ assign sa =
 	                   { m[28:0], m[31], m[30], m[29] };
 
 assign {r[12],r[8],r[4],r[0]} =
-	{s4,s3,s2} == 3'b000 ? { sa[12],sa[8],sa[4], sa[0] } :
-	{s4,s3,s2} == 3'b001 ? { sa[8], sa[4],sa[0], sa[28] } :
-	{s4,s3,s2} == 3'b010 ? { sa[4], sa[0],sa[28],sa[24] } :
-	{s4,s3,s2} == 3'b011 ? { sa[0],sa[28],sa[24],sa[20] } :
+	{s4,s3,s2} == 3'b000 ? { sa[12],sa[8], sa[4], sa[0] } :
+	{s4,s3,s2} == 3'b001 ? { sa[8], sa[4], sa[0], sa[28] } :
+	{s4,s3,s2} == 3'b010 ? { sa[4], sa[0], sa[28],sa[24] } :
+	{s4,s3,s2} == 3'b011 ? { sa[0], sa[28],sa[24],sa[20] } :
 	{s4,s3,s2} == 3'b100 ? { sa[28],sa[24],sa[20],sa[16] } :
 	{s4,s3,s2} == 3'b101 ? { sa[24],sa[20],sa[16],sa[12] } :
 	{s4,s3,s2} == 3'b110 ? { sa[20],sa[16],sa[12],sa[8] } :
                                { sa[16],sa[12],sa[8], sa[4] };
 
 assign {r[13],r[9],r[5],r[1]} =
-	{s4,s3,s2} == 3'b000 ? { sa[13],sa[9],sa[5], sa[1] } :
-	{s4,s3,s2} == 3'b001 ? { sa[9], sa[5],sa[1], sa[29] } :
-	{s4,s3,s2} == 3'b010 ? { sa[5], sa[1],sa[29],sa[25] } :
-	{s4,s3,s2} == 3'b011 ? { sa[1],sa[29],sa[25],sa[21] } :
+	{s4,s3,s2} == 3'b000 ? { sa[13],sa[9], sa[5], sa[1] } :
+	{s4,s3,s2} == 3'b001 ? { sa[9], sa[5], sa[1], sa[29] } :
+	{s4,s3,s2} == 3'b010 ? { sa[5], sa[1], sa[29],sa[25] } :
+	{s4,s3,s2} == 3'b011 ? { sa[1], sa[29],sa[25],sa[21] } :
 	{s4,s3,s2} == 3'b100 ? { sa[29],sa[25],sa[21],sa[17] } :
 	{s4,s3,s2} == 3'b101 ? { sa[25],sa[21],sa[17],sa[13] } :
 	{s4,s3,s2} == 3'b110 ? { sa[21],sa[17],sa[13],sa[9] } :
@@ -1162,15 +1428,12 @@ assign {r[31],r[27],r[23],r[19]} =
 
 // page SMCTL
 
-wire mr_n, sr_n, s1, s0;
-
 assign mr_n  = !(irbyte_n | ir[13]);
 assign sr_n  = !(irbyte_n | ir[12]);
 
 assign s0 = !(sr_n | ~ir[0]);
 assign s1 = !(sr_n | ~ir[1]);
 
-wire[4:0] mskr;
 
 assign mskr[4] = !(mr_n | sh4_n);
 assign mskr[3] = !(mr_n | sh3_n);
@@ -1178,7 +1441,6 @@ assign mskr[2] = !(mr_n | ~ir[2]);
 assign mskr[1] = !(mr_n | ~ir[1]);
 assign mskr[0] = !(mr_n | ~ir[0]);
 
-wire s4, s4_n, s3, s2;
 
 assign s4 = !(sr_n | sh4_n);
 assign s4_n = sh4_n | sr_n;
@@ -1186,26 +1448,20 @@ assign s4_n = sh4_n | sr_n;
 assign s3 = !(sr_n | sh3_n);
 assign s2 = !(sr_n | ~ir[2]);
 
-wire[4:0] mskl;
 
 assign mskl = mskr + ir[9:5];
 
 // page SOURCE
 
-wire irbyte_n, irdisp_n, irjump_n, iralu_n;
-wire irdisp, irjump;
-
 assign irdisp = ~irdisp_n;
 assign irjump = ~irjump_n;
 
 assign {irbyte_n,irdisp_n,irjump_n,iralu_n} =
-  nop ? 4'b0000 :
-	({ir[44],ir[43]} == 2'b00) ? 4'b0001 :
-	({ir[44],ir[43]} == 2'b01) ? 4'b0010 :
-	({ir[44],ir[43]} == 2'b10) ? 4'b0100 :
-                                     4'b1000 ;
-
-wire[3:0] funct;
+  nop ? 4'b1111 :
+	({ir[44],ir[43]} == 2'b00) ? 4'b1110 :
+	({ir[44],ir[43]} == 2'b01) ? 4'b1101 :
+	({ir[44],ir[43]} == 2'b10) ? 4'b1011 :
+                                     4'b0111 ;
 
 assign funct = 
   nop ? 4'b0000 :
@@ -1214,7 +1470,7 @@ assign funct =
 	({ir[11],ir[10]} == 2'b10) ? 4'b0100 :
                                      4'b1000 ;
 
-wire funct2_n;
+assign iralu = ~iralu_n;
 assign funct2_n = ~funct[2];
 
 assign specalu_n  = !(ir[8] & iralu);
@@ -1223,43 +1479,31 @@ assign {div_n,mul_n} =
   specalu_n == 1 ? 2'b00 :
 	({ir[4],ir[3]} == 2'b00) ? 2'b01 : 2'b10;
 
-wire srcq_n, srcopc_n, srcpdltop_n, srcpdlpop_n,
-	srcpdlidx_n, srcpdlptr_n, srcspc_n, srcdc_n;
-wire srcspcpop_n, srclc_n, srcmd_n, srcmap_n, srcvma_n;
-
 //xxx eliminate?
-wire srclc;
 assign srclc = ~srclc_n;
 
 assign {srcq_n,srcopc_n,srcpdltop_n,srcpdlpop_n,
 	srcpdlidx_n,srcpdlptr_n,srcspc_n,srcdc_n} =
-  (~ir[31] | ir[29]) ? 8'b00000000 :
-	({ir[28],ir[27],ir[26]} == 3'b000) ? 8'b00000001 :
-	({ir[28],ir[27],ir[26]} == 3'b001) ? 8'b00000010 :
-	({ir[28],ir[27],ir[26]} == 3'b010) ? 8'b00000100 :
-	({ir[28],ir[27],ir[26]} == 3'b011) ? 8'b00001000 :
-	({ir[28],ir[27],ir[26]} == 3'b100) ? 8'b00010000 :
-	({ir[28],ir[27],ir[26]} == 3'b101) ? 8'b00100000 :
-	({ir[28],ir[27],ir[26]} == 3'b110) ? 8'b01000000 :
-	                                     8'b10000000;
+  (~ir[31] | ir[29]) ? 8'b11111111 :
+	({ir[28],ir[27],ir[26]} == 3'b000) ? 8'b11111110 :
+	({ir[28],ir[27],ir[26]} == 3'b001) ? 8'b11111101 :
+	({ir[28],ir[27],ir[26]} == 3'b010) ? 8'b11111011 :
+	({ir[28],ir[27],ir[26]} == 3'b011) ? 8'b11110111 :
+	({ir[28],ir[27],ir[26]} == 3'b100) ? 8'b11101111 :
+	({ir[28],ir[27],ir[26]} == 3'b101) ? 8'b11011111 :
+	({ir[28],ir[27],ir[26]} == 3'b110) ? 8'b10111111 :
+	                                     8'b01111111;
 
 assign {srcspcpop_n,srclc_n,srcmd_n,srcmap_n,srcvma_n} =
-  (~ir[31] | ~ir[29]) ? 5'b00000 :
-	({ir[28],ir[27],ir[26]} == 3'b000) ? 5'b00001 :
-	({ir[28],ir[27],ir[26]} == 3'b001) ? 5'b00010 :
-	({ir[28],ir[27],ir[26]} == 3'b010) ? 5'b00100 :
-	({ir[28],ir[27],ir[26]} == 3'b011) ? 5'b01000 :
-	({ir[28],ir[27],ir[26]} == 3'b100) ? 5'b10000 :
-	                                     5'b00000 ;
-
-wire imod;
+  (~ir[31] | ~ir[29]) ? 5'b11111 :
+	({ir[28],ir[27],ir[26]} == 3'b000) ? 5'b11110 :
+	({ir[28],ir[27],ir[26]} == 3'b001) ? 5'b11101 :
+	({ir[28],ir[27],ir[26]} == 3'b010) ? 5'b11011 :
+	({ir[28],ir[27],ir[26]} == 3'b011) ? 5'b10111 :
+	({ir[28],ir[27],ir[26]} == 3'b100) ? 5'b01111 :
+	                                     5'b11111 ;
 
 assign imod = !((destimod0_n & iwrited_n) & destimod1_n & idebug_n);
-
-wire destmem_n, destvma_n, destmdr_n, dest, destm;
-wire destintctl_n, destlc_n;
-wire destimod1_n, destimod0_n, destspc_n, destpdlp_n,
-	destpdlx_n, destpdl_x_n, destpdl_p_n, destpdltop_n;
 
 assign destmem_n = !(destm & ir[23]);
 assign destvma_n = destmem_n | ir[22];
@@ -1269,39 +1513,33 @@ assign destm = dest & ~ir[25];
 
 assign {destintctl_n,destlc_n} =
   !(destm & ~ir[23] & ~ir[22]) ? 2'b00 :
-	({ir[21],ir[20],ir[19]} == 3'b001) ? 2'b01 :
-	({ir[21],ir[20],ir[19]} == 3'b010) ? 2'b10 :
-	                                     2'b00 ;
+	({ir[21],ir[20],ir[19]} == 3'b001) ? 2'b10 :
+	({ir[21],ir[20],ir[19]} == 3'b010) ? 2'b01 :
+	                                     2'b11 ;
 
 assign {destimod1_n,destimod0_n,destspc_n,destpdlp_n,
 	destpdlx_n,destpdl_x_n,destpdl_p_n,destpdltop_n} =
-  !(destm & ~ir[23] & ~ir[22]) ? 8'b00000000 :
-	({ir[21],ir[20],ir[19]} == 3'b000) ? 8'b00000001 :
-	({ir[21],ir[20],ir[19]} == 3'b001) ? 8'b00000010 :
-	({ir[21],ir[20],ir[19]} == 3'b010) ? 8'b00000100 :
-	({ir[21],ir[20],ir[19]} == 3'b011) ? 8'b00001000 :
-	({ir[21],ir[20],ir[19]} == 3'b100) ? 8'b00010000 :
-	({ir[21],ir[20],ir[19]} == 3'b101) ? 8'b00100000 :
-	({ir[21],ir[20],ir[19]} == 3'b110) ? 8'b01000000 :
-	                                     8'b10000000;
+  !(destm & ~ir[23] & ~ir[22]) ? 8'b11111111 :
+	({ir[21],ir[20],ir[19]} == 3'b000) ? 8'b11111110 :
+	({ir[21],ir[20],ir[19]} == 3'b001) ? 8'b11111101 :
+	({ir[21],ir[20],ir[19]} == 3'b010) ? 8'b11111011 :
+	({ir[21],ir[20],ir[19]} == 3'b011) ? 8'b11110111 :
+	({ir[21],ir[20],ir[19]} == 3'b100) ? 8'b11101111 :
+	({ir[21],ir[20],ir[19]} == 3'b101) ? 8'b11011111 :
+	({ir[21],ir[20],ir[19]} == 3'b110) ? 8'b10111111 :
+	                                     8'b01111111;
 
-wire destspc;
 assign destspc = ~destspc_n;
 
 // page SPC
-
-reg[4:0] spcptr;
-
-wire [18:0] spcw;
-wire [18:0] spco;
 
 part_32x19ram  i_SPC (
   .A(spcptr),
   .I(spcw),
   .D(spco),
-  .WCLK(swp_n),
+  .WCLK_N(swp_n),
   .WE_N(1'b0),
-  .CE_N(1'b0)
+  .CE(1'b1)
 );
 
 always @(posedge CLK4)
@@ -1309,9 +1547,9 @@ always @(posedge CLK4)
     if (spcnt_n == 0)
       begin
         if (~spush_n == 0)
-          spcptr = spcptr - 1;
+          spcptr = spcptr - 1'b1;
         else
-          spcptr = spcptr + 1;
+          spcptr = spcptr + 1'b1;
       end
   end
 
@@ -1320,16 +1558,12 @@ initial
 
 // page SPCLCH
 
-reg[18:0] spco_latched;
-reg spcpar;
-
 // mux SPC
 assign spc = 
   spcpass_n == 0 ? spco_latched :
   spcwpass_n == 0 ? spcw :
 	32'b0;
 
-wire spcopar;
 assign spcopar = 0;
 
 always @(posedge CLK4)
@@ -1341,8 +1575,6 @@ always @(posedge CLK4)
 
 // page SPCPAR
 
-wire spcwpar, spcwparl_n, spcwparh, spcparok;
-
 assign spcwpar = 0;
 assign spcwparl_n = 1;
 assign spcwparh = 0;
@@ -1352,8 +1584,6 @@ assign spcwpar = spcwparh ^ spcwparl_n;
 
 // page SPCW
 
-reg[13:0] reta;
-
 assign spcw = 
 	destspcd ? l[18:0] : { 5'b0, reta };
 
@@ -1362,11 +1592,17 @@ always @(posedge CLK4)
     reta <= n ? wpc : ipc;
   end
 
+always @(reset_n)
+  if (reset_n == 0)
+    reta <= 0;
+
 // page SPY1-2
 
-wire[15:0] spy;
-
-assign spy[15:0] =
+//xxxdebug
+//assign spy = 16'b1111111111111111;
+assign spy = 16'b0;
+/*
+assign spy =
 	spy_irh_n == 0 ? ir[47:32] :
 	spy_irm_n == 0 ? ir[31:16] :
 	spy_irl_n == 0 ? ir[15:0] :
@@ -1388,17 +1624,13 @@ assign spy[15:0] =
 			  spe_n, pdlpe_n, mpe_n, ape_n } :
 	spy_pc_n == 0 ?
 			{ 2'b0,pc } :
-	                 16'b0;
+	                 16'b1111111111111111;
+*/
 
-wire halt_n;
 assign halt_n = 1;
 
 // page TRAP
 
-wire mdparerr, parerr_n, memparok_n, memparok, trap_n, trap;
-reg boot_trap;
-
-wire mdpareven;
 assign mdpareven = 0;
 
 assign mdparerr = mdpareven ^ mdpar;
@@ -1410,9 +1642,6 @@ assign trap = ~trap_n;
 assign memparok_n = !(parerr_n | trapenb);
 
 // page VCTRL1
-
-reg memstart, mbusy_sync;
-wire memop_n, memprepare, memstart_n, musy_sync_n;
 
 assign memop_n  = memrd_n  & memwr_n  & ifetch_n;
 assign memprepare = !(memop_n | CLK2);
@@ -1438,9 +1667,6 @@ initial
     memstart = 0;
     mbusy_sync = 0;
   end
-
-reg wrcyc, wmapd, mbusy;
-wire rdcyc, pfw_n, pfr_n, vmaok_n, wmapd_n, memrq;
 
 assign pfw_n  = !(lvmo_n[22] & wrcyc);
 assign vmaok_n  = !(pfr_n & pfw_n);
@@ -1469,40 +1695,36 @@ assign wmapd_n = ~wmapd;
 
 assign memrq = mbusy | (memstart & pfr_n & pfw_n);
 
-always @(posedge MCLK1 or mfinishd_n)
-  begin
-    if (mfinishd_n == 0)
-      mbusy = 0;
-    else
-      if (MCLK1)
-	mbusy <= memrq;
-  end
+always @(posedge MCLK1)
+  mbusy <= memrq;
 
-wire set_rd_in_progess, mfinish_n;
-reg rd_in_progress;
+always @(mfinishd_n)
+  if (mfinishd_n == 0)
+      mbusy = 0;
+
+always @(reset_n)
+  if (reset_n == 0)
+    begin
+      mbusy = 0;
+    end
 
 //external
-wire memack_n, memgrant_n;
 assign memack_n = 1;
 assign memgrant_n = 1;
 
 assign set_rd_in_progess = rd_in_progress | (memstart & pfr_n & rdcyc);
 assign mfinish_n = memack_n & reset_n;
 
-always @(posedge MCLK1 or rdfinish_n)
-  begin
-    if (rdfinish_n == 0)
-      rd_in_progress = 0;
-    else
-      if (MCLK1)	
-        rd_in_progress <= set_rd_in_progess;
-  end
+always @(posedge MCLK1)
+  rd_in_progress <= set_rd_in_progess;
+
+always @(rdfinish_n)
+  if (rdfinish_n == 0)
+    rd_in_progress = 0;
 
 //XXX delay line
 // mfinish_n + 30ns -> mfinishd_n
 // mfinish_n + 140ns -> rdfinish_n
-
-reg[10:0] mcycle_delay;
 
 always @(posedge osc50mhz)
   begin
@@ -1516,25 +1738,18 @@ always @(posedge osc50mhz)
     mcycle_delay[7] <= mcycle_delay[6];
   end
 
-wire mfinishd_n, rdfinish_n;
-wire wait_n;
-
 assign mfinishd_n = ~mcycle_delay[2];
 assign rdfinish_n = mcycle_delay[7];
 
-assign wait_n =
+assign wait_n = !(
 	(~destmem_n & mbusy_sync) |
 	(use_md & mbusy & memgrant_n) |		/* hang loses */
-	(lcinc & needfetch & mbusy_sync);	/* ifetch */
+	(lcinc & needfetch & mbusy_sync)	/* ifetch */
+	);
 
 assign hang_n = !(rd_in_progress & use_md & ~CLK3);
 
 // page VCTRL2
-
-wire mapwr0d, mapwr1d, vm0wp_n, vm1wp_n;
-wire vmaenb_n, vmasel;
-wire memdrive_n, mdsel, use_md;
-wire wmap_n, memwr_n, memrd_n;
 
 assign mapwr0d = !(wmapd_n | ~vma[26]);
 assign mapwr1d = !(wmapd_n | ~vma[25]);
@@ -1546,7 +1761,6 @@ assign vmaenb_n = destvma_n & ifetch_n;
 assign vmasel = ifetch_n & 1'b1;
 
 // external?
-wire lm_drive_enb;
 assign lm_drive_enb = 0;
 
 assign memdrive_n = !(wrcyc & lm_drive_enb);
@@ -1564,14 +1778,9 @@ assign {wmap_n,memwr_n,memrd_n} =
 	({ir[20],ir[19]} == 2'b11) ? 3'b100 :
 	                             3'b000 ;
 
-wire wmap;
 assign wmap = ~wmap_n;
 
 // page VMA
-
-wire[31:0] vma_n;
-reg[31:0] vma_latched;
-wire vmadrive_n;
 
 always @(posedge CLK1)
   begin
@@ -1579,7 +1788,6 @@ always @(posedge CLK1)
   end
 
 // need vma bus?
-wire[31:0] vma;
 assign vma =
 	vmaenb_n == 0 ? vma_latched :
 	32'b0;
@@ -1592,29 +1800,19 @@ initial
 
 // page VMAS
 
-wire[31:0] vmas;
-
 assign vmas = vmasel ? ob : { 8'b0,lc[25:2] };
-
-wire[23:8] mapi;
-wire[12:8] mapi_n;
 
 assign mapi = memstart_n ? md_n[23:8] : vma[23:8];
 
-// page VMEM0
+// page VMEM0 - virtual memory map stage 0
 
-wire[4:0] vmap_n;
-
-part_2kx32ram  i_VMEM0 (
+part_2kx5ram i_VMEM0 (
   .A(mapi[23:13]),
   .DO(vmap_n),
-  .DI(vma_n),
+  .DI(vma_n[31:27]),
   .WE_N(vm0wp_n),
-  .CE_N(mapi23)
+  .CE_N(1'b0)
 );
-
-wire srcmap, use_map_n;
-wire vmoparck, v0parok, vm0pari, vmoparodd;
 
 assign srcmap = ~srcmap_n;
 assign use_map_n = !(srcmap | memstart);
@@ -1622,7 +1820,6 @@ assign vmoparck = use_map_n | vmoparodd;
 assign v0parok = use_map_n  | 1'b1;
 assign vm0pari = 0;
 
-wire vmopar;
 assign vmopar = 0;
 
 assign vmoparodd = vmopar ^ vmoparck;
@@ -1631,35 +1828,29 @@ assign vmoparodd = vmopar ^ vmoparck;
 
 assign mapi_n = ~mapi[12:8];
 
-wire[23:0] vmo_n;
-wire[23:0] vmo;
-
 assign vmo = ~vmo_n;
 
+assign vmap = ~vmap_n;
+
 part_1kx12ram  i_VMEM1 (
-  .A( {vmap[4:0],mapi_n[12:8]} ),
+  .A( {mapi_n[12:8],vmap[4:0]} ),
   .DO(vmo_n[11:0]),
   .DI(vma_n[11:0]),
   .WE_N(vm1wp_n),
   .CE_N(1'b0)
 );
 
-wire vm1mpar, vm1lpar;
-
 assign vm1mpar = 0;
 assign vm1lpar = 0;
 
 // page VMEM2
 
-wire mapdrive_n;
-wire vm0par, vm0parm, vm0parl, adrpar_n;
-
-part_2kx22ram  i_VMEM2 (
-  .A( {vmap[4:0],mapi_n[12:8]} ),
+part_1kx12ram  i_VMEM2 (
+  .A( {mapi_n[12:8],vmap[4:0]} ),
   .DO(vmo_n[23:12]),
-  .DI(vma_n),
+  .DI(vma_n[23:12]),
   .WE_N(vm1wp_n),
-  .CE_N(mapi23)
+  .CE_N(1'b0)
 );
 
 assign vm0par = 0;
@@ -1669,9 +1860,6 @@ assign vm0parl = 0;
 // page VMEMDR - map output drive
 
 assign adrpar_n = 0;
-
-reg[23:22] lvmo_n;
-reg[21:8] pma;
 
 always @(posedge memstart)
   begin
@@ -1688,39 +1876,29 @@ assign mapdrive_n = !(tse & srcmap);
 
 // page DEBUG
 
-wire[48:0] i;
-
-reg[15:0] latched_spy;
+always @(posedge lddbirh_n)
+     spy_ir[47:32] <= spy;
 
 always @(posedge lddbirm_n)
-  begin
-     latched_spy <= spy;
-  end
+     spy_ir[31:16] <= spy;
 
-assign i[47:32] =
-	idebug_n == 0 ? spy :
-	16'b0;
+always @(posedge lddbirl_n)
+     spy_ir[15:0] <= spy;
+
+// put latched value on I bus when idebug_n asserted
+assign i =
+	idebug_n == 0 ? spy_ir :
+	promenable_n == 0 ? iprom :
+	iram;
 
 initial
-  latched_spy = 0;
+  spy_ir = 0;
 
 // page ICTL - I RAM control
-
-wire ramdisable, promdisabled_n;
 
 assign promdisabled_n = ~promdisabled;
 
 assign ramdisable = idebug | (promdisabled_n & iwrited_n);
-
-//wire[3:0] ice;
-//
-//// banking for iram - only need 1!!
-//assign ice =
-//  ramdisable ? 3'b0000 :
-//	({pc_n[13],pc_n[12]} == 2'b00) ? 4'b1000 :
-//	({pc_n[13],pc_n[12]} == 2'b01) ? 4'b0100 :
-//	({pc_n[13],pc_n[12]} == 2'b10) ? 4'b0010 :
-//	                                 4'b0001 ;
 
 // see clocks below
 //assign iwe_n  = !(wp5& iwriteda);
@@ -1731,12 +1909,6 @@ assign ramdisable = idebug | (promdisabled_n & iwrited_n);
 //assign iwrp1 = 0;
 
 // page OLORD1 
-
-reg promdisable;
-reg trapenb;
-reg stathenb;
-reg errstop;
-reg speed1, speed0;
 
 always @(posedge ldmode_n)
   begin
@@ -1769,6 +1941,8 @@ initial
     speed0 = 0;
   end
 
+wire ldopc;
+assign ldopc = ~ldopc_n;
 
 always @(posedge ldopc)
   begin
@@ -1792,12 +1966,12 @@ initial
     lpc_hold = 0;
   end
 
-reg opcinh, opcclk, lpc_hold;
-wire opcinh_n, opcclk_n, lpc_hold_n;
-
 assign opcinh_n = ~opcinh;
 assign opcclk_n = ~opcclk;
 assign lpc_hold_n = ~lpc_hold;
+
+wire ldclk;
+assign ldclk = ~ldclk_n;
 
 always @(posedge ldclk)
   begin
@@ -1824,36 +1998,40 @@ initial
     step = 0;
   end
 
-reg ldstat, idebug, nop11, step;
-wire ldstat_n, idebug_n, nop11_n, step_n;
-
 assign ldstat_n = ~ldstat;
 assign idebug_n = ~idebug;
 assign nop11_n = ~nop11;
 assign step_n = ~step;
 
+always @(reset_n)
+  if (reset_n == 0)
+    begin
+      ldstat = 0;
+      idebug = 0;
+      nop11 = 0;
+      step = 0;
+    end
+
 initial
   begin
     ldstat = 0;
-	idebug = 0;
-	nop11 = 0;
-	step = 0;
+    idebug = 0;
+    nop11 = 0;
+    step = 0;
   end
 
-reg run;
-wire run_n;
 assign run_n = ~run;
 
-always @(posedge ldclk_n or clock_reset_n or boot_n)
+always @(posedge ldclk_n)
+  run <= spy[0];
+
+always @(clock_reset_n)
+  if (clock_reset_n == 0)
+    run = 0;
+
+always @(boot_n)
   if (boot_n == 0)
     run = 1;
-  else
-    if (clock_reset_n == 0)
-      run = 0;
-    else
-      run <= spy[0];
-
-reg srun, sstep, ssdone, promdisabled;
 
 always @(posedge MCLK5)
   begin
@@ -1883,9 +2061,6 @@ initial
 //xxx delay line
 //assign speedclk = !(tpr60_n);
 
-reg speed0a, speed1a;
-reg sspeed0, sspeed1;
-
 //always @(posedge speedclk)
 //  begin
 //    speed0a <= speed0;
@@ -1911,8 +2086,6 @@ initial
       sspeed1 = 0;
     end
 
-wire machrun, machrun_n, ssdone_n, stat_ovf, stathalt_n;
-
 assign ssdone_n = ~ssdone;
 
 assign machrun = (sstep & ssdone_n) | (srun & errhalt_n &
@@ -1922,14 +2095,10 @@ assign machrun = (sstep & ssdone_n) | (srun & errhalt_n &
 //assign stat_ovf = 0'b0;
 assign stathalt_n = !(statstop & stathenb);
 
-assign machrun_n = machrun;
+assign machrun_n = ~machrun;
 
 // page OLORD2
 
-reg ape_n, mpe_n, pdlpe_n, dpe_n, ipe_n, spe_n, higherr_n, mempe_n;
-reg v0pe_n, v1pe_n, statstop, halted_n;
-
-wire spcoparok, vm0parok, pdlparok;
 assign spcoparok = 1;
 assign vm0parok = 1;
 assign pdlparok = 1;
@@ -1951,13 +2120,6 @@ always @(posedge CLK5)
     halted_n <= halt_n;
   end
 
-wire lowerhighok_n, highok, ldmode;
-wire prog_reset_n, reset, reset_n;
-wire err, errhalt_n;
-wire bus_reset_n, bus_power_reset_n;
-wire power_reset;
-wire clock_reset_n, prog_boot, boot1_n, boot2_n, boot_n;
-
 assign lowerhighok_n = 0;
 assign highok = 1;
 assign ldmode = !ldmode_n;
@@ -1974,48 +2136,44 @@ assign err = ~ape_n | ~mpe_n | ~pdlpe_n | ~dpe_n |
 assign errhalt_n = !(errstop & err);
 
 // external
-wire prog_bus_reset;
 assign prog_bus_reset = 0;
 
 assign bus_reset_n  = !(prog_bus_reset | power_reset);
 assign bus_power_reset_n  = ~power_reset;
 
 //external power_reset_n - low by rc, external input
-reg power_reset_n;
 assign power_reset  = ~power_reset_n;
 
 // external
-wire busint_lm_reset_n;
+assign busint_lm_reset_n = 1;
 
 assign clock_reset_n = !(power_reset | !busint_lm_reset_n);
 
 assign prog_boot = ldmode & spy[7];
 
-assign boot1_n = 1;
-assign boot2_n = 1;
-
 assign boot_n  = !(!boot1_n | (!boot2_n | prog_boot));
 
-always @(posedge CLK5 or clock_reset_n or boot_n)
+always @(posedge CLK5)
+  if (srun == 1)
+    boot_trap <= 0;
+
+always @(clock_reset_n)
   if (clock_reset_n == 0)
     boot_trap <= 0;
-  else
-    if (boot_n == 0)
-      boot_trap <= 1;
-    else
-      if (srun == 1)
-        boot_trap <= 0;
 
+always @(boot_n)
+  if (boot_n == 0)
+     boot_trap <= 1;
 
 // page OPCS
-
-reg[13:0] opc;
-wire opcclka, opcinha;
 
 assign opcclka = !(~CLK5 | opcclk);
 assign opcinha = !opcinh_n;
 
-always @(posedge opcinha or posedge opcclka)
+wire opc_inha_or_clka;
+assign opc_inha_or_clka = opcinha | opcclka;
+
+always @(opc_inha_or_clka)
   opc <= pc[13:0];
 
 initial
@@ -2029,29 +2187,27 @@ initial
 
 
 // page PCTL
-wire promenable_n, promce0_n, promce1_n, bottom_1k;
 
 assign bottom_1k = !(pc[13] | pc[12] | pc[11] | pc[10]);
 assign promenable_n = !(bottom_1k & idebug_n & promdisabled_n & iwrited_n);
 
-assign promce0_n = promenable_n | pc[9];
-assign promce1_n = prompc_n[9] | promenable_n ;
+assign promce_n = promenable_n | pc[9];
+
+assign prompc_n = ~pc[11:0];
 
 // page PROM0
 
-wire[11:0] prompc_n = ~pc[11:0];
-
-part_1kx49prom  i_PROM0 (
-  .A(prompc_n),
-  .D(i),
-  .CE_N(promce0_n)
+part_512x49prom  i_PROM0 (
+  .A(prompc_n[8:0]),
+  .D(iprom),
+  .CE_N(promce_n)
 );
 
 // page IRAM
 
-part_16kx49ram  i_VMEM2 (
+part_16kx49ram  i_IRAM (
   .A( pc[11:0] ),
-  .DO(i),
+  .DO(iram),
   .DI(iwr),
   .WE_N(iwe_n),
   .CE_N(1'b0/*ice*/)
@@ -2059,53 +2215,45 @@ part_16kx49ram  i_VMEM2 (
 
 // page SPY0
 
-wire[3:0] eadr;
-wire spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
-	spu_nc_n,spy_irh_n, spy_irm_n, spy_irl_n;
-
-wire spy_sth_n, spy_stl_n, spy_ah_n, spy_al_n,
-	spy_mh_n, spy_ml_n, spy_flag2_n, spy_flag1_n;
-
-wire ldmode_n, ldopc_n, ldclk_n, lddbirh_n, lddbirm_n, lddbirl_n;
+assign eadr = 0;
 
 //external
-wire dbread;
 assign dbread = 0;
 
 assign {spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
 	spu_nc_n,spy_irh_n, spy_irm_n, spy_irl_n} =
   (~eadr[3] & ~dbread) ? 8'b00000000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b00001000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
-	                                        8'b10000000;
+	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b11111110 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b11111101 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b11111011 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b11110111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b11101111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b11011111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b10111111 :
+	                                        8'b01111111;
 
 assign {spy_sth_n,spy_stl_n,spy_ah_n,spy_al_n,
 	spy_mh_n,spy_ml_n,spy_flag2_n,spy_flag1_n} =
   (eadr[3] & ~dbread) ? 8'b00000000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b00001000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
-	                                        8'b10000000;
+	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b11111110 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b11111101 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b11111011 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b11110111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b11101111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b11011111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b10111111 :
+	                                        8'b01111111;
 
 assign {ldmode_n,ldopc_n,ldclk_n,
 	lddbirh_n,lddbirm_n,lddbirl_n} =
-  (~dbread) ? 6'b000000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 6'b000001 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 6'b000010 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 6'b000100 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 6'b001000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 6'b010000 :
-	({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 6'b100000 :
-	                                        6'b000000;
+  (~dbread) ? 6'b111111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 6'b111110 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 6'b111101 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 6'b111011 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 6'b110111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 6'b101111 :
+	({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 6'b011111 :
+	                                        6'b111111;
 
 
 // *******
@@ -2115,46 +2263,23 @@ assign {ldmode_n,ldopc_n,ldclk_n,
 // *******
 
 //xxx need to clean these up
-wire CLK1, CLK2, CLK3, CLK4, CLK5, MCLK1;
-wire clk0_n, mclk0_n;
-
 assign mclk0_n  = tpclk_n;
 assign MCLK1 = !mclk0_n;
+assign MCLK5 = !mclk0_n;
 
-assign CLK1 = !clk0_n;
-assign CLK2 = !clk0_n;
-assign CLK3 = !clk0_n;
-assign CLK4 = !clk0_n;
-assign CLK5 = !clk0_n;
-assign clk0_n = tpclk_n & machrun;
+assign CLK1 = lclk_n;
+assign CLK2 = lclk_n;
+assign CLK3 = lclk_n;
+assign CLK4 = lclk_n;
+assign CLK5 = lclk_n;
+//assign clk0_n = tpclk_n & machrun;
 
 // LM-2 clocks
-
-reg osc50mhz;
-wire osc0, hifreq1, hifreq2, hf_n , hfdlyd, hftomm;
-wire clk_n, mclk_n, tpclk, tpclk_n, lclk, lclk_n, wp, lwp_n;
-wire tse, ltse, ltse_n;
-wire tpr0_n, tpr0a, tpr0d, tpr0d_n;
-wire tpr1a, tpr1d_n;
-wire tpwp, sone_n, tprend_n;
-
-reg tpr1, tpr1_n, ff1d;
-reg tpr6_n, tpr5, tpr5_n, tpr4, tpr4_n, tpr3, tpr3_n, tpr2, tpr2_n;
-reg tpw0, tpw0_n, tpw1, tpw1_n, tpw2, tpw2_n, tpw3, tpw3_n;
-
-wire tpwpor1, tpwpiram;
-wire tptse, tptsef, tptsef_n, maskc, ff1, ff1_n;
-reg tendly_n, hangs_n, crbs_n;
-wire hang_n;
-wire machruna, iwe_n;
-reg machruna_n;
-
-reg sspeed1a, sspeed0a;
 
 // -------
 
 assign mclk_n = tpclk_n & 1'b1;
-assign clk_n = tpclk_n & machruna;
+assign clk_n = tpclk_n & machrun;
 
 assign lclk = ! clk_n ;
 assign lclk_n = ! lclk ;
@@ -2167,11 +2292,10 @@ assign tpr0a = ! tpr0_n ;
 assign tpr0d_n = ! tpr0a;
 assign tpr1a = ! tpr1_n ;
 assign tpr1d_n = ! tpr1a ;
-assign machruna = ! machruna ;
 
-assign tpwp = tpw1 & crbs_n & machruna;
+assign tpwp = tpw1 & crbs_n & machrun;
 // ?? tpwpor1
-assign tpwpiram = tpwpor1 & crbs_n & machruna;
+assign tpwpiram = tpwpor1 & crbs_n & machrun;
 
 assign tptsef = ! ( tpr1d_n & crbs_n & tptsef_n );
 assign iwe_n = ! ( iwrited & tpwpiram );
@@ -2206,7 +2330,7 @@ assign tpclk = ! ( tpclk_n & tpr0_n );
 assign tptsef_n = ! ( tpr0d_n & tptsef );
 
 assign tpwpor1 = !( tpw0_n & tpw1_n );
-assign tptse = !(tptsef_n & machruna);
+assign tptse = !(tptsef_n & machrun);
 
 assign osc0 = !osc50mhz;
 assign hifreq1 = !osc0;
@@ -2266,12 +2390,17 @@ always @(posedge hifreq2)
     crbs_n <= clock_reset_n ;
   end
 
-
 initial
   begin
     ff1d = 0;
     crbs_n = 0;
     tpw2_n = 0;
+
+tpw1 = 0;
+tpw0 = 0;
+tpr1 = 0;
+tpr1_n = 0;
+tendly_n = 0;
   end
 
 
@@ -2287,38 +2416,3 @@ initial
 
 endmodule
 
-
-module test;
-  caddr cpu ();
-
-  initial
-    begin
-      $dumpfile("caddr.vcd");
-      $dumpvars(0, test.cpu);
-    end
-
-  initial
-    begin
-      cpu.osc50mhz = 0;
-//      cpu.clock_reset_n = 1;
-//      cpu.machruna = 0;
-//      cpu.hang_n = 1;
-//      #1 cpu.clock_reset_n = 0;
-//      #250 cpu.clock_reset_n = 1;
-
-      cpu.power_reset_n = 1;
-
-      #1 cpu.power_reset_n = 0;
-      #250 cpu.power_reset_n = 1;
-
-      #500 $finish;
-    end
-
-  // 50mhz clock
-  always
-    begin
-      #10 cpu.osc50mhz = 0;
-      #10 cpu.osc50mhz = 1;
-    end
-
-endmodule

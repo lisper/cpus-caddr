@@ -1811,7 +1811,7 @@ part_2kx5ram i_VMEM0 (
   .DO(vmap_n),
   .DI(vma_n[31:27]),
   .WE_N(vm0wp_n),
-  .CE_N(1'b0)
+  .CE_N(mapi23)
 );
 
 assign srcmap = ~srcmap_n;
@@ -1850,7 +1850,7 @@ part_1kx12ram  i_VMEM2 (
   .DO(vmo_n[23:12]),
   .DI(vma_n[23:12]),
   .WE_N(vm1wp_n),
-  .CE_N(1'b0)
+  .CE_N(mapi23)
 );
 
 assign vm0par = 0;

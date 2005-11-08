@@ -27,13 +27,13 @@
  */
 
 module caddr ( osc50mhz, int, power_reset_n, boot1_n, boot2_n,
-		spy, dbread, eadr  ) ;
+		spy, dbread_n, dbwrite_n, eadr  ) ;
 
 input osc50mhz;
 input int;
 input power_reset_n, boot1_n, boot2_n;
 inout[15:0] spy;
-input dbread;
+input dbread_n, dbwrite_n;
 input[3:0] eadr;
 
 
@@ -455,15 +455,24 @@ assign aadr = CLK ? { ir[41:32] } : wadr;
 // page ALATCH
 
 // AML
-always @(negedge CLK or negedge reset_n)
+//always @(negedge CLK or negedge reset_n)
+//  if (reset_n == 0)
+//    a_latch <= 0;
+//  else
+//    a_latch <= amem;
+
+// AML
+// transparent latch
+always @(CLK or amem or negedge reset_n)
   if (reset_n == 0)
     a_latch <= 0;
   else
-    a_latch <= amem;
+    if (CLK == 1'b1)
+      a_latch <= amem;
 
 assign a =
-	amemenb_n == 0 ? a_latch :
-	apassenb_n == 0 ? l :
+	amemenb_n == 1'b0 ? a_latch :
+	apassenb_n == 1'b0 ? l :
 	32'hffff;
 
 // page ALU0-1
@@ -827,7 +836,7 @@ assign dmapbenb_n  = !(ir[8] | ir[9]);
 assign dispwr = !(irdisp_n | funct2_n);
 
 always @(posedge CLK)
-  if (irdisp_n == 0)
+  if (irdisp_n == 1'b0)
     dc <= ir[41:32];
 
 initial
@@ -872,7 +881,7 @@ always @(posedge CLK or negedge reset_n)
       sequence_break <= 0;
     end
   else
-    if (destintctl_n == 0)
+    if (destintctl_n == 1'b0)
       begin
         lc_byte_mode <= ob[29];
         prog_unibus_reset <= ob[28];
@@ -960,7 +969,7 @@ always @(posedge CLK or negedge reset_n)
     lc <= 0;
   else
     begin
-      if (destlc_n == 0)
+      if (destlc_n == 1'b0)
         lc <= { ob[25:4], ob[3:0] };
       else
         lc <= { lc[25:4] + lcry3, lca[3:0] };
@@ -988,10 +997,10 @@ assign lcdrive_n  = !(srclc & tse);
 
 // mux MF
 assign mf =
-	lcdrive_n == 0 ?
+	~lcdrive_n ?
 	  { needfetch, 1'b0, lc_byte_mode, prog_unibus_reset,
 	    int_enable, sequence_break, lc[25:1], lc0b } :
-        opcdrive_n == 0 ?
+        ~opcdrive_n ?
 	  { 16'b0, 2'b0, opc[13:0] } :
 // zero16_drive drives top 16 bits to zero
 // zero12_drive drives top 4 bits of lower 16 to zero
@@ -1000,19 +1009,19 @@ assign mf =
 //	  { 16'b0, 4'b0, 12'b0 } :
         dcdrive ?
 	  { 16'b0, 4'b0, 2'b0, dc[9:0] } :
-	ppdrive_n == 0 ?
+	~ppdrive_n ?
 	  { 16'b0, 4'b0, 2'b0, pdlptr[9:0] } :
-	pidrive == 1 ?
+	pidrive ?
 	  { 16'b0, 4'b0, 2'b0, pdlidx[9:0] } :
-	qdrive == 1 ?
+	qdrive ?
 	  q :
-	mddrive_n == 0 ?
+	~mddrive_n ?
 	  md :
-	mpassl_n == 0 ?
+	~mpassl_n ?
 	  l :
-	vmadrive_n == 0 ?
+	~vmadrive_n ?
 	  vma :
-	mapdrive_n == 0 ?
+	~mapdrive_n ?
 	  { pfw_n, pfr_n, 1'b1, vmap_n[4:0], vmo[23:0] } :
 	32'b0;
 
@@ -1134,7 +1143,7 @@ assign mempar_out = mdparodd;
 
 // mux MEM
 assign mem =
-	memdrive_n == 0 ? md :
+	~memdrive_n ? md :
 	loadmd ? busint_bus :
 		32'b0;
 
@@ -1146,20 +1155,28 @@ assign mfdrive_n  = !(mfenb & tse);
 
 assign mmemparity = 0;
 
-always @(negedge CLK)
-  begin
-    mmem_latched <= mmem;
-    mparity <= mmemparity;
-  end
+//always @(negedge CLK)
+//  begin
+//    mmem_latched <= mmem;
+//    mparity <= mmemparity;
+//  end
+
+// transparent latch
+always @(CLK or mmem or mmemparity)
+  if (CLK == 1'b1)
+    begin
+      mmem_latched <= mmem;
+      mparity <= mmemparity;
+    end
 
 assign mmemparok = 1;
 
 // mux M
 assign m = 
-	mpassm_n == 0 ? mmem_latched :
-	pdldrive_n == 0 ? pdl_latch :
-	spcdrive_n == 0 ? {3'b0, spcptr, 5'b0, spco_latched} :
-	mfdrive_n == 0 ? mf :
+	~mpassm_n ? mmem_latched :
+	~pdldrive_n ? pdl_latch :
+	~spcdrive_n ? {3'b0, spcptr, 5'b0, spco_latched} :
+	~mfdrive_n ? mf :
                         32'b0;
 
 // page MMEM
@@ -1310,7 +1327,7 @@ always @(posedge CLK or negedge reset_n)
   if (reset_n == 0)
     pdlidx <= 0;
   else
-    if (destpdlx_n == 0)
+    if (destpdlx_n == 1'b0)
       pdlidx <= ob[9:0];
 
 always @(posedge CLK or negedge reset_n)
@@ -1318,10 +1335,10 @@ always @(posedge CLK or negedge reset_n)
     pdlptr <= 0;
   else
     begin
-     if (destpdlp_n == 0)
+     if (destpdlp_n == 1'b0)
        pdlptr <= ob[9:0];
      else
-       if (pdlcnt_n == 0)
+       if (pdlcnt_n == 1'b0)
          begin
            if (srcpdlpop_n)
              pdlptr <= pdlptr - 1'b1;
@@ -1339,11 +1356,19 @@ initial
 
 // page PLATCH
 
-always @(negedge CLK)
-  begin
-    pdl_latch <= pdl;
-    mparity <= pdlparity;
-  end
+//always @(negedge CLK)
+//  begin
+//    pdl_latch <= pdl;
+//    mparity <= pdlparity;
+//  end
+
+// transparent latch
+always @(CLK or pdl or pdlparity)
+  if (CLK == 1'b1)
+    begin
+      pdl_latch <= pdl;
+      mparity <= pdlparity;
+    end
 
 // page Q
 
@@ -1578,14 +1603,15 @@ part_32x19ram  i_SPC (
   .CE(1'b1)
 );
 
-always @(posedge CLK)
+//always @(posedge CLK)
+always @(posedge QCLK)
   begin
-    if (spcnt_n == 0)
+    if (spcnt_n == 1'b0)
       begin
-        if (~spush_n == 0)
-          spcptr = spcptr - 1'b1;
+        if (spush_n == 1'b0)
+          spcptr <= spcptr + 1'b1;
         else
-          spcptr = spcptr + 1'b1;
+          spcptr <= spcptr - 1'b1;
       end
   end
 
@@ -1596,17 +1622,31 @@ initial
 
 // mux SPC
 assign spc = 
-  spcpass_n == 0 ? spco_latched :
-  spcwpass_n == 0 ? spcw :
-	32'b0;
+  ~spcpass_n ?  spco_latched :
+  ~spcwpass_n ? spcw :
+	        32'b0;
 
 assign spcopar = 0;
 
-always @(negedge CLK)
-  begin
-    spco_latched <= spco;
-    spcpar <= spcopar;
-  end
+//always @(negedge CLK or negedge reset_n)
+//  if (reset_n == 0)
+//    spco_latched <= 0;
+//  else
+//    begin
+//      spco_latched <= spco;
+//      spcpar <= spcopar;
+//    end
+
+// transparent latch
+always @(CLK or spco or spcopar or negedge reset_n)
+  if (reset_n == 0)
+    spco_latched <= 0;
+  else
+    if (CLK == 1'b1)
+      begin
+        spco_latched <= spco;
+        spcpar <= spcopar;
+      end
 
 
 // page SPCPAR
@@ -1634,26 +1674,26 @@ always @(posedge CLK or negedge reset_n)
 //assign spy = 16'b1111111111111111;
 
 assign spy =
-	spy_irh_n == 0 ? ir[47:32] :
-	spy_irm_n == 0 ? ir[31:16] :
-	spy_irl_n == 0 ? ir[15:0] :
-	spy_obh_n == 0 ? ob[31:16] :
-	spy_obl_n == 0 ? ob[15:0] :
-	spy_ah_n == 0 ? a[31:16] :
-	spy_al_n == 0 ? a[15:0] :
-	spy_mh_n == 0 ? m[31:16] :
-	spy_ml_n == 0 ? m[15:0] :
-	spy_flag2_n == 0 ?
+	~spy_irh_n ? ir[47:32] :
+	~spy_irm_n ? ir[31:16] :
+	~spy_irl_n ? ir[15:0] :
+	~spy_obh_n ? ob[31:16] :
+	~spy_obl_n ? ob[15:0] :
+	~spy_ah_n ? a[31:16] :
+	~spy_al_n ? a[15:0] :
+	~spy_mh_n ? m[31:16] :
+	~spy_ml_n ? m[15:0] :
+	~spy_flag2_n ?
 			{ 2'b0,wmapd,destspcd,iwrited,imodd,pdlwrited,spushd,
 			  2'b0,ir[48],nop,vmaok_n,jcond,pcs1,pcs0 } :
-	spy_opc_n == 0 ?
+	~spy_opc_n ?
 			{ 2'b0,opc } :
-	spy_flag1_n == 0 ?
+	~spy_flag1_n ?
 			{ wait_n,v1pe_n,v0pe_n,promdisable,
 			  stathalt_n, err, ssdone, srun,
 			  higherr_n, mempe_n, ipe_n, dpe_n,
 			  spe_n, pdlpe_n, mpe_n, ape_n } :
-	spy_pc_n == 0 ?
+	~spy_pc_n ?
 			{ 2'b0,pc } :
 	                 16'b1111111111111111;
 
@@ -1723,24 +1763,21 @@ assign wmapd_n = ~wmapd;
 assign memrq = mbusy | (memstart & pfr_n & pfw_n);
 
 //------
-//always @(posedge MCLK or negedge reset_n or negedge mfinishd_n)
-//  if (reset_n == 0)
-//    mbusy <= 0;
-//  else
-//    if (mfinishd_n == 0)
-//      mbusy <= 0;
-//    else
-//      mbusy <= memrq;
-
-always @(posedge MCLK or negedge reset_n)
-  if (reset_n == 0)
-    mbusy <= 0;
+always @(posedge MCLK or negedge mfinishd_n)
+  if (mfinishd_n == 0)
+    mbusy <= 1'b0;
   else
     mbusy <= memrq;
 
-always @(mfinishd_n)
-  if (mfinishd_n == 0)
-      mbusy <= 0;
+//always @(posedge MCLK or negedge reset_n)
+//  if (reset_n == 0)
+//    mbusy <= 1'b0;
+//  else
+//    mbusy <= memrq;
+//
+//always @(mfinishd_n)
+//  if (mfinishd_n == 1'b0)
+//      mbusy <= 1'b0;
 
 //------
 
@@ -1748,7 +1785,7 @@ assign set_rd_in_progess = rd_in_progress | (memstart & pfr_n & rdcyc);
 assign mfinish_n = memack_n & reset_n;
 
 always @(posedge MCLK or negedge rdfinish_n)
-  if (rdfinish_n == 0)
+  if (rdfinish_n == 1'b0)
     rd_in_progress <= 0;
   else
     rd_in_progress <= set_rd_in_progess;
@@ -1820,7 +1857,7 @@ always @(posedge CLK or negedge reset_n)
   if (reset_n == 0)
     vma <= 0;
   else
-    if (vmaenb_n == 0)
+    if (vmaenb_n == 1'b0)
       vma <= vmas;
 
 assign vmadrive_n = !(~srcvma_n & tse);
@@ -1881,13 +1918,18 @@ assign vm0parl = 0;
 
 // page VMEMDR - map output drive
 
-always @(negedge memstart or negedge reset_n)
-  if (reset_n == 0)
-    begin
-      lvmo_n <= 0;
-      pma <= 0;
-    end
-  else
+//always @(negedge memstart or negedge reset_n)
+//  if (reset_n == 0)
+//    begin
+//      lvmo_n <= 0;
+//      pma <= 0;
+//    end
+//  else
+//    { lvmo_n[23:22], pma } <= vmo_n;
+
+// transparent latch
+always @(memstart or vmo_n)
+  if (memstart == 1'b1)
     { lvmo_n[23:22], pma } <= vmo_n;
 
 initial
@@ -1911,8 +1953,8 @@ always @(posedge lddbirl_n)
 
 // put latched value on I bus when idebug_n asserted
 assign i =
-	idebug_n == 0 ? spy_ir :
-	promenable_n == 0 ? iprom :
+	~idebug_n ? spy_ir :
+	~promenable_n ? iprom :
 	iram;
 
 initial
@@ -2019,21 +2061,21 @@ assign nop11_n = ~nop11;
 assign step_n = ~step;
 
 always @(posedge ldclk_n or negedge clock_reset_n or negedge boot_n)
-  if (boot_n == 0)
-    run <= 1;
+  if (boot_n == 1'b0)
+    run <= 1'b1;
   else
-    if (clock_reset_n == 0)
-      run <= 0;
+    if (clock_reset_n == 1'b0)
+      run <= 1'b0;
     else
       run <= spy[0];
 
 always @(posedge MCLK or negedge clock_reset_n)
   if (clock_reset_n == 0)
     begin
-      srun <= 0;
-      sstep <= 0;
-      ssdone <= 0;
-      promdisabled <= 0;
+      srun <= 1'b0;
+      sstep <= 1'b0;
+      ssdone <= 1'b0;
+      promdisabled <= 1'b0;
     end
   else
     begin
@@ -2148,11 +2190,11 @@ always @(posedge CLK or negedge clock_reset_n or negedge boot_n)
   if (clock_reset_n == 0)
     boot_trap <= 0;
   else
-    if (boot_n == 0)
-      boot_trap <= 1;
+    if (boot_n == 1'b0)
+      boot_trap <= 1'b1;
     else
-      if (srun == 1)
-        boot_trap <= 0;
+      if (srun == 1'b1)
+        boot_trap <= 1'b0;
 
 // page OPCS
 
@@ -2203,9 +2245,10 @@ part_16kx49ram  i_IRAM (
 
 // page SPY0
 
+/* read registers */
 assign {spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
 	spy_nc_n,spy_irh_n, spy_irm_n, spy_irl_n} =
-  (~eadr[3] & ~dbread) ? 8'b00000000 :
+  (eadr[3] & dbread_n) ? 8'b11111111 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b11111110 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b11111101 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b11111011 :
@@ -2215,9 +2258,10 @@ assign {spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
 	({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b10111111 :
 	                                        8'b01111111;
 
+/* read registers */
 assign {spy_sth_n,spy_stl_n,spy_ah_n,spy_al_n,
 	spy_mh_n,spy_ml_n,spy_flag2_n,spy_flag1_n} =
-  (eadr[3] & ~dbread) ? 8'b00000000 :
+  (~eadr[3] & dbread_n) ? 8'b11111111 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b11111110 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b11111101 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b11111011 :
@@ -2227,9 +2271,9 @@ assign {spy_sth_n,spy_stl_n,spy_ah_n,spy_al_n,
 	({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b10111111 :
 	                                        8'b01111111;
 
-assign {ldmode_n,ldopc_n,ldclk_n,
-	lddbirh_n,lddbirm_n,lddbirl_n} =
-  (~dbread) ? 6'b111111 :
+/* load registers */
+assign {ldmode_n,ldopc_n,ldclk_n, lddbirh_n,lddbirm_n,lddbirl_n} =
+  (dbwrite_n) ? 6'b111111 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 6'b111110 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 6'b111101 :
 	({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 6'b111011 :

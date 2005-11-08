@@ -14,7 +14,6 @@ module ic_74S182 (CIN_N, X, Y, XOUT, YOUT, COUT0_N, COUT1_N, COUT2_N);
 
   input[3:0]    X, Y;
   input	        CIN_N;
-
   output	XOUT, YOUT, COUT0_N, COUT1_N, COUT2_N;
 	
   TopLevel74182 Ckt74182 (CIN_N, X, Y, XOUT, YOUT, COUT0_N, COUT1_N, COUT2_N);

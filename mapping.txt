@@ -1,0 +1,18 @@
+
+74181   ir6:3   F
+SETZ	0000	0011  0		0
+AND	0001	1011  a&b	m&a
+ANDCA	0010	0111  a&~b	m&~a
+SETM	0011    1111  a		m
+ANDCM	0100    0010  ~a&b	~m&a
+SETA	0101	1010  b		a
+XOR	0110	0110  a^b	m^a
+IOR	0111	1110  a+b	m+a
+ANDCB	1000    0001  ~(a+b)	~(m+a) ?
+EQV	1001    1001  ~(a^b)	~(m^a)
+SETCA	1010	0101  ~b	~a
+ORCA	1011    1101  a + ~b	m + ~a
+SETCM	1100    0000  ~a	~m
+ORCM	1101    1000  ~a + b  	~m + a
+ORCB	1110    0100  ~(a&b)	~(m&a) ?
+SETO	1111	1100  a		m

@@ -455,15 +455,9 @@ assign aadr = CLK ? { ir[41:32] } : wadr;
 // page ALATCH
 
 // AML
-//always @(negedge CLK or negedge reset_n)
-//  if (reset_n == 0)
-//    a_latch <= 0;
-//  else
-//    a_latch <= amem;
-
-// AML
 // transparent latch
-always @(CLK or amem or negedge reset_n)
+//always @(CLK or amem or negedge reset_n)
+always @(CLK or amem or reset_n)
   if (reset_n == 0)
     a_latch <= 0;
   else
@@ -1155,12 +1149,6 @@ assign mfdrive_n  = !(mfenb & tse);
 
 assign mmemparity = 0;
 
-//always @(negedge CLK)
-//  begin
-//    mmem_latched <= mmem;
-//    mparity <= mmemparity;
-//  end
-
 // transparent latch
 always @(CLK or mmem or mmemparity)
   if (CLK == 1'b1)
@@ -1355,12 +1343,6 @@ initial
 
 
 // page PLATCH
-
-//always @(negedge CLK)
-//  begin
-//    pdl_latch <= pdl;
-//    mparity <= pdlparity;
-//  end
 
 // transparent latch
 always @(CLK or pdl or pdlparity)
@@ -1628,17 +1610,9 @@ assign spc =
 
 assign spcopar = 0;
 
-//always @(negedge CLK or negedge reset_n)
-//  if (reset_n == 0)
-//    spco_latched <= 0;
-//  else
-//    begin
-//      spco_latched <= spco;
-//      spcpar <= spcopar;
-//    end
-
 // transparent latch
-always @(CLK or spco or spcopar or negedge reset_n)
+//always @(CLK or spco or spcopar or negedge reset_n)
+always @(CLK or spco or spcopar or reset_n)
   if (reset_n == 0)
     spco_latched <= 0;
   else
@@ -1796,7 +1770,7 @@ always @(posedge MCLK or negedge rdfinish_n)
 
 always @(posedge osc50mhz or negedge reset_n)
   if (reset_n == 0)
-    mcycle_delay = 10'b1;
+    mcycle_delay <= 10'b1;
   else
     begin
       mcycle_delay[0] <= mfinish_n;
@@ -1917,15 +1891,6 @@ assign vm0parm = 0;
 assign vm0parl = 0;
 
 // page VMEMDR - map output drive
-
-//always @(negedge memstart or negedge reset_n)
-//  if (reset_n == 0)
-//    begin
-//      lvmo_n <= 0;
-//      pma <= 0;
-//    end
-//  else
-//    { lvmo_n[23:22], pma } <= vmo_n;
 
 // transparent latch
 always @(memstart or vmo_n)

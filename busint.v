@@ -32,7 +32,29 @@ module busint(bus, addr, spy, mclk, mempar_in, adrpar_n, req, ack_n,
       disk_ecc <= 0;
     end
 
-  always @(reset_n)
+//  always @(reset_n)
+//    if (reset_n == 0)
+//      begin
+//        req_delayed = 0;
+//        ack_delayed_n[0] = 1;
+//        ack_delayed_n[1] = 1;
+//        ack_delayed_n[2] = 1;
+//
+//        data = 0;
+//        disk_ma = 0;
+//        disk_da = 0;
+//        disk_ecc = 0;
+//      end
+
+//  assign ack_n = ack_delayed_n[1];
+//  assign ack_n = ack_delayed_n[0];
+  assign ack_n = ~req_delayed;
+  assign memgrant_n = ~req;
+  assign loadmd = ~ack_n;
+
+  assign bus = data;
+
+  always @(posedge mclk)
     if (reset_n == 0)
       begin
         req_delayed = 0;
@@ -45,26 +67,17 @@ module busint(bus, addr, spy, mclk, mempar_in, adrpar_n, req, ack_n,
         disk_da = 0;
         disk_ecc = 0;
       end
-
-//  assign ack_n = ack_delayed_n[1];
-//  assign ack_n = ack_delayed_n[0];
-  assign ack_n = ~req_delayed;
-  assign memgrant_n = ~req;
-  assign loadmd = ~ack_n;
-
-  assign bus = data;
-
-  always @(posedge mclk)
-    begin
-//      req_delayed <= req;
-      if (ack_delayed_n[2] == 1)
-        req_delayed <= req;
-      else
-        req_delayed <= 0;
-      ack_delayed_n[0] <= ~req_delayed;
-      ack_delayed_n[1] <= ack_delayed_n[0];
-      ack_delayed_n[2] <= ack_delayed_n[1];
-    end
+    else
+      begin
+//        req_delayed = req;
+        if (ack_delayed_n[2] == 1)
+          req_delayed = req;
+        else
+          req_delayed = 0;
+        ack_delayed_n[0] = ~req_delayed;
+        ack_delayed_n[1] = ack_delayed_n[0];
+        ack_delayed_n[2] = ack_delayed_n[1];
+      end
 
   always @(posedge req)
     begin

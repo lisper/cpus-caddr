@@ -5,10 +5,10 @@ add wave -noupdate -format logic /test/cpu/sspeed1
 add wave -noupdate -format logic /test/cpu/tpclk
 add wave -noupdate -format logic /test/cpu/tpr0_n
 add wave -noupdate -format logic /test/cpu/tpwp
-add wave -noupdate -format logic /test/cpu/cyclecompleted
+#add wave -noupdate -format logic /test/cpu/cyclecompleted
 add wave -noupdate -divider {}
 add wave -noupdate -format logic /test/cpu/reset
-add wave -noupdate -format logic /test/cpu/internal4
+#add wave -noupdate -format logic /test/cpu/internal4
 add wave -noupdate -divider {}
 add wave -noupdate -format literal -radix hexadecimal /test/cpu/reta
 add wave -noupdate -format literal -radix hexadecimal /test/cpu/ipc

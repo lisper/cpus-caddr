@@ -55,7 +55,7 @@ module test;
             boot2_n = 1;
           end
 
-      #250 power_reset_n = 1;
+      #40 power_reset_n = 1;
 
       #5 begin
             boot1_n = 0;
@@ -67,7 +67,9 @@ module test;
             boot2_n = 1;
           end
 
-      #10000 $finish;
+      #4000 $stop;
+//      #10000 $finish;
+//      #20000 $stop;
     end
 
   // 50mhz clock
@@ -76,5 +78,10 @@ module test;
       #10 clk = 0;
       #10 clk = 1;
     end
+
+always @(posedge cpu.CLK)
+  begin
+    $display("%t pc %o", $time, cpu.pc);
+  end
 
 endmodule

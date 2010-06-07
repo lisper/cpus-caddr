@@ -1,0 +1,257 @@
+
+The other bus is the "memory" bus.  It's used for accesses to Unibus
+and Xbus devices as well as memory, but it is what looks like memory
+to the Lisp machine.  The cpu is the master of this bus.  The signals are
+
+ MEM<31:0>, MEMPAR	Bi-directional data lines.  The cpu generates
+ 			and checks parity.  Bad parity occurs on a double-bit
+ 			error.
+ -IGNPAR		(from busint) Reflects XBUS.IGNPAR, ignore parity.
+ -ADR<21:0>, -ADRPAR	(from cpu) Address and its parity, complemented.
+ 	     		Address parity is not valid when MEMRQ first comes up,
+ 			but it is valid by the next clock.
+ -MEMRQ			(from cpu) Request a memory cycle (see below).
+ -MEMACK 		(from busint) Terminate a memory cycle (see below)
+ -MEMGRANT 		(from busint) Low when the processor has the bus.  Do
+ 			not hang when this line is high!  Synchronous.
+ -LOADMD 		(from busint) Equals MEMACK and RDCYC, or diagnostic
+			load of MD.  Loads MD from MEM, asynchronous with
+ 			clock.  This is a pulse which goes low then high,
+ 			the high-going edge loads MD.  It takes care
+ 			of deskewing the data.
+	
+ WRCYC			(from cpu) High to write, low to read
+ MCLK7			(from cpu) This is the master clock supplied to
+			the bus interface by the cpu.  The rising edge is active.
+
+--------------------
+
+    
+		Interface to the Bus Interface
+
+The bus interface plugs into the Xbus and the Unibus, and is connected
+to the cpu by 5 40-wire (alternating grounds) flat cables, which carry
+two independent busses and the master clock, which is supplied by the
+cpu to the bus interface.
+
+If there is skew, the bus interface's clock should lag the cpu's.  The
+supplied clock is one 74S04 and one 74S37 ahead of the real clock
+(maybe this should change, this clock has to go out over the Xbus as
+XBUS.SYNC then get buffered in each device.)
+
+One of the busses is the diagnostic bus.  The bus interface is the
+master of this bus.  The signals are
+       SPY<15:0>     Bi-directional data lines.
+       EADR<3:0>     Select one of 16 16-bit diagnostic registers,
+       		     	    see the prints for which addresses do what.
+			    	    Read and write at the same address are
+				    	     uncorrelated.
+     -DBREAD		When low, reading is occurring and the cpu drives
+   			SPY<15:0>.
+     -DBWRITE		When low, writing is occurring, and
+     		     the bus interface drives SPY<15:0>.  The trailing
+		     edge of -DBWRITE clocks the data into the register,
+		     so you must hold SPY longer.
+     -RESET 	 The cpu drives this low when reset.  Should reset
+     		     the bus interface, but probably should not generate
+	     	     Unibus reset?
+     -BOOT1  Take this low to boot the machine.  It has a pullup.
+
+The other bus is the "memory" bus.  It's used for accesses to Unibus
+and Xbus devices as well as memory, but it is what looks like memory
+to the Lisp machine.  The cpu is the master of this bus.  The signals are
+
+   MEM<31:0>, MEMPAR  Bi-directional data lines.  The cpu generates
+   	      	      and checks parity.  Bad parity occurs on a double-bit
+		      	  	 error.
+	 -IGNPAR		(from busint) Reflects XBUS.IGNPAR, ignore parity.
+	 -ADR<21:0>, -ADRPAR	(from cpu) Address and its parity, complemented.
+ 	     		Address parity is not valid when MEMRQ first comes up,
+		       but it is valid by the next clock.
+       -MEMRQ 	 (from cpu) Request a memory cycle (see below).
+       -MEMACK	       (from busint) Terminate a memory cycle (see below)
+       -MEMGRANT       (from busint) Low when the processor has the bus.  Do
+       		       	     not hang when this line is high!  Synchronous.
+     -LOADMD  	   (from busint) Equals MEMACK and RDCYC, or diagnostic
+    		   	 load of MD.  Loads MD from MEM, asynchronous with
+		      	 clock.  This is a pulse which goes low then high,
+	 	      the high-going edge loads MD.  It takes care
+      	  	     of deskewing the data.
+     WRCYC	      (from cpu) High to write, low to read
+     MCLK7	      	    (from cpu) This is the master clock supplied to
+		    	  the bus interface by the cpu.  The rising edge is active.
+
+>The way clocking works
+
+There are two clocks, the master clock (MCLK) and the cpu clock (CLK).
+MCLK is what gets distributed on the XBUS.  The two clocks are always
+synchronized, but sometimes CLK is gated off.  The two forms of clock
+control are:
+
+WAIT.  The cpu clock stops and the master clock continues to run.
+This happens while the clock is high, so the decision must be made
+early (within about 70 ns).  This is used to halt the machine, for
+statistics counter stops, for error stops, and to wait to start a new
+bus cycle until the previous one has finished.
+
+HANG.  Both clocks stop, and resume in synchronism with a restarting
+signal.  This happens while the clock is low, just before the rising
+edge that starts the next cycle.  The hang state never lasts more than
+a few microseconds.  It is only used when the cpu calls for data (in MD)
+that has not yet arrived from a pending bus cycle.  Stopping both clocks
+ensures that things get restarted as soon as possible, with no
+synchronizer delay.
+
+MEMACK is asynchronous with respect to the clock.  MEMRQ is synchronous;
+it starts in the middle of a cycle, since it depends on the VMAOK signal
+coming out of the map, but the bus interface only looks at it towards
+the end of the cycle.  It runs it (and the Unibus-select bits of the
+address) into its priority logic, and clocks into flip flops the 
+decision as to whether the cpu gets this cycle or not.  XBUSRQ is derived
+from MEMRQ, starting at this clock.
+
+MEMACK rises when the data is first available (read), or as soon as the
+memory no longer needs the address and data held (write).  MEMRQ drops
+when MEMACK rises, which causes MEMACK to drop.  This is all asynchronous.
+
+If the machine tries to start a cycle while MEMRQ is still true, it
+WAITS.  Since you must wait during the first half of a clock cycle, 
+the busy condition (MEMRQ) must be synchronized.  Hopefully the
+synchronizer settles within the 70 ns allowed.  It also takes the
+machine a while to decide that it is starting a cycle; this can
+depend on the SPC output.  If all else fails, such instructions could
+have ILONG, which stretches the first half of the cycle (although for
+dispatch it's the second half you want to stretch, but it doesn't matter.)
+
+If the machine tries to read the MD (SRCMD and not NOP) while a read
+cycle is in progress, the clock HANGS.  Read cycle in progress is
+a flip flop which is set synchronously from MEMRQ and -WRCYC (essentially),
+and is cleared by MEMACK delayed by about 150 ns.  This delay is sufficient
+time for the data in MD to get through the data paths; the slowest case
+is probably MD -> MAP -> DPC -> NPC -> PC, which happens when doing
+a transport-dispatch.  This delay is also sufficient time for the
+parity of MD to be computed and the trap logic to decide whether or
+not to trap.
+
+Note that HANG must not occur if MEMGRANT is not asserted, i.e. the
+cycle being waited for hasn't even started yet.  If this happened
+the bus interface would never get the clock it needs to start the cycle.
+In this case, WAIT until the cycle starts, then HANG.
+
+There are no delays of ACK, and no parity computation, in the bus
+interface, unlike the first machine.  Things simply pass straight
+through.  There is a delay of MEMRQ -> XBUSRQ, because it gets
+synchronized through the priority logic.
+
+In the cpu (VCTL), we have:  clocking logic for MD.  DESTMDR and clock low
+selects input from OBUS; input is normally selected from MEM.  The reason
+for clock low is so that if the machine should stop with DESTMDR in the
+IR, it will still be loadable.  The clock to MD comes from a 74S51,
+(DESTMDR and -CLK) or LOADMD.
+
+A 74S175 remembering the following: RDCYC, WMAPD, MBUSY.SYNC (input
+from MEMRQ), MEMSTART.  MEMSTART says you are in the cycle during which
+MAP(VMA) is being read out, and MEMRQ is being generated.  A flip flop
+named MBUSY.  MEMRQ to the bus interface is the INPUT to this flip flop,
+which is MEMSTART and VMAOK or MBUSY.  Clears on MEMACK or RESET.  A
+flip flop for READ IN PROGRESS, which clears from delayed MEMACK or
+RESET, loads from MEMSTART and VMAOK and RDCYC or self.
+
+These all have to clock from MCLK rather than CLK so that the right thing
+happens when single-stepping the machine (i.e. MEMSTART doesn't keep
+happening forever.)  MEMSTART is what opens the latches on the output
+of the map.  -VMAOK remains static after MEMSTART because it comes from
+the latches and from RDCYC/-WRCYC which is held.
+
+Delay between back to back cycles.  MEMACK comes in and clears MBUSY
+and hence MEMRQ.  If the first cycle is a read, after a delay READ IN
+PROGRESS is cleared, otherwise it was cleared already.  The next clock
+(1) clocks MBUSY.SYNC from MEMRQ, and it gets 0.  The next clock (2)
+loads VMA for the new operation we're starting.  This clock is delayed
+by a WAIT if MBUSY.SYNC didn't get 0.  The next clock (3) terminates
+MEMSTART and starts XBUSRQ out in the bus interface.  So there is
+400-600 ns delay between back to back cycles (plus 200 additional if
+the first is a READ, as it usually is.)
+
+The additional delay due to MBUSY.SYNC is computed as follows.  Assume that
+the microcode is faster than the memory.  Then it gets into the WAIT state
+before MEMACK comes in.  MEMACK arrives, and at the next clock (0-200 ns)
+MBUSY.SYNC clears.  READ IN PROGRESS clears 150 ns after MEMACK arrives,
+which may be just barely in time to avoid a HANG.  The time lost is 50
+to 250 ns, depending on where MEMACK falls with respect to the clock.
+The effect is that with back to back cycles, the extra speed-up gained
+by the clock resynchronization of the HANG feature is lost.
+
+>Interface from bus interface to XBUS
+
+When the cpu has grabbed the bus interface, address, data, ack, and wrcyc
+lines just pass straight through.  [[What about delaying request until
+address lines on bus are stable?]]  When the cpu is accessing the unibus
+the right thing gets simulated.
+
+>Interface from the XBUS to devices.
+
+You treat XBUSRQ as MSYN and XBUSACK as SSYN, Unibus-style and completely
+asynchronous.  If you want, you are allowed to know that XBUSRQ is
+synchronized to the clock; it always starts right after a clock except
+for address settling delay comes first.  The semiconductor memory
+uses this fact to hack hidden refresh somehow.
+
+On a read, the leading edge of XBUSACK is what clocks in the data.
+Error-correcting memory must make sure it has the correct data before
+sending XBUSACK.  On a write, the leading edge of XBUSRQ is allowed
+to clock in the data, or it can be an asynchronous load, in which case
+note that the data drops the same time XBUSRQ does, so stop looking
+at the data as soon as you send XBUSACK.
+
+>Interface from XBUS masters (disk control) to XBUS
+
+Grabbing the bus??
+XBUSRQ and XBUSACK are as above; XBUSRQ must be synchronous with the
+clock as mentioned above.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

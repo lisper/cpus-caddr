@@ -6,13 +6,6 @@
 
 `timescale 1ns / 1ns
 
-`include "74181.v"
-`include "74182.v"
-`include "memory.v"
-`include "rom.v"
-
-`include "busint.v"
-
 /*
  *   +++++++++++++++++++++++++++                    +--------
  *   |                         |                    |
@@ -1255,6 +1248,27 @@ initial
   pc = 0;
 
 assign ipc = pc + 1'b1;
+
+`ifdef debug
+   always @(posedge CLK or reset_n)
+     if (reset_n)
+       begin
+	  $display("; npc %o ipc %o, spc %o, pc %o pcs %b%bb",
+		   npc, ipc, spc, pc, pcs1, pcs0);
+	  $display("; spcpass_n=%b, spcwpass_n=%b, spco_latched %o, spcw %o",
+	  	   spcpass_n, spcwpass_n, spco_latched, spcw);
+	  $display("; %b %b %b %b (%b %b)", 
+		   (popj & ignpopj_n),
+		   (jfalse & ~jcond),
+		   (irjump & ~ir[6] & jcond),
+		   (dispenb& dr & ~dp),
+		   popj, ignpopj_n);
+	  $display("; trap=%b,  parerr_n %b, trapenb %b boot_trap %b",
+		   trap, parerr_n, trapenb, boot_trap);
+
+       end
+`endif
+
 
 // page OPCD
 

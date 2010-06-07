@@ -1,17 +1,15 @@
 /*
  * caddr
- * 10/2005 brad parker brad@heeltoe.com
  *
+ * major cleanup:
+ * 11/2009 brad parker brad@heeltoe.com
+ * 
+ * sync version:
+ * 4/2008 brad parker brad@heeltoe.com
+ *
+ * original version:
+ * 10/2005 brad parker brad@heeltoe.com
  */
-
-`timescale 1ns / 1ns
-
-`include "74181.v"
-`include "74182.v"
-`include "memory.v"
-`include "rom.v"
-
-`include "busint.v"
 
 /*
  * The original set of clocks:
@@ -31,436 +29,459 @@
  *   |                      latch A&M memory output
  *  latch IR
  *
+ * ===============================================================
+ * 
+ * New states & clock:
+ *
+ *  ++++  ++++  ++++  ++++  ++++  ++++  ++++  ++++  ++++  ++++  
+ *  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ * -+  +--+  +--+  +--+  +--+  +--+  +--+  +--+  +--+  +--+  +--
+ *
+ *  +++++++
+ *  |     |
+ * -+     +---------------
+ *
+ *        +++++++
+ *        |     |
+ * -------+     +---------------
+ *
+ *              +++++++
+ *              |     |
+ * -------------+     +---------------
+ *
+ *                    +++++++
+ *                    |     |
+ * -------------------+     +---------------
+ * 
+ * boot
+ * reset
  */
 
-module caddr ( CLK, int, power_reset_n, boot1_n, boot2_n,
-		spy, dbread_n, dbwrite_n, eadr  ) ;
+module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
+	       spy, dbread, dbwrite, eadr );
 
-   input CLK;
-input int;
-input power_reset_n, boot1_n, boot2_n;
-inout[15:0] spy;
-input dbread_n, dbwrite_n;
-input[3:0] eadr;
+   input clk;
+   input ext_int;
+   input ext_reset;
+   input ext_boot;
+   input ext_halt;
 
+   inout [15:0] spy;
+   input 	dbread;
+   input 	dbwrite;
+   input [3:0] 	eadr;
 
-wire[13:0] npc;
-wire[13:0] dpc;
-wire[13:0] ipc;
-wire[18:0] spc;
+   /* */
+   wire [13:0] 	npc;
+   wire [13:0] 	dpc;
+   wire [13:0] 	ipc;
+   wire [18:0] 	spc;
 
-reg[48:0] ir;
+   reg [48:0] 	ir;
 
-wire[31:0] a;
-reg[31:0] a_latch;
+   wire [31:0] 	a;
+   reg [31:0] 	a_latch;
 
+   reg [9:0] 	wadr;
+   reg 		destd, destmd;
 
-reg[9:0] wadr;
-reg destd, destmd;
+   wire 	apass;
+   wire 	amemenb, apassenb;
+   wire 	awp;
 
-wire apass, apass_n;
-wire amemenb_n, apassenb_n;
-wire awp_n;
+   wire [9:0] 	aadr;
 
-wire[9:0] aadr;
+   wire [7:0] 	aeqm_bits;
+   wire 	aeqm;
+   wire [32:0] 	alu;
 
-wire[7:0] aeqm_bits;
-wire aeqm;
-wire[32:0] alu;
+   wire 	divposlasttime, divsubcond, divaddcond;
+   wire 	aluadd, alusub, mulnop;
+   wire 	mul, div, specalu;
 
-wire divposlasttime_n, divsubcond, divaddcond, aluadd, alusub, mulnop_n;
-wire mul_n, div_n, specalu_n;
+   wire [1:0] 	osel;
 
-wire[1:0] osel;
+   wire [3:0] 	aluf;
+   wire 	alumode;
+   wire 	cin0;
 
-wire[3:0] aluf, aluf_n;
-wire alumode_n, alumode, cin0_n;
+   wire [31:0] 	amem;
 
-wire[31:0] amem;
+   wire 	aparok;
 
-wire aparok;
+   wire 	dfall, dispenb, ignpopj, jfalse, jcalf, jretf, jret, iwrite;
+   wire 	ipopj, popj, srcspcpopreal;
+   wire 	spop, spush;
 
-wire dfall_n, dispenb, ignpopj_n, jfalse, jcalf, jretf, jret, iwrite;
-wire ipopj_n, popj_n, srcspcpopreal_n;
-wire spop_n, spush_n;
+   wire 	spcwpass, spcpass;
+   wire 	swp, spcenb, spcdrive, spcnt;
 
-wire popj;
+   reg 		inop, spushd, iwrited; 
+   wire 	n, pcs1, pcs0;
 
-wire spcwpass_n, spcpass_n;
-wire swp_n, spcenb, spcdrive_n, spcnt_n;
+   wire 	nopa, nop;
 
-reg inop, spushd, iwrited; 
-wire inop_n, spushd_n, iwrited_n;
-wire n, pcs1, pcs0;
+   // page DRAM0-2
+   wire [10:0] 	dadr;
+   wire 	dr, dp, dn;
+   wire 	daddr0;
+   wire [6:0] 	dmask;
+   wire 	dwe;
 
-wire nopa_n, nopa, nop, nop_n;
+   // page DSPCTL
+   wire 	dparok, dmapbenb, dispwr;
+   reg [9:0] 	dc;
+   wire [11:0] 	prompc;
 
-// page DRAM0-2
-wire[10:0] dadr_n;
-wire dr, dp, dn;
-wire daddr0_n;
-wire[6:0] dmask;
-wire dwe_n;
+   // page FLAG
+   wire 	statbit, ilong, aluneg;
+   wire 	pgf_or_int, pgf_or_int_or_sb, sint;
 
-// page DSPCTL
-wire dparh_n, dparl, dpareven, dparok, dmapbenb_n, dispwr;
-reg[9:0] dc;
-wire[11:0] prompc_n;
+   wire [2:0] 	conds;
+   wire 	jcond;
+   reg 		lc_byte_mode, prog_unibus_reset, int_enable, sequence_break;
 
-// page FLAG
-wire statbit_n, ilong_n, aluneg;
-wire pgf_or_int, pgf_or_int_or_sb, sint;
+   // page IOR
+   wire [47:0] 	iob;
+   wire [31:0] 	ob;
 
-wire[2:0] conds;
-wire jcond;
-reg lc_byte_mode, prog_unibus_reset, int_enable, sequence_break;
+   // page IPAR
+   wire 	iparity, iparok;
 
-// page IOR
-wire[47:0] iob;
-wire[31:0] ob;
+   // page LC
+   reg [25:0] 	lc;
+   wire [3:0] 	lca;
+   wire 	lcry3;
 
-// page IPAR
-wire[3:0] ipar;
-wire iparity, iparok;
+   wire 	lcdrive;
+   wire 	sh4, sh3;
 
-// page L
-wire lparl, lparm_n, lparity, lparity_n;
+   wire [31:0] 	mf;
 
-// page LC
-reg[25:0] lc;
-wire[3:0] lca;
-wire lcry3;
+   wire 	lc0b, next_instr, newlc_in;
+   wire 	have_wrong_word, last_byte_in_word;
+   wire 	needfetch, ifetch, spcmung, spc1a;
+   wire 	lcinc;
 
-wire lcdrive_n;
-wire sh4_n, sh3_n;
+   reg 		newlc, sintr, next_instrd;
 
-wire[31:0] mf;
+   wire 	lc_modifies_mrot;
+   wire 	inst_in_left_half;
+   wire 	inst_in_2nd_or_4th_quarter;
 
-wire lc0b, next_instr, newlc_in_n, have_wrong_word, last_byte_in_word;
-wire needfetch, ifetch_n, spcmung, spc1a, lcinc, lcinc_n;
-wire newlc_n;
+   wire [13:0] 	wpc;
 
-reg newlc, sintr, next_instrd;
+   // page MCTL
+   wire 	mpass, mpassl, mpassm;
+   wire 	srcm;
+   wire 	mwp;
+   wire [4:0] 	madr;
 
-wire int;
+   // page MD
+   reg [31:0] 	md;
+   wire 	mddrive;	/* drive md on to mf bus */
+   wire 	mdclk;		/* enable - clock md in? */
+   wire 	loadmd;		/* data available from busint */
 
-wire lc_modifies_mrot_n, inst_in_left_half, inst_in_2nd_or_4th_quarter;
+   reg 		mdhaspar, mdpar;
+   wire 	mdgetspar;
+   wire 	mempar_in;
 
-wire[13:0] wpc;
+   wire 	ignpar;
 
-// page MCTL
-wire mpass, mpass_n, mpassl_n, mpassm_n;
-wire srcm, mwp_n;
-wire[4:0] madr;
+   // page MDS
+   wire [31:0] 	mds;
+   wire [31:0] 	mem;
+   wire [31:0] 	busint_bus;
+   wire 	mempar_out;
 
-// page MD
-reg[31:0] md;
-reg mdhaspar, mdpar;
-wire mddrive_n, mdgetspar, mdclk;
-wire mempar_in;
 
-wire loadmd, ignpar_n;
+   // page MF
+   wire 	mfenb;
+   wire 	mfdrive;
 
-// page MDS
-wire[31:0] mds;
-wire[31:0] mem;
-wire[31:0] busint_bus;
-wire mempar_out;
+   // page MLATCH
+   reg [31:0] 	mmem_latched;
+   wire 	mmemparity;
 
-wire mdparodd;
+   wire 	mmemparok;
+   wire [31:0] 	m;
 
-// page MF
-wire mfenb, mfdrive_n;
+   // page MMEM
+   wire [31:0] 	mmem;
 
-// page MLATCH
-reg[31:0] mmem_latched;
-wire mmemparity;
+   wire [31:0] 	mo;
 
-wire mmemparok;
-wire[31:0] m;
+   wire [31:0] 	msk_right_out, msk_left_out, msk;
 
-// page MMEM
-wire[31:0] mmem;
+   wire 	dcdrive, opcdrive;
+   wire 	zero16, zero12_drive, zero16_drive;
 
-wire[31:0] mo;
+   // page PDL
+   wire 	pdlparity;
+   wire [31:0] 	pdl;
 
-wire[31:0] msk_right_out, msk_left_out, msk;
+   // page PDLCTL
+   wire [9:0] 	pdla;
+   wire 	pdlp, pdlwrite;
+   wire 	pwp, pdlenb, pdldrive, pdlcnt;
+   reg 		pdlwrited, pwidx, imodd, destspcd;
 
-wire dcdrive, opcdrive_n, zero16, zero12_drive, zero16_drive, zero16_drive_n;
+   // page PDLPTR
+   wire 	pidrive, ppdrive;
+   reg [9:0] 	pdlidx;
 
-// page PDL
-wire pdlparity;
-wire[31:0] pdl;
+   // page Q
+   reg [31:0] 	q;
+   wire 	qs1, qs0, qdrive;
 
-// page PDLCTL
-wire[9:0] pdla;
-wire pdlp_n, pdlwrite;
-wire pwp_n, pdlenb, pdldrive_n, pdlcnt_n;
-wire imodd_n;
-wire destspcd;
-reg pdlwrited, pwidx_n, imodd, destspcd_n;
+   // page SHIFT0-1
+   wire [31:0] 	sa;
+   wire [31:0] 	r;
 
-// page PDLPTR
-wire pidrive, ppdrive_n;
-reg[9:0]pdlidx;
+   // page SMCTL
+   wire 	mr, sr, s1, s0;
+   wire [4:0] 	mskr;
 
-// page Q
-reg[31:0] q;
-wire qs1, qs0, srcq, qdrive;
+   wire 	s4, s3, s2;
+   wire [4:0] 	mskl;
 
-// page SHIFT0-1
-wire[31:0] sa;
-wire[31:0] r;
+   // page SOURCE
+   wire 	irbyte, irdisp, irjump, iralu;
 
-// page SMCTL
-wire mr_n, sr_n, s1, s0;
-wire[4:0] mskr;
+   wire [3:0] 	funct;
 
-wire s4, s4_n, s3, s2;
-wire[4:0] mskl;
+   wire 	srcq;
+   wire 	srcopc;
+   wire 	srcpdltop;	/* ir<30-26> src PDL buffer, ptr */
+   wire 	srcpdlpop;	/* ir<30-26> src PDL buffer, ptr, pop */
+   wire 	srcpdlidx;
+   wire 	srcpdlptr;
+   wire 	srcspc;		/* ir<30-26> src spc ptr */
+   wire 	srcdc;		/* ir<30-26> src dispatch constant */
+   wire 	srcspcpop, srclc, srcmd, srcmap, srcvma;
 
-// page SOURCE
-wire irbyte_n, irdisp_n, irjump_n, iralu_n;
-wire irdisp, irjump, iralu;
+   wire 	imod;
 
-wire[3:0] funct;
-wire funct2_n;
+   wire 	dest;
+   wire 	destm;		/* fuctional destination */
 
-wire srcq_n, srcopc_n, srcpdltop_n, srcpdlpop_n,
-	srcpdlidx_n, srcpdlptr_n, srcspc_n, srcdc_n;
-wire srcspcpop_n, srclc_n, srcmd_n, srcmap_n, srcvma_n;
+   wire 	destmem;	/* ir<25-14> dest VMA or MD */
 
-wire srclc;
-wire imod;
+   wire 	destvma;	/* ir<25-14> dest VMA register */
+   wire 	destmdr;	/* ir<25-14> dest MD register */
 
-wire destmem_n, destvma_n, destmdr_n, dest, destm;
-wire destintctl_n, destlc_n;
-wire destimod1_n, destimod0_n, destspc_n, destpdlp_n,
-	destpdlx_n, destpdl_x_n, destpdl_p_n, destpdltop_n;
+   wire 	destintctl;	/* ir<25-14> dest interrupt control */
+   wire 	destlc;		/* ir<25-14> dest lc */
+   wire 	destimod1;	/* ir<25-14> dest oa register <47-26> */
+   wire 	destimod0;	/* ir<25-14> dest oa register <25-0> */
+   wire 	destspc;	/* ir<25-14> dest spc data, push*/
+   wire 	destpdlp;	/* ir<25-14> dest pdl ptr */
+   wire		destpdlx;	/* ir<25-14> dest pdl index */
+   wire 	destpdl_x;	/* ir<25-14> dest pdl (addressed by index)  */
+   wire 	destpdl_p;	/* ir<25-14> dest pdl (addressed by ptr), push*/
+   wire 	destpdltop;	/* ir<25-14> dest pdl (addressed by ptr) */
 
-wire destspc;
 
-// page SPC
-reg[4:0] spcptr;
+   // page SPC
+   reg [4:0] 	spcptr;
 
-wire [18:0] spcw;
-wire [18:0] spco;
+   wire [18:0] 	spcw;
+   wire [18:0] 	spco;
 
-wire spcopar;
+   wire 	spcopar;
 
-// page SPCPAR
-wire spcwpar, spcwparl_n, spcwparh, spcparok;
+   // page SPCPAR
+   wire 	spcparok;
 
 
-wire halt_n;
+   wire 	mdparerr, parerr, memparok;
+   wire 	trap;
+   reg 		boot_trap;
 
-wire mdparerr, parerr_n, memparok_n, memparok, trap_n, trap;
-reg boot_trap;
 
-wire mdpareven;
+   // page VCTRL1
+   reg 		memstart, mbusy_sync;
+   wire 	memop, memprepare;
 
-// page VCTRL1
-reg memstart, mbusy_sync;
-wire memop_n, memprepare, memstart_n;
+   reg 		rdcyc, wmapd, mbusy;
+   wire 	memrq;
+   wire 	wrcyc;
 
-reg wrcyc, wmapd, mbusy;
-wire rdcyc, pfw_n, pfr_n, vmaok_n, wmapd_n, memrq;
+   wire 	pfw, pfr;		/* vma permissions */
+   wire 	vmaok;			/* vma access ok */
 
-wire set_rd_in_progess, mfinish_n;
-reg rd_in_progress;
+   wire 	mfinish;
 
-wire memack_n, memgrant_n;
+   wire 	memack;
 
-wire mfinishd_n, rdfinish_n;
-wire wait_n;
+   reg 		mfinishd;
+   wire 	waiting;
+   
+   // page VCTRL2
+   wire 	mapwr0d, mapwr1d, vm0wp, vm1wp;
+   wire 	vmaenb, vmasel;
+   wire 	memdrive, mdsel, use_md;
+   wire 	wmap, memwr, memrd;
 
-// page VCTRL2
-wire mapwr0d, mapwr1d, vm0wp_n, vm1wp_n;
-wire vmaenb_n, vmasel;
-wire memdrive_n, mdsel, use_md;
-wire wmap_n, memwr_n, memrd_n;
+   wire 	lm_drive_enb;
 
-wire lm_drive_enb;
+   // page VMA
+   reg [31:0] 	vma;
+   wire 	vmadrive;
 
-wire wmap;
+   // page VMAS
+   wire [31:0] 	vmas;
 
-// page VMA
-reg[31:0] vma;
-wire vmadrive_n;
+   wire [23:8] 	mapi;
 
-// page VMAS
-wire[31:0] vmas;
+   wire [4:0] 	vmap;
 
-wire[23:8] mapi;
-wire[12:8] mapi_n;
+   // page VMEM0 - virtual memory map stage 0
+   wire 	use_map;
+   wire 	v0parok;
 
-wire[4:0] vmap_n;
+   wire [23:0] 	vmo;
 
-// page VMEM0 - virtual memory map stage 0
-wire srcmap, use_map_n;
-wire vmoparck, v0parok, vm0pari, vmoparodd;
+   wire 	mapdrive;
 
-wire vmopar;
+   wire [48:0] 	i;
+   wire [48:0] 	iprom;
+   wire [48:0] 	iram;
+   reg [47:0] 	spy_ir;
 
-wire[23:0] vmo_n, vmo;
+   wire 	ramdisable;
 
-wire[4:0] vmap;
+   reg 		opcinh, opcclk, lpc_hold;
 
-wire vm1mpar, vm1lpar;
+   reg 		ldstat, idebug, nop11, step;
 
-wire mapdrive_n;
-wire vm0par, vm0parm, vm0parl, adrpar_n;
+   reg 		run;
 
-wire[48:0] i;
-wire[48:0] iprom;
-wire[48:0] iram;
-reg[47:0] spy_ir;
+   wire 	machrun, stat_ovf, stathalt;
 
-wire ramdisable, promdisabled_n;
+   wire 	spcoparok, vm0parok, pdlparok;
 
-reg opcinh, opcclk, lpc_hold;
-wire opcinh_n, opcclk_n;
+   wire 	lowerhighok, highok;
+   wire 	prog_reset, reset;
+   wire 	err, errhalt;
+   wire 	bus_reset;
+   wire 	prog_boot, boot;
 
-reg ldstat, idebug, nop11, step;
-wire ldstat_n, idebug_n, nop11_n, step_n;
+   wire 	prog_bus_reset;
 
-reg run;
+   wire 	opcclka;
 
-wire machrun, ssdone_n, stat_ovf, stathalt_n;
+   // page PCTL
+   wire 	promenable, promce, bottom_1k;
 
-wire spcoparok, vm0parok, pdlparok;
+   reg 		mparity;
+   reg [31:0] 	pdl_latch;
 
-wire lowerhighok_n, highok, ldmode;
-wire prog_reset_n, reset, reset_n;
-wire err, errhalt_n;
-wire bus_reset_n, bus_power_reset_n;
-wire power_reset;
-wire prog_boot, boot_n;
+   // page SPCLCH
+   reg [18:0] 	spco_latched;
+   reg 		spcpar;
 
-wire prog_bus_reset;
+   // page OLORD1 
+   reg 		promdisable;
+   reg 		trapenb;
+   reg 		stathenb;
+   reg 		errstop;
 
-wire busint_lm_reset_n;
+   reg 		srun, sstep, ssdone, promdisabled;
 
-wire opcclka;
+   // page OLORD2
 
-// page PCTL
-wire promenable_n, promce_n, bottom_1k;
+   reg 		ape, mpe, pdlpe, dpe, ipe, spe, higherr, mempe;
+   reg 		v0pe, v1pe, statstop, halted;
 
-reg mparity;
-reg[31:0] pdl_latch;
+   // page L
+   reg [31:0] 	l;
 
-// page SPCLCH
-reg[18:0] spco_latched;
-reg spcpar;
+   // page NPC
+   reg [13:0] 	pc;
 
-// page OLORD1 
-reg promdisable;
-reg trapenb;
-reg stathenb;
-reg errstop;
+   // page OPCS
+   reg [13:0] 	opc;
 
-reg srun, sstep, ssdone, promdisabled;
+   // page PDLPTR
+   reg [9:0] 	pdlptr;
 
-// page OLORD2
+   // page SPCW
+   reg [13:0] 	reta;
 
-reg ape_n, mpe_n, pdlpe_n, dpe_n, ipe_n, spe_n, higherr_n, mempe_n;
-reg v0pe_n, v1pe_n, statstop, halted_n;
+   // page IWR
+   reg [48:0] 	iwr;
 
-// page L
-reg[31:0] l;
+   reg [13:0] 	lpc;
 
-// page NPC
-reg[13:0] pc;
-
-// page OPCS
-reg[13:0] opc;
-
-// page PDLPTR
-reg[9:0] pdlptr;
-
-// page SPCW
-reg[13:0] reta;
-
-reg[9:0] mcycle_delay;
-
-// page IWR
-reg[48:0] iwr;
-
-reg[13:0] lpc;
-
-reg[23:22] lvmo_n;
-reg[21:8] pma;
+   reg 		lvmo_23;
+   reg 		lvmo_22;
+   reg [21:8] 	pma;
 
 
    // SPY 0
 
-   wire   spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
-	  spy_nc_n, spy_irh_n, spy_irm_n, spy_irl_n;
+   wire   spy_obh, spy_obl, spy_pc, spy_opc,
+	  spy_nc, spy_irh, spy_irm, spy_irl;
 
-   wire   spy_sth_n, spy_stl_n, spy_ah_n, spy_al_n,
-	  spy_mh_n, spy_ml_n, spy_flag2_n, spy_flag1_n;
+   wire   spy_sth, spy_stl, spy_ah, spy_al,
+	  spy_mh, spy_ml, spy_flag2, spy_flag1;
 
-   wire   ldmode_n, ldopc_n, ldclk_n, lddbirh_n, lddbirm_n, lddbirl_n;
+   wire   ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl;
 
    // *******************************************************************
 
    // main cpu state machine
 
-`define STATE_RESET	4'b0000
-`define STATE_FETCH	4'b0001
-`define STATE_DECODE	4'b0010
-`define STATE_WP	4'b0100
-`define STATE_WAIT	4'b1000
+`define STATE_S0	5'b00000
+`define STATE_S1	5'b00001
+`define STATE_S2	5'b00010
+`define STATE_S3	5'b00100
+`define STATE_S4	5'b01000
+`define STATE_S5	5'b10000
 
-   reg [3:0] state;
-   reg [3:0] next_state;
-   wire       state_reset, state_fetch, state_decode, state_wp, state_wait;
+   reg [4:0] state;
+   wire [4:0] next_state;
+   wire       state_decode, state_write, state_fetch, state_wait;
+   wire       phase0;
+   wire       phase1;
 
-   
-   always @(posedge CLK)
-     if (~reset_n)
-       state <= `STATE_RESET;
+   always @(posedge clk)
+     if (reset)
+       state <= `STATE_S0;
      else
        state <= next_state;
 
-   always @(state or next_state)
-     begin
-	next_state = state;
-	case (state)
-//	  `STATE_RESET: next_state = `STATE_FETCH;
-//	  `STATE_FETCH: next_state = `STATE_DECODE;
-//	  `STATE_DECODE: next_state = `STATE_WP;
-//	  `STATE_WP: next_state = `STATE_FETCH;
-//	  `STATE_WAIT: next_state = `STATE_FETCH;
-//	  default: next_state = `STATE_FETCH;
-	  `STATE_RESET: next_state = `STATE_DECODE;
-	  `STATE_DECODE: next_state = `STATE_WP;
-	  `STATE_WP: next_state = `STATE_DECODE;
-	  `STATE_WAIT: next_state = `STATE_DECODE;
-	  default: next_state = `STATE_DECODE;
-	endcase
-     end
+   assign next_state = 
+		state == `STATE_S0 ? `STATE_S1 :
+		(state == `STATE_S1 && machrun) ? `STATE_S2 :
+		(state == `STATE_S1 && ~machrun) ? `STATE_S1 :
+		state == `STATE_S2 ?`STATE_S3 :
+		state == `STATE_S3 ? `STATE_S4 :
+		state == `STATE_S4 ? `STATE_S1 :
+		state == `STATE_S5 ? `STATE_S4 :
+		`STATE_S4;
 
-   assign state_fetch = state[0];
-   assign state_decode = state[1];
-   assign state_wp = state[2];
-   assign state_wait = state[3];
+   assign state_decode = state[0] | state[1];
+   assign state_write = state[2];
+   assign state_fetch = state[3];
+   assign state_wait = state[4];
 
-//??
-assign tse = state_wp;
+   assign phase0 = state_decode;
+   assign phase1 = state_write | state_fetch;
 
-   
    // page actl
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  wadr <= 0;
 	  destd <= 0;
 	  destmd <= 0;
        end
      else
-       if (state_decode)
+       if (state_fetch)
 	 begin
 	    // wadr 9  8  7  6  5  4  3  2  1  0
 	    //      0  0  0  0  0  18 17 16 15 14
@@ -468,39 +489,32 @@ assign tse = state_wp;
 	    wadr <= destm ? { 5'b0, ir[18:14] } : { ir[23:14] };
 	    destd <= dest;
 	    destmd <= destm;
-       end
-
-   initial
-     wadr = 0;
+	 end
 
    assign apass = destd & ( ir[41:32] == wadr[9:0] ? 1'b1 : 1'b0 );
-   assign apass_n = ~apass;
 
-   assign amemenb_n  = !(apass_n & tse);
-   assign apassenb_n  = !(apass & tse);
+   assign apassenb  = apass & (state_write | state_fetch);
+   assign amemenb  = ~apass & (state_write | state_fetch);
 
-   assign awp_n = ~(destd & state_wp);
+   assign awp = destd & state_write;
 
-//??
-//   assign aadr = CLK ? { ir[41:32] } : wadr;
-   // ? pass wadr during state_wp?
-   assign aadr = state_decode ? { ir[41:32] } : wadr;
+   // use wadr during state_write
+   assign aadr = ~state_write ? { ir[41:32] } : wadr;
 
    // page ALATCH
 
    // AML
    // transparent latch w/async reset
-   always @(state_decode or amem or negedge reset_n)
-     if (~reset_n)
+   always @(state_decode or state_fetch or amem or reset)
+     if (reset)
        a_latch <= 0;
      else
-       if (state_decode)
+       if (state_decode/*|| state_fetch*/)
 	 a_latch <= amem;
 
-   assign a =
-	     amemenb_n == 1'b0 ? a_latch :
-	     apassenb_n == 1'b0 ? l :
-	     32'hffff;
+   assign a = amemenb ? a_latch :
+	      apassenb ? l :
+	      32'hffff;
 
    // page ALU0-1
 
@@ -509,14 +523,20 @@ assign tse = state_wp;
    assign aeqm = aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;
 
    wire[2:0] nc_alu;
-
+   wire      cin32_n, cin28_n, cin24_n, cin20_n;
+   wire      cin16_n, cin12_n, cin8_n, cin4_n;
+   
    ic_74S181  i_ALU1_2A03 (
 			   .B({3'b0,a[31]}),
 			   .A({3'b0,m[31]}),
 			   .S(aluf[3:0]),
 			   .CIN_N(cin32_n),
 			   .M(alumode),
-			   .F({nc_alu,alu[32]})
+			   .F({nc_alu,alu[32]}),
+			   .X(),
+			   .Y(),
+			   .COUT_N(),
+			   .AEB()
 			   );
 
    ic_74S181  i_ALU1_2A08 (
@@ -528,7 +548,8 @@ assign tse = state_wp;
 			   .F(alu[31:28]),
 			   .AEB(aeqm_bits[7]),
 			   .X(xout31),
-			   .Y(yout31)
+			   .Y(yout31),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU1_2B08 (
@@ -540,7 +561,8 @@ assign tse = state_wp;
 			   .F(alu[27:24]),
 			   .AEB(aeqm_bits[6]),
 			   .X(xout27),
-			   .Y(yout27)
+			   .Y(yout27),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU1_2A13 (
@@ -552,7 +574,8 @@ assign tse = state_wp;
 			   .F(alu[23:20]),
 			   .AEB(aeqm_bits[5]),
 			   .X(xout23),
-			   .Y(yout23)
+			   .Y(yout23),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU1_2B13 (
@@ -564,7 +587,8 @@ assign tse = state_wp;
 			   .F(alu[19:16]),
 			   .AEB(aeqm_bits[4]),
 			   .X(xout19),
-			   .Y(yout19)
+			   .Y(yout19),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU0_2A23 (
@@ -576,7 +600,8 @@ assign tse = state_wp;
 			   .F({alu[15:12]}),
 			   .AEB(aeqm_bits[3]),
 			   .X(xout15),
-			   .Y(yout15)
+			   .Y(yout15),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU0_2B23 (
@@ -588,7 +613,8 @@ assign tse = state_wp;
 			   .F(alu[11:8]),
 			   .AEB(aeqm_bits[2]),
 			   .X(xout11),
-			   .Y(yout11)
+			   .Y(yout11),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU0_2A28 (
@@ -600,19 +626,21 @@ assign tse = state_wp;
 			   .F(alu[7:4]),
 			   .AEB(aeqm_bits[1]),
 			   .X(xout7),
-			   .Y(yout7)
+			   .Y(yout7),
+			   .COUT_N()
 			   );
 
    ic_74S181  i_ALU0_2B28 (
 			   .A(m[3:0]),
 			   .B(a[3:0]),
 			   .S(aluf[3:0]),
-			   .CIN_N(cin0_n),
+			   .CIN_N(~cin0),
 			   .M(alumode),
 			   .F(alu[3:0]),
 			   .AEB(aeqm_bits[0]),
 			   .X(xout3),
-			   .Y(yout3)
+			   .Y(yout3),
+			   .COUT_N()
 			   );
 
    // page ALUC4
@@ -623,7 +651,7 @@ assign tse = state_wp;
 			    .COUT2_N(cin12_n),
 			    .COUT1_N(cin8_n),
 			    .COUT0_N(cin4_n),
-			    .CIN_N(cin0_n),
+			    .CIN_N(~cin0),
 			    .XOUT(xx0),
 			    .YOUT(yy0)
 			    );
@@ -644,77 +672,72 @@ assign tse = state_wp;
 			    .X( { 2'b00, xx1,xx0 } ),
 			    .COUT1_N(cin32_n),
 			    .COUT0_N(cin16_n),
-			    .CIN_N(cin0_n)
+			    .CIN_N(~cin0),
+			    .COUT2_N(),
+			    .XOUT(),
+			    .YOUT()
 			    );
 
 
-   assign divposlasttime_n  = !(q[0] | ir[6]);
+   assign    divposlasttime  = q[0] | ir[6];
 
-   assign divsubcond = !(div_n | divposlasttime_n);
+   assign    divsubcond = div & divposlasttime;
 
-   assign divaddcond = !(div_n | !(ir[5] | divposlasttime_n));
+   assign    divaddcond = div & (ir[5] | ~divposlasttime);
 
-   assign aluadd = !(
-		     !(divaddcond & ~a[31]) &
-		     !(divsubcond & a[31]) &
-		     mul_n
-		     );
+   assign    mulnop = mul & ~q[0];
 
-   assign mulnop_n = mul_n | q[0];
+   assign    aluadd = (divaddcond & ~a[31]) |
+		      (divsubcond & a[31]) |
+		      mul;
 
-   assign alusub = !(
-		     mulnop_n &
-		     !(~a[31] & divsubcond) &
-	             !(divaddcond & a[31]) &
-		     irjump_n
-		     );
+   assign    alusub = mulnop |
+		      (divsubcond & ~a[31]) |
+	              (divaddcond & a[31]) |
+		      irjump;
 
-//   assign osel[1] = ! (~ir[13] | iralu_n);
-//   assign osel[0] = ! (~ir[12] | iralu_n);
    assign osel[1] = ir[13] & iralu;
    assign osel[0] = ir[12] & iralu;
 
-   assign aluf_n =
-		  {alusub,aluadd} == 2'b00 ? { ~ir[3], ~ir[4], ir[6], ir[5] } :
-		  {alusub,aluadd} == 2'b01 ? { 1'b0,   1'b1,   1'b1,  1'b0 } :
-		  {alusub,aluadd} == 2'b10 ? { 1'b1,   1'b0,   1'b0,  1'b1 } :
-	          { 1'b0,   1'b0,   1'b0,  1'b0 };
+   assign aluf =
+		  {alusub,aluadd} == 2'b00 ? { ir[3], ir[4], ~ir[6], ~ir[5] } :
+		  {alusub,aluadd} == 2'b01 ? { 1'b1,   1'b0,   1'b0,  1'b1 } :
+		  {alusub,aluadd} == 2'b10 ? { 1'b0,   1'b1,   1'b1,  1'b0 } :
+	          { 1'b1,   1'b1,   1'b1,  1'b1 };
 
-   assign alumode_n =
-		     {alusub,aluadd} == 2'b00 ? ir[7] :
-		     {alusub,aluadd} == 2'b01 ? 1'b1 :
-		     {alusub,aluadd} == 2'b10 ? 1'b1 :
-	             1'b0;
+   assign alumode =
+		     {alusub,aluadd} == 2'b00 ? ~ir[7] :
+		     {alusub,aluadd} == 2'b01 ? 1'b0 :
+		     {alusub,aluadd} == 2'b10 ? 1'b0 :
+	             1'b1;
 
-   assign cin0_n =
-		  {alusub,aluadd} == 2'b00 ? ~ir[2] :
-		  {alusub,aluadd} == 2'b01 ? 1'b1 :
-		  {alusub,aluadd} == 2'b10 ? irjump :
-                  1'b0;
-
-   assign aluf = ~aluf_n;
-   assign alumode = ~alumode_n;
+   assign cin0 =
+		  {alusub,aluadd} == 2'b00 ? ir[2] :
+		  {alusub,aluadd} == 2'b01 ? 1'b0 :
+		  {alusub,aluadd} == 2'b10 ? ~irjump :
+                  1'b1;
 
 
    // page AMEM0-1
 
-   part_1kx32ram_sync  i_AMEM (
-			       .CLK(CLK),
+   part_1kx32ram_sync_a  i_AMEM (
+			       .CLK(clk),
 			       .A(aadr),
 			       .DO(amem),
 			       .DI(l),
-			       .WE_N(awp_n),
+			       .WE_N(~awp),
 			       .CE_N(1'b0)
 			       );
 
-   assign aparok = 1;
+   assign aparok = 1'b1;
 
    // page CONTRL
 
-   assign dfall_n  = ! (dr & dp);		/* push-pop fall through */
+   assign dfall  = dr & dp;			/* push-pop fall through */
 
-   assign dispenb = irdisp & funct2_n;
-   assign ignpopj_n  = irdisp_n  | dr;
+   assign dispenb = irdisp & ~funct[2];
+
+   assign ignpopj  = irdisp & ~dr;
 
    assign jfalse = irjump & ir[6];		/* jump and inverted-sense */
 
@@ -726,60 +749,45 @@ assign tse = state_wp;
 
    assign iwrite = irjump & ir[8] & ir[9];	/* microcode write */
 
-   assign ipopj_n  = ! (ir[42] & nop_n );
-   assign popj_n  = ipopj_n  & iwrited_n ;
+   assign ipopj = ir[42] & ~nop;
 
-   assign popj = ~popj_n;
+   assign popj = ipopj | iwrited;
 
-   assign srcspcpopreal_n  = srcspcpop_n  | nop;
+   assign srcspcpopreal  = srcspcpop & ~nop;
 
-   assign spop_n = ! (
-		      ( !(srcspcpopreal_n & popj_n ) & ignpopj_n ) |
-		      (dispenb & dr & ~dp) |
-		      (jret & ~ir[6] & jcond) |
-		      (jretf & ~jcond)
-		      );
+   assign spop =
+		((srcspcpopreal | popj) & ~ignpopj) |
+		(dispenb & dr & ~dp) |
+		(jret & ~ir[6] & jcond) |
+		(jretf & ~jcond);
 
-   assign spush_n = ! (
-		       destspc |
-		       (jcalf & ~jcond) |
-		       (dispenb & dp & ~dr) |
-		       (irjump & ~ir[6] & ir[8] & jcond)
-		       );
+   assign spush = 
+		  destspc |
+		  (jcalf & ~jcond) |
+		  (dispenb & dp & ~dr) |
+		  (irjump & ~ir[6] & ir[8] & jcond);
+   
 
-   assign spcwpass_n = !(spushd & tse);
-   assign spcpass_n = !(spushd_n & tse);
+   assign spcwpass = spushd & state_fetch;
+   assign spcpass = ~spushd & state_fetch;
 
-   assign swp_n = !(spushd & state_wp);
-   assign spcenb = !(srcspc_n & srcspcpop_n);
-   assign spcdrive_n = !(spcenb & tse);
-   assign spcnt_n = spush_n & spop_n;
+   assign swp = spushd & state_write;
+   assign spcenb = srcspc | srcspcpop;
+   assign spcdrive = spcenb & state_write;
+   assign spcnt = spush | spop;
 
-   assign inop_n = ~inop;
-   assign spushd_n = ~spushd;
-   assign iwrited_n = ~iwrited;
-
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
-	  inop <= 0;
 	  spushd <= 0;
 	  iwrited <= 0;
        end
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    inop <= n;
-	    spushd <= ~spush_n;
+	    spushd <= spush;
 	    iwrited <= iwrite;
 	 end
-
-   initial
-     begin
-	inop = 0;
-	spushd = 0;
-	iwrited = 0;
-     end
 
    /*
     * select new pc
@@ -792,8 +800,8 @@ assign tse = state_wp;
 
    assign pcs1 =
 	!(
-	  (popj & ignpopj_n) |		/* popj & ignore */
-	  (jfalse & ~jcond) |		/* jump & invert & cond-not-satisfied*/
+	  (popj & ~ignpopj) |		/* popj & !ignore */
+	  (jfalse & ~jcond) |		/* jump & invert & cond-not-satisfied */
 	  (irjump & ~ir[6] & jcond) |	/* jump & !invert & cond-satisfied */
 	  (dispenb & dr & ~dp)		/* dispatch + return & !push */
 	  );
@@ -801,33 +809,37 @@ assign tse = state_wp;
    assign pcs0 =
 	!(
 	  (popj) |
-	  (dispenb & dfall_n) |
+	  (dispenb & ~dfall) |
 	  (jretf & ~jcond) |
 	  (jret & ~ir[6] & jcond)
 	  );
 
    /*
     * N set if:
-    *  iwrite (microcode write)
-    *  dispatch & disp-N
-    *  jump & invert-jump-selse & cond-false & !next
+    *  trap 						or
+    *  iwrite (microcode write) 			or
+    *  dispatch & disp-N 				or
+    *  jump & invert-jump-selse & cond-false & !next	or
     *  jump & !invert-jump-sense & cond-true & !next
     */
    assign n =
-	     !(trap_n & 
-	       !((iwrited) |
-		 (dispenb & dn) |
-		 (jfalse & ~jcond & ir[7]) |
-		 (irjump & ~ir[6] & jcond & ir[7]))
-	       );
+	     trap |
+	     iwrited |
+	     (dispenb & dn) |
+	     (jfalse & ~jcond & ir[7]) |
+	     (irjump & ~ir[6] & jcond & ir[7]);
 
-   assign nopa_n  = inop_n & nop11_n;
-   assign nopa  = ~nopa_n;
+   assign nopa = inop | nop11;
 
-   assign nop = !(trap_n & nopa_n);
-   assign nop_n = ~nop;
+   assign nop = trap | nopa;
 
-
+   always @(posedge clk)
+     if (reset)
+       inop <= 0;
+     else
+       if (state_fetch)
+	 inop <= n;
+   
    // page DRAM0-2
 
    // dadr  10 9  8  7  6  5  4  3  2  1  0
@@ -836,47 +848,41 @@ assign tse = state_wp;
    // dmask x  x  x  x  6  5  4  3  2  1  x
    // r     x  x  x  x  6  5  4  3  2  1  x
 
-   assign daddr0_n = !(
-		       (ir[8] & vmo[18]) |
-		       (ir[9] & vmo[19]) |
-		       (dmapbenb_n & dmask[0] & r[0]) |
-		       (ir[12]));
+   assign daddr0 = 
+		   (ir[8] & vmo[18]) |
+		   (ir[9] & vmo[19]) |
+		   (~dmapbenb & dmask[0] & r[0]) |
+		   (ir[12]);
 
-   assign dadr_n =
-		  ~(
-		    { ir[22:13], ~daddr0_n } |
-		    ({ 4'b0000, dmask[6:1], 1'b0 } &
-		     { 4'b0000, r[6:1],     1'b0 })
-		    );
-
-   assign dwe_n = !(dispwr & state_wp);
+   assign dadr =
+		{ ir[22:13], daddr0 } |
+		({ 4'b0000, dmask[6:1], 1'b0 } &
+		 { 4'b0000, r[6:1],     1'b0 });
+   
+   assign dwe = dispwr & state_write;
 
    part_2kx17ram  i_DRAM (
-			  .A(dadr_n),
+			  .A(dadr),
 			  .DO({dr,dp,dn,dpc}),
 			  .DI(a[16:0]),
-			  .WE_N(dwe_n),
+			  .WE_N(~dwe),
 			  .CE_N(1'b0)
 			  );
 
    // page DSPCTL
 
-   assign dparh_n = 1;
-   assign dparl = 0;
-   assign dpareven = dparh_n  ^ dparl;
-   assign dparok = !(dpareven & dispenb);
-   assign dmapbenb_n  = !(ir[8] | ir[9]);
-   assign dispwr = !(irdisp_n | funct2_n);
+   assign dparok = 1'b1;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   assign dmapbenb  = ir[8] | ir[9];
+
+   assign dispwr = irdisp & funct[2];
+
+   always @(posedge clk)
+     if (reset)
        dc <= 0;
      else
-       if (state_wp && irdisp_n == 1'b0)
+       if (state_fetch && irdisp)
 	 dc <= ir[41:32];
-
-   initial
-     dc = 0;
 
    part_32x8prom  i_DMASK (
 			   .A( {1'b0, 1'b0, ir[7], ir[6], ir[5]} ),
@@ -886,15 +892,15 @@ assign tse = state_wp;
 
    // page FLAG
 
-   assign statbit_n = !(nopa_n & ir[46]);
-   assign ilong_n  = !(nopa_n & ir[45]);
+   assign statbit = ~nopa & ir[46];
+   assign ilong  = ~nopa & ir[45];
    
-   assign aluneg = !(aeqm | ~alu[32]);
+   assign aluneg = ~aeqm & alu[32];
 
    assign sint = sintr & int_enable;
-
-   assign pgf_or_int = vmaok_n | sint;
-   assign pgf_or_int_or_sb = vmaok_n | sint | sequence_break;
+   
+   assign pgf_or_int = ~vmaok | sint;
+   assign pgf_or_int_or_sb = ~vmaok | sint | sequence_break;
 
    assign conds = ir[2:0] & {ir[5],ir[5],ir[5]};
 
@@ -903,13 +909,13 @@ assign tse = state_wp;
 		  conds == 3'b001 ? aluneg :
 		  conds == 3'b010 ? alu[32] :
 		  conds == 3'b011 ? aeqm :
-		  conds == 3'b100 ? vmaok_n :
+		  conds == 3'b100 ? ~vmaok :
 		  conds == 3'b101 ? pgf_or_int :
 		  conds == 3'b110 ? pgf_or_int_or_sb :
 	          1'b1;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  lc_byte_mode <= 0;
 	  prog_unibus_reset <= 0;
@@ -917,22 +923,13 @@ assign tse = state_wp;
 	  sequence_break <= 0;
        end
      else
-       if (state_wp && destintctl_n == 1'b0)
+       if (state_fetch && destintctl)
 	 begin
             lc_byte_mode <= ob[29];
             prog_unibus_reset <= ob[28];
             int_enable <= ob[27];
             sequence_break <= ob[26];
 	 end
-
-   initial
-     begin
-	lc_byte_mode = 0;
-	prog_unibus_reset = 0;
-	int_enable = 0;
-	sequence_break = 0;
-     end
-
 
    // page IOR
 
@@ -949,85 +946,70 @@ assign tse = state_wp;
 
    // page IPAR
 
-   assign ipar = 4'b0000;
    assign iparity = 0;
    assign iparok = imodd | iparity;
 
    
    // page IREG
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        ir <= 49'b0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    ir[47:26] <= destimod1_n ? i[47:26] : iob[47:26]; 
-	    ir[25:0] <= destimod0_n ? i[25:0] : iob[25:0]; 
+	    ir[47:26] <= ~destimod1 ? i[47:26] : iob[47:26]; 
+	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0]; 
 	 end
-
-   initial
-     ir = 49'b0;
 
 
    // page IWR
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        iwr <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
 	    iwr[48] <= 0;
 	    iwr[47:32] <= a[15:0];
 	    iwr[31:0] <= m[31:0];
 	 end
 
-   initial
-     iwr[47:0] = 48'b0;
-
 
    // page L
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        l <= 0;
      else
-       if (state_decode)
+       if (state_fetch)
 	 l <= ob;
-
-   initial
-     l = 0;
-
-   assign lparl = 0;
-   assign lparm_n = 0;
-   assign lparity = 0;
-   assign lparity_n = 1;
 
 
    // page LC
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        lc <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    if (destlc_n == 1'b0)
+	    if (destlc)
               lc <= { ob[25:4], ob[3:0] };
 	    else
               lc <= { lc[25:4] + lcry3, lca[3:0] };
 	 end
 
    assign {lcry3, lca[3:0]} =
-		     lc[3:0] + { 3'b0, !(lcinc_n | lc_byte_mode) } + lcinc;
+		     lc[3:0] + { 3'b0, lcinc & ~lc_byte_mode } + lcinc;
 
-   assign lcdrive_n  = !(srclc & tse);
+   assign lcdrive  = srclc & state_write;
 
    // xxx
    // I think the above is really
    // 
-   // always @(posedge CLK)
+   // always @(posedge clk)
    //   begin
    //     if (destlc_n == 0)
    //       lc <= ob;
@@ -1040,10 +1022,10 @@ assign tse = state_wp;
 
    // mux MF
    assign mf =
-        ~lcdrive_n ?
+        lcdrive ?
 	      { needfetch, 1'b0, lc_byte_mode, prog_unibus_reset,
 		int_enable, sequence_break, lc[25:1], lc0b } :
-        ~opcdrive_n ?
+        opcdrive ?
 	      { 16'b0, 2'b0, opc[13:0] } :
    // zero16_drive drives top 16 bits to zero
    // zero12_drive drives top 4 bits of lower 16 to zero
@@ -1052,71 +1034,61 @@ assign tse = state_wp;
    //	      { 16'b0, 4'b0, 12'b0 } :
         dcdrive ?
 	      { 16'b0, 4'b0, 2'b0, dc[9:0] } :
-	~ppdrive_n ?
+	ppdrive ?
 	      { 16'b0, 4'b0, 2'b0, pdlptr[9:0] } :
 	pidrive ?
 	      { 16'b0, 4'b0, 2'b0, pdlidx[9:0] } :
 	qdrive ?
 	      q :
-	~mddrive_n ?
+	mddrive ?
 	      md :
-	~mpassl_n ?
+	mpassl ?
 	      l :
-	~vmadrive_n ?
+	vmadrive ?
 	      vma :
-	~mapdrive_n ?
-	      { pfw_n, pfr_n, 1'b1, vmap_n[4:0], vmo[23:0] } :
+	mapdrive ?
+	      { ~pfw, ~pfr, 1'b1, ~vmap[4:0], ~vmo[23:0] } :
 	      32'b0;
 
 
    // page LCC
 
    assign lc0b = lc[0] & lc_byte_mode;
-   assign next_instr  = !(spop_n | !(srcspcpopreal_n & spc[14]));
-
-   assign newlc_in_n  = !(have_wrong_word & lcinc_n);
-   assign have_wrong_word = !(newlc_n & destlc_n);
-   assign last_byte_in_word  = !(lc[1] | lc0b);
+   assign next_instr  = spop & ~(srcspcpopreal | ~spc[14]);
+  
+   assign newlc_in  = have_wrong_word & ~lcinc;
+   assign have_wrong_word = newlc | destlc;
+   assign last_byte_in_word  = ~lc[1] & ~lc0b;
    assign needfetch = have_wrong_word | last_byte_in_word;
 
-   assign ifetch_n  = !(needfetch & lcinc);
+   assign ifetch  = needfetch & lcinc;
    assign spcmung = spc[14] & ~needfetch;
    assign spc1a = spcmung | spc[1];
 
    assign lcinc = next_instrd | (irdisp & ir[24]);
-   assign lcinc_n = !(next_instrd | (irdisp & ir[24]));
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  newlc <= 0;
 	  sintr <= 0;
 	  next_instrd <= 0;
        end
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    newlc <= newlc_in_n;
-	    sintr <= int;
+	    newlc <= ~newlc_in;
+	    sintr <= ext_int;
 	    next_instrd <= next_instr;
 	 end
 
-   assign newlc_n = ~newlc;
-
-   initial 
-     begin
-	newlc = 0;
-	sintr = 0;
-	next_instrd = 0;
-     end
-
    // mustn't depend on nop
 
-   assign lc_modifies_mrot_n  = !(ir[10] & ir[11]);
+   assign lc_modifies_mrot  = ir[10] & ir[11];
    
-   assign inst_in_left_half = !((lc[1] ^ lc0b) | lc_modifies_mrot_n);
+   assign inst_in_left_half = !((lc[1] ^ lc0b) | ~lc_modifies_mrot);
 
-   assign sh4_n  = inst_in_left_half ^ ~ir[4];
+   assign sh4  = ~(inst_in_left_half ^ ~ir[4]);
 
    // LC<1:0>
    // +---------------+
@@ -1126,25 +1098,22 @@ assign tse = state_wp;
    // +---------------+
 
    assign inst_in_2nd_or_4th_quarter =
-	      !(lc[0] | lc_modifies_mrot_n) & lc_byte_mode;
+	      !(lc[0] | ~lc_modifies_mrot) & lc_byte_mode;
 
-   assign sh3_n  = ~ir[3] ^ inst_in_2nd_or_4th_quarter;
+   assign sh3  = ~(~ir[3] ^ inst_in_2nd_or_4th_quarter);
 
 
    //page LPC
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        lpc <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    if (lpc_hold == 0)
+	    if (~lpc_hold)
 	      lpc <= pc;
 	 end
-
-   initial
-     lpc = 0;
 
    /* dispatch and instruction as N set */
    assign wpc = (irdisp & ir[25]) ? lpc : pc;
@@ -1153,51 +1122,51 @@ assign tse = state_wp;
    // page MCTL
 
    assign mpass = { 1'b1, ir[30:26] } == { destmd, wadr[4:0] };
-   assign mpass_n = ~mpass;
 
-   assign mpassl_n = !(mpass & tse & ~ir[31]);
-   assign mpassm_n  = !(mpass_n & tse & ~ir[31]);
+   assign mpassl = mpass & (state_write|state_fetch) & ~ir[31];
+   assign mpassm  = ~mpass & (state_write|state_fetch) & ~ir[31];
 
-   assign srcm = ~ir[31] & mpass_n;
+   assign srcm = ~ir[31] & ~mpass;	/* srcm = m-src is m-memory */
 
-   assign mwp_n = !(destmd & state_wp);
+   assign mwp = destmd & state_write;
 
-   assign madr = state_decode ? ir[30:26] : wadr[4:0];
-
+   // use wadr during state_write
+   assign madr = ~state_write ? ir[30:26] : wadr[4:0];
 
    // page MD
 
 //   always @(posedge mdclk)
-   always @(posedge CLK) 
-     if (~reset_n)
-       md <= 0;
+   always @(posedge clk) 
+     if (reset)
+       begin
+	  md <= 1'b0;
+	  mdhaspar <= 1'b0;
+	  mdpar <= 1'b0;
+       end
      else
-       if (state_wp && mdclk)
+       if (state_fetch && mdclk)
 	 begin
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
 	    mdpar <= mempar_in;
 	 end
 
-   initial
-     md = 0;
+   assign mddrive = srcmd & (state_write | state_fetch);
 
-   assign mddrive_n = !(~srcmd_n & tse);
-   assign mdgetspar = ignpar_n  & destmdr_n;
-   assign mdclk = !(loadmd | (~CLK & ~destmdr_n));
+   assign mdgetspar = ~destmdr & ~ignpar;
+   assign ignpar = 1'b0;
 
+   assign mdclk = loadmd | ((state_write|state_fetch) & destmdr);
    
    // page MDS
 
    assign mds = mdsel ? ob : mem;
 
-   assign mdparodd = 1;
-
-   assign mempar_out = mdparodd;
+   assign mempar_out = 1'b1;
 
    // mux MEM
    assign mem =
-	       ~memdrive_n ? md :
+	       memdrive ? md :
 	       loadmd ? busint_bus :
 	       32'b0;
 
@@ -1205,7 +1174,7 @@ assign tse = state_wp;
    // page MF
 
    assign mfenb = ~srcm & !(spcenb | pdlenb);
-   assign mfdrive_n  = !(mfenb & tse);
+   assign mfdrive = mfenb & (state_write | state_fetch);
 
 
    // page MLATCH
@@ -1213,14 +1182,14 @@ assign tse = state_wp;
    assign mmemparity = 0;
 
    // transparent latch w/async reset
-   always @(state_decode or mmem or mmemparity or negedge reset_n)
-     if (~reset_n)
+   always @(state_decode or state_fetch or mmem or mmemparity)
+     if (reset)
        begin
 	  mmem_latched <= 0;
 	  mparity <= 0;
        end
      else
-       if (state_decode)
+       if (state_decode || state_fetch)
 	 begin
 	    mmem_latched <= mmem;
 	    mparity <= mmemparity;
@@ -1230,23 +1199,23 @@ assign tse = state_wp;
 
    // mux M
    assign m = 
-	      ~mpassm_n ? mmem_latched :
-	      ~pdldrive_n ? pdl_latch :
-	      ~spcdrive_n ? {3'b0, spcptr, 5'b0, spco_latched} :
-	      ~mfdrive_n ? mf :
+	      mpassm ? mmem_latched :
+	      pdldrive ? pdl_latch :
+	      spcdrive ? {3'b0, spcptr, 5'b0, spco_latched} :
+	      mfdrive ? mf :
               32'b0;
 
 
    // page MMEM
 
-   part_32x32ram  i_MMEM (
-			  .A(madr),
-			  .DI(l),
-			  .DO(mmem),
-			  .WCLK_N(mwp_n),
-			  .WE_N(1'b0),
-			  .CE(1'b1)
-			  );
+   part_32x32ram_sync  i_MMEM (
+			       .CLK(clk),
+			       .A(madr),
+			       .DI(l),
+			       .DO(mmem),
+			       .WE_N(~mwp),
+			       .CE_N(1'b0)
+			       );
 
 
    // page MO
@@ -1301,136 +1270,150 @@ assign tse = state_wp;
 		{pcs1,pcs0} == 2'b10 ? dpc :
                  /*2'b11*/ ipc;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        pc <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 pc <= npc;
-
-   initial
-     pc = 0;
 
    assign ipc = pc + 1'b1;
 
+`ifdef debug_detail
+   always @(posedge clk)
+     if (~reset)
+       begin
+	  $display("; npc %o ipc %o, spc %o, pc %o pcs %b%b state %b",
+		   npc, ipc, spc, pc, pcs1, pcs0, state);
+//	  $display("; spcpass=%b, spcwpass=%b, spco_latched %o, spcw %o",
+//	  	   spcpass, spcwpass, spco_latched, spcw);
+	  $display("; %b %b %b %b (%b %b)", 
+		   (popj & ~ignpopj),
+		   (jfalse & ~jcond),
+		   (irjump & ~ir[6] & jcond),
+		   (dispenb & dr & ~dp),
+		   popj, ignpopj);
+	  $display("; conds=%b,  aeqm=%b, aeqm_bits=%b",
+		   conds, aeqm, aeqm_bits);
+//	  $display("; trap=%b,  parerr_n=%b, trapenb=%b boot_trap=%b",
+//		   trap, parerr, trapenb, boot_trap);
+	  $display("; nopa %b, inop %b, nop11 %b",
+		   nopa, inop, nop11);
+       end
+`endif
 
    // page OPCD
 
-   assign dcdrive = ~srcdc_n & tse;
-   assign opcdrive_n  = !(~srcopc_n & tse);
+   assign dcdrive = srcdc & state_write;	/* dispatch constant */
+   assign opcdrive  = srcopc & state_write;
 
-   assign zero16 = !(srcopc_n  & srcpdlidx_n  & srcpdlptr_n & srcdc_n);
+   assign zero16 = srcopc | srcpdlidx | srcpdlptr | srcdc;
 
-   assign zero12_drive  = zero16 & srcopc_n & tse;
-   assign zero16_drive  = zero16 & tse;
-   assign zero16_drive_n  = !(zero16 & tse);
+   assign zero12_drive  = zero16 & ~srcopc & state_write;
+
+   assign zero16_drive  = zero16 & state_write;
 
 
    // page PDL
 
    assign pdlparity = 0;
 
-   part_1kx32ram i_PDL (
-			.A(pdla),
-			.DO(pdl),
-			.DI(l),
-			.WE_N(pwp_n),
-			.CE_N(1'b0)
-			);
-
+`ifdef xxx
+   part_1kx32ram_async i_PDL (
+			     .A(pdla),
+			     .DO(pdl),
+			     .DI(l),
+			     .WE_N(~pwp),
+			     .CE_N(1'b0)
+			     );
+`else
+   part_1kx32ram_sync_p i_PDL (
+			     .CLK(clk),
+			     .A(pdla),
+			     .DO(pdl),
+			     .DI(l),
+			     .WE_N(~pwp),
+			     .CE_N(1'b0)
+			     );
+`endif
    
    // page PDLCTL
 
-   assign pdla = pdlp_n ? pdlidx : pdlptr;
+   /* m-src = pdl buffer, or index based write */
+   assign pdlp = (phase0 & ir[30]) | (~phase0 & ~pwidx);
 
-   assign pdlp_n = !((CLK & ir[30]) | (~CLK & pwidx_n));
-   assign pdlwrite = !(destpdltop_n & destpdl_x_n & destpdl_p_n);
+   assign pdla = pdlp ? pdlptr : pdlidx;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   assign pdlwrite = destpdltop | destpdl_x | destpdl_p;
+
+   always @(posedge clk)
+     if (reset)
        begin
 	  pdlwrited <= 0;
-	  pwidx_n <= 0;
+	  pwidx <= 0;
 	  imodd <= 0;
-	  destspcd_n <= 0;
+	  destspcd <= 0;
        end
      else
-       if (state_wp)
+       if (state_write | state_fetch)
 	 begin
 	    pdlwrited <= pdlwrite;
-	    pwidx_n <= destpdl_x_n;
+	    pwidx <= destpdl_x;
 	    imodd <= imod;
-	    destspcd_n <= destspc_n;
+	    destspcd <= destspc;
 	 end
 
-   assign imodd_n = ~imodd;
+   assign pwp  = pdlwrited & state_write;
 
-   initial
-     begin
-	pdlwrited = 0;
-	pwidx_n = 0;
-	imodd = 0;
-	destspcd_n = 0;
-     end
+   assign pdlenb = srcpdlpop | srcpdltop;
 
-   assign destspcd = ~destspcd_n;
-
-   assign pwp_n  = !(pdlwrited & state_wp);
-
-   assign pdlenb = !(srcpdlpop_n  & srcpdltop_n);
-   assign pdldrive_n  = !(pdlenb & tse);
+   assign pdldrive  = pdlenb & (state_write | state_fetch);
    
-   assign pdlcnt_n  = (srcpdlpop_n | nop) & destpdl_p_n;
+   assign pdlcnt  = (~nop & srcpdlpop) | destpdl_p;
 
    
    // page PDLPTR
 
-   assign pidrive = tse & ~srcpdlidx_n;
-   assign ppdrive_n  = !(tse & ~srcpdlptr_n);
+   assign pidrive = state_write & srcpdlidx;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   assign ppdrive  = state_write & srcpdlptr;
+
+   always @(posedge clk)
+     if (reset)
        pdlidx <= 0;
      else
-       if (state_wp && destpdlx_n == 1'b0)
+       if (state_fetch && destpdlx)
 	 pdlidx <= ob[9:0];
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        pdlptr <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    if (destpdlp_n == 1'b0)
+	    if (destpdlp)
 	      pdlptr <= ob[9:0];
 	    else
-	      if (pdlcnt_n == 1'b0)
+	      if (pdlcnt)
 		begin
-		   if (srcpdlpop_n)
+		   if (srcpdlpop)
 		     pdlptr <= pdlptr - 1'b1;
 		   else
 		     pdlptr <= pdlptr + 1'b1;
 		end
 	 end
 
-   initial
-     begin
-	pdlidx = 0;
-	pdlptr = 0;
-     end
-
-
    // page PLATCH
 
    // transparent latch w/async reset
-   always @(state_wp or pdl or pdlparity or negedge reset_n)
-     if (~reset_n)
+   always @(state_decode or pdl or pdlparity)
+     if (reset)
        begin
 	  pdl_latch <= 0;
 	  mparity <= 0;
        end
      else
-       if (state_wp)
+       if (state_decode)
 	 begin
 	    pdl_latch <= pdl;
 	    mparity <= pdlparity;
@@ -1442,15 +1425,14 @@ assign tse = state_wp;
    assign qs1 = ir[1] & iralu;
    assign qs0 = ir[0] & iralu;
 
-   assign srcq = ~srcq_n;
-   assign qdrive = srcq & tse;
+   assign qdrive = srcq & (state_write | state_fetch);
 
 //??? double check this
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        q <= 0;
      else
-       if (state_decode && (qs1 | qs0))
+       if (state_write && (qs1 | qs0))
 	 begin
             case ( {qs1,qs0} )
               2'b01: q <= { q[30:0], ~alu[31] };
@@ -1553,41 +1535,32 @@ assign tse = state_wp;
 
    // page SMCTL
 
-   assign mr_n  = !(irbyte_n | ir[13]);
-   assign sr_n  = !(irbyte_n | ir[12]);
+   assign mr = ~irbyte | ir[13];
+   assign sr = ~irbyte | ir[12];
 
-   assign s0 = !(sr_n | ~ir[0]);
-   assign s1 = !(sr_n | ~ir[1]);
+   assign mskr[4] = mr & sh4;
+   assign mskr[3] = mr & sh3;
+   assign mskr[2] = mr & ir[2];
+   assign mskr[1] = mr & ir[1];
+   assign mskr[0] = mr & ir[0];
 
-
-   assign mskr[4] = !(mr_n | sh4_n);
-   assign mskr[3] = !(mr_n | sh3_n);
-   assign mskr[2] = !(mr_n | ~ir[2]);
-   assign mskr[1] = !(mr_n | ~ir[1]);
-   assign mskr[0] = !(mr_n | ~ir[0]);
-
-
-   assign s4 = !(sr_n | sh4_n);
-   assign s4_n = sr_n | sh4_n;
-
-   assign s3 = !(sr_n | sh3_n);
-   assign s2 = !(sr_n | ~ir[2]);
-
+   assign s4 = sr & sh4;
+   assign s3 = sr & sh3;
+   assign s2 = sr & ir[2];
+   assign s1 = sr & ir[1];
+   assign s0 = sr & ir[0];
 
    assign mskl = mskr + ir[9:5];
 
 
    // page SOURCE
 
-   assign irdisp = ~irdisp_n;
-   assign irjump = ~irjump_n;
-
-   assign {irbyte_n,irdisp_n,irjump_n,iralu_n} =
-	  nop ? 4'b1111 :
-		({ir[44],ir[43]} == 2'b00) ? 4'b1110 :
-		({ir[44],ir[43]} == 2'b01) ? 4'b1101 :
-		({ir[44],ir[43]} == 2'b10) ? 4'b1011 :
-	                                     4'b0111 ;
+   assign {irbyte,irdisp,irjump,iralu} =
+	  nop ? 4'b0000 :
+		({ir[44],ir[43]} == 2'b00) ? 4'b0001 :
+		({ir[44],ir[43]} == 2'b01) ? 4'b0010 :
+		({ir[44],ir[43]} == 2'b10) ? 4'b0100 :
+	                                     4'b1000 ;
 
    assign funct = 
 	  nop ? 4'b0000 :
@@ -1596,116 +1569,107 @@ assign tse = state_wp;
 		({ir[11],ir[10]} == 2'b10) ? 4'b0100 :
 	                                     4'b1000 ;
 
-   assign iralu = ~iralu_n;
-   assign funct2_n = ~funct[2];
+   assign specalu  = ir[8] & iralu;
 
-   assign specalu_n  = !(ir[8] & iralu);
+   assign {div,mul} =
+		     ~specalu ? 2'b00 :
+   		     ({ir[4],ir[3]} == 2'b00) ? 2'b01 : 2'b10;
 
-   assign {div_n,mul_n} =
-			 specalu_n == 1 ? 2'b11 :
-   			 ({ir[4],ir[3]} == 2'b00) ? 2'b10 : 2'b01;
+   assign {srcq,srcopc,srcpdltop,srcpdlpop,
+	   srcpdlidx,srcpdlptr,srcspc,srcdc} =
+	  (~ir[31] | ir[29]) ? 8'b00000000 :
+		({ir[28],ir[27],ir[26]} == 3'b000) ? 8'b00000001 :
+		({ir[28],ir[27],ir[26]} == 3'b001) ? 8'b00000010 :
+		({ir[28],ir[27],ir[26]} == 3'b010) ? 8'b00000100 :
+		({ir[28],ir[27],ir[26]} == 3'b011) ? 8'b00001000 :
+		({ir[28],ir[27],ir[26]} == 3'b100) ? 8'b00010000 :
+		({ir[28],ir[27],ir[26]} == 3'b101) ? 8'b00100000 :
+		({ir[28],ir[27],ir[26]} == 3'b110) ? 8'b01000000 :
+		                                     8'b10000000;
 
-   //xxx eliminate?
-   assign srclc = ~srclc_n;
+   assign {srcspcpop,srclc,srcmd,srcmap,srcvma} =
+	  (~ir[31] | ~ir[29]) ? 5'b00000 :
+		({ir[28],ir[27],ir[26]} == 3'b000) ? 5'b00001 :
+		({ir[28],ir[27],ir[26]} == 3'b001) ? 5'b00010 :
+		({ir[28],ir[27],ir[26]} == 3'b010) ? 5'b00100 :
+		({ir[28],ir[27],ir[26]} == 3'b011) ? 5'b01000 :
+		({ir[28],ir[27],ir[26]} == 3'b100) ? 5'b10000 :
+		                                     5'b00000 ;
 
-   assign {srcq_n,srcopc_n,srcpdltop_n,srcpdlpop_n,
-	   srcpdlidx_n,srcpdlptr_n,srcspc_n,srcdc_n} =
-	  (~ir[31] | ir[29]) ? 8'b11111111 :
-		({ir[28],ir[27],ir[26]} == 3'b000) ? 8'b11111110 :
-		({ir[28],ir[27],ir[26]} == 3'b001) ? 8'b11111101 :
-		({ir[28],ir[27],ir[26]} == 3'b010) ? 8'b11111011 :
-		({ir[28],ir[27],ir[26]} == 3'b011) ? 8'b11110111 :
-		({ir[28],ir[27],ir[26]} == 3'b100) ? 8'b11101111 :
-		({ir[28],ir[27],ir[26]} == 3'b101) ? 8'b11011111 :
-		({ir[28],ir[27],ir[26]} == 3'b110) ? 8'b10111111 :
-		                                     8'b01111111;
+   assign imod = destimod0 | iwrited | destimod1 | idebug;
 
-   assign {srcspcpop_n,srclc_n,srcmd_n,srcmap_n,srcvma_n} =
-	  (~ir[31] | ~ir[29]) ? 5'b11111 :
-		({ir[28],ir[27],ir[26]} == 3'b000) ? 5'b11110 :
-		({ir[28],ir[27],ir[26]} == 3'b001) ? 5'b11101 :
-		({ir[28],ir[27],ir[26]} == 3'b010) ? 5'b11011 :
-		({ir[28],ir[27],ir[26]} == 3'b011) ? 5'b10111 :
-		({ir[28],ir[27],ir[26]} == 3'b100) ? 5'b01111 :
-		                                     5'b11111 ;
+   assign destmem = destm & ir[23];
+   assign destvma = destmem & ~ir[22];
+   assign destmdr = destmem & ir[22];
 
-   assign imod = !((destimod0_n & iwrited_n) & destimod1_n & idebug_n);
+   assign dest = iralu | irbyte;	/* destination field is valid */
+   assign destm = dest & ~ir[25];	/* functional destination */
 
-   assign destmem_n = !(destm & ir[23]);
-   assign destvma_n = destmem_n | ir[22];
-   assign destmdr_n = destmem_n | ~ir[22];
+   assign {destintctl,destlc} =
+	  !(destm & ~ir[23] & ~ir[22]) ? 2'b00 :
+		({ir[21],ir[20],ir[19]} == 3'b001) ? 2'b01 :
+		({ir[21],ir[20],ir[19]} == 3'b010) ? 2'b10 :
+		                                     2'b00 ;
 
-   assign dest = !(iralu_n & irbyte_n);
-   assign destm = dest & ~ir[25];
-
-   assign {destintctl_n,destlc_n} =
-	  !(destm & ~ir[23] & ~ir[22]) ? 2'b11 :
-		({ir[21],ir[20],ir[19]} == 3'b001) ? 2'b10 :
-		({ir[21],ir[20],ir[19]} == 3'b010) ? 2'b01 :
-		                                     2'b11 ;
-
-   assign {destimod1_n,destimod0_n,destspc_n,destpdlp_n,
-	   destpdlx_n,destpdl_x_n,destpdl_p_n,destpdltop_n} =
-	  !(destm & ~ir[23] & ir[22]) ? 8'b11111111 :
-		({ir[21],ir[20],ir[19]} == 3'b000) ? 8'b11111110 :
-		({ir[21],ir[20],ir[19]} == 3'b001) ? 8'b11111101 :
-		({ir[21],ir[20],ir[19]} == 3'b010) ? 8'b11111011 :
-		({ir[21],ir[20],ir[19]} == 3'b011) ? 8'b11110111 :
-		({ir[21],ir[20],ir[19]} == 3'b100) ? 8'b11101111 :
-		({ir[21],ir[20],ir[19]} == 3'b101) ? 8'b11011111 :
-		({ir[21],ir[20],ir[19]} == 3'b110) ? 8'b10111111 :
-		                                     8'b01111111;
-
-    assign destspc = ~destspc_n;
-
+   assign {destimod1,destimod0,destspc,destpdlp,
+	   destpdlx,destpdl_x,destpdl_p,destpdltop} =
+	  !(destm & ~ir[23] & ir[22]) ? 8'b00000000 :
+		({ir[21],ir[20],ir[19]} == 3'b000) ? 8'b00000001 :
+		({ir[21],ir[20],ir[19]} == 3'b001) ? 8'b00000010 :
+		({ir[21],ir[20],ir[19]} == 3'b010) ? 8'b00000100 :
+		({ir[21],ir[20],ir[19]} == 3'b011) ? 8'b00001000 :
+		({ir[21],ir[20],ir[19]} == 3'b100) ? 8'b00010000 :
+		({ir[21],ir[20],ir[19]} == 3'b101) ? 8'b00100000 :
+		({ir[21],ir[20],ir[19]} == 3'b110) ? 8'b01000000 :
+		                                     8'b00000000;
 
     // page SPC
 
-   part_32x19ram  i_SPC (
-			 .A(spcptr),
-			 .DI(spcw),
-			 .DO(spco),
-			 .WCLK_N(swp_n),
-			 .WE_N(1'b0),
-			 .CE(1'b1)
-			 );
+   part_32x19ram_sync  i_SPC (
+			      .CLK(clk),
+			      .A(spcptr),
+			      .DI(spcw),
+			      .DO(spco),
+			      .WE_N(~swp),
+			      .CE_N(1'b0)
+			      );
 
 //??? double check this
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        spcptr <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 begin
-	    if (spcnt_n == 1'b0)
+	    if (spcnt)
 	      begin
-		 if (spush_n == 1'b0)
+		 if (spush)
 		   spcptr <= spcptr + 1'b1;
 		 else
 		   spcptr <= spcptr - 1'b1;
 	      end
 	 end
 
-   initial
-     spcptr = 0;
-
    
    // page SPCLCH
 
    // mux SPC
    assign spc = 
-		~spcpass_n ?  spco_latched :
-		~spcwpass_n ? spcw :
+		spcpass ? spco_latched :
+		spcwpass ? spcw :
 	        32'b0;
 
    assign spcopar = 0;
 
    // transparent latch w/async reset
-   always @(state_decode or spco or spcopar or negedge reset_n)
-     if (~reset_n)
-       spco_latched <= 0;
+   always @(state_decode or spco or spcopar or reset)
+     if (reset)
+       begin
+	  spco_latched <= 0;
+	  spcpar <= 0;
+       end
      else
-       if (state_wp)
+       if (state_fetch/*state_decode*/)
 	 begin
             spco_latched <= spco;
             spcpar <= spcopar;
@@ -1714,140 +1678,118 @@ assign tse = state_wp;
 
    // page SPCPAR
 
-   assign spcwpar = 0;
-   assign spcwparl_n = 1;
-   assign spcwparh = 0;
    assign spcparok = 1;
-
-   assign spcwpar = spcwparh ^ spcwparl_n;
 
    
    // page SPCW
 
    assign spcw = destspcd ? l[18:0] : { 5'b0, reta };
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        reta <= 0;
      else
-       if (state_wp)
+       if (state_fetch)
 	 reta <= n ? wpc : ipc;
 
 
    // page SPY1-2
 
-   //xxxdebug
-   //assign spy = 16'b1111111111111111;
-
    wire[15:0] spy_mux;
 
-   assign spy = ~dbread_n ? spy_mux : 16'bz;
+   assign spy = dbread ? spy_mux : 16'bz;
 
    assign spy_mux =
-	~spy_irh_n ? ir[47:32] :
-	~spy_irm_n ? ir[31:16] :
-	~spy_irl_n ? ir[15:0] :
-	~spy_obh_n ? ob[31:16] :
-	~spy_obl_n ? ob[15:0] :
-	~spy_ah_n ? a[31:16] :
-	~spy_al_n ? a[15:0] :
-	~spy_mh_n ? m[31:16] :
-	~spy_ml_n ? m[15:0] :
-	~spy_flag2_n ?
+	spy_irh ? ir[47:32] :
+	spy_irm ? ir[31:16] :
+	spy_irl ? ir[15:0] :
+	spy_obh ? ob[31:16] :
+	spy_obl ? ob[15:0] :
+	spy_ah  ? a[31:16] :
+	spy_al  ? a[15:0] :
+	spy_mh  ? m[31:16] :
+	spy_ml  ? m[15:0] :
+	spy_flag2 ?
 			{ 2'b0,wmapd,destspcd,iwrited,imodd,pdlwrited,spushd,
-			  2'b0,ir[48],nop,vmaok_n,jcond,pcs1,pcs0 } :
-	~spy_opc_n ?
+			  2'b0,ir[48],nop,vmaok,jcond,pcs1,pcs0 } :
+	spy_opc ?
 			{ 2'b0,opc } :
-	~spy_flag1_n ?
-			{ wait_n, v1pe_n, v0pe_n, promdisable,
-			  stathalt_n, err, ssdone, srun,
-			  higherr_n, mempe_n, ipe_n, dpe_n,
-			  spe_n, pdlpe_n, mpe_n, ape_n } :
-	~spy_pc_n ?
+	spy_flag1 ?
+			{ waiting, v1pe, v0pe, promdisable,
+			  stathalt, err, ssdone, srun,
+			  higherr, mempe, ipe, dpe,
+			  spe, pdlpe, mpe, ape } :
+	spy_pc ?
 			{ 2'b0,pc } :
         16'b1111111111111111;
 
-   assign halt_n = 1;
 
 
    // page TRAP
 
-   assign mdpareven = 0;
+   assign mdparerr = 1'b0;
 
-   assign mdparerr = mdpareven ^ mdpar;
-   assign parerr_n = !(mdparerr & mdhaspar & use_md & wait_n);
-   assign memparok = !memparok_n;
+   assign parerr = mdparerr & mdhaspar & use_md & ~waiting;
 
-   assign trap_n  = !( !(parerr_n | ~trapenb) | boot_trap );
-   assign trap = ~trap_n;
-   assign memparok_n = !(parerr_n | trapenb);
+   assign memparok = ~parerr | trapenb;
+
+   assign trap = (parerr & trapenb) | boot_trap;
 
 
    // page VCTRL1
 
-   assign memop_n  = memrd_n  & memwr_n  & ifetch_n;
-   assign memprepare = !(memop_n | CLK);
+   assign memop  = memrd | memwr | ifetch;
+   assign memprepare = memop;
 
 //??? double check
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  memstart <= 0;
 	  mbusy_sync <= 0;
        end
      else
-       if (state_wp)
+       if (state_write)
 	 begin
 	    memstart <= memprepare;
 	    mbusy_sync <= memrq;
 	 end
 
-   assign memstart_n = ~memstart;
+   assign pfw = lvmo_22 & wrcyc;	/* write permission */
+   assign pfr = lvmo_23;		/* read permission */
 
-   initial
-     begin
-	memstart = 0;
-	mbusy_sync = 0;
-     end
+   assign vmaok = pfr | pfw;
 
-   assign pfw_n  = !(lvmo_n[22] & wrcyc);
-   assign vmaok_n  = !(pfr_n & pfw_n);
-
-   always @(posedge CLK)
-     if (~reset_n)
-       begin
-	  wrcyc <= 0;
+   always @(posedge clk)
+     if (reset)
 	  wmapd <= 0;
-       end
      else
-       if (state_wp)
-	 begin
-	    wrcyc <= !((memprepare & memwr_n) | (~memprepare & rdcyc));
+       if (state_fetch)
 	    wmapd <= wmap;
-	 end
 
-   initial
-     begin
-	wrcyc = 0;
-	wmapd = 0;
-     end
+   always @(posedge clk)
+     if (reset)
+	  rdcyc <= 0;
+     else
+       if (state_fetch)
+	 rdcyc <= (memprepare & ~memwr);
+//	    rdcyc <= (memprepare & ~memwr) | (~memprepare & rdcyc);
 
-   assign rdcyc = ~wrcyc;
-   assign wmapd_n = ~wmapd;
+   assign wrcyc = ~rdcyc;
+   
+   assign memrq = mbusy | (memstart & (pfr | pfw));
 
-   assign memrq = mbusy | (memstart & pfr_n & pfw_n);
-
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        mbusy <= 0;
      else
-       if (~mfinishd_n)
+       if (mfinishd)
 	 mbusy <= 1'b0;
        else
 	 mbusy <= memrq;
 
-//always @(posedge MCLK or negedge reset_n)
-//  if (~reset_n)
+//always @(posedge Mclk or negedge reset_n)
+//  if (reset)
 //    mbusy <= 1'b0;
 //  else
 //    mbusy <= memrq;
@@ -1858,201 +1800,178 @@ assign tse = state_wp;
 
    //------
 
-   assign set_rd_in_progess = rd_in_progress | (memstart & pfr_n & rdcyc);
-   assign mfinish_n = memack_n & reset_n;
+   assign mfinish = memack | reset;
 
-   always @(posedge CLK)
-     if (~reset_n)
-       rd_in_progress <= 0;
-   else
-     if (~rdfinish_n)
-       rd_in_progress <= 0;
+   always @(posedge clk)
+     if (reset)
+       mfinishd <= 1'b0;
      else
-       rd_in_progress <= set_rd_in_progess;
-
-//XXX delay line
-// mfinish_n + 30ns -> mfinishd_n
-// mfinish_n + 140ns -> rdfinish_n
-
-   always @(posedge CLK)
-     if (~reset_n)
-       mcycle_delay <= 10'b1;
-     else
-       begin
-	  mcycle_delay[0] <= mfinish_n;
-	  mcycle_delay[1] <= mcycle_delay[0];
-	  mcycle_delay[2] <= mcycle_delay[1];
-	  mcycle_delay[3] <= mcycle_delay[2];
-	  mcycle_delay[4] <= mcycle_delay[3];
-	  mcycle_delay[5] <= mcycle_delay[4];
-	  mcycle_delay[6] <= mcycle_delay[5];
-	  mcycle_delay[7] <= mcycle_delay[6];
-       end
-
-   assign mfinishd_n = mcycle_delay[2];
-   assign rdfinish_n = mcycle_delay[7];
-
-   assign wait_n = !(
-		     (~destmem_n & mbusy_sync) |
-		     (use_md & mbusy & memgrant_n) |	/* hang loses */
-		     (lcinc & needfetch & mbusy_sync)	/* ifetch */
-		     );
-
-   assign hang_n = !(rd_in_progress & use_md & ~CLK);
-
+       mfinishd <= mfinish;
    
+   assign waiting =
+		(destmem & mbusy/*_sync*/) |
+		(use_md & mbusy /*& ~memgrant*/) |		/* hang loses */
+		(lcinc & needfetch & mbusy/*_sync*/);	/* ifetch */
+
    // page VCTRL2
 
-   assign mapwr0d = !(wmapd_n | ~vma[26]);
-   assign mapwr1d = !(wmapd_n | ~vma[25]);
+   assign mapwr0d = wmapd & vma[26];
+   assign mapwr1d = wmapd & vma[25];
 
-   assign vm0wp_n = !(mapwr0d & state_wp);
-   assign vm1wp_n = !(mapwr1d & state_wp);
+   assign vm0wp = mapwr0d & state_write;
+   assign vm1wp = mapwr1d & state_write;
 
-   assign vmaenb_n = destvma_n & ifetch_n;
-   assign vmasel = ifetch_n & 1'b1;
+   assign vmaenb = destvma | ifetch;
+   assign vmasel = ~ifetch;
 
    // external?
    assign lm_drive_enb = 0;
 
-   assign memdrive_n = !(wrcyc & lm_drive_enb);
+   assign memdrive = wrcyc & lm_drive_enb;
 
-   assign mdsel = !(destmdr_n | CLK);
+   assign mdsel = destmdr & ~state_write;
 
-   assign use_md  = !(srcmd_n | nopa);
+   assign use_md  = srcmd & ~nopa;
 
-   assign pfr_n = ~lvmo_n[23];
-
-   assign {wmap_n,memwr_n,memrd_n} =
-				    destmem_n ? 3'b111 :
-				    ({ir[20],ir[19]} == 2'b01) ? 3'b110 :
-				    ({ir[20],ir[19]} == 2'b10) ? 3'b101 :
-				    ({ir[20],ir[19]} == 2'b11) ? 3'b011 :
-	                            3'b111 ;
-
-   assign wmap = ~wmap_n;
-
+   assign {wmap,memwr,memrd} =
+			      ~destmem ? 3'b000 :
+			      ({ir[20],ir[19]} == 2'b01) ? 3'b001 :
+			      ({ir[20],ir[19]} == 2'b10) ? 3'b010 :
+			      ({ir[20],ir[19]} == 2'b11) ? 3'b100 :
+	                      3'b000 ;
 
    // page VMA
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        vma <= 0;
      else
-       if (state_wp && vmaenb_n == 1'b0)
+       if (state_fetch && vmaenb)
 	 vma <= vmas;
 
-   assign vmadrive_n = !(~srcvma_n & tse);
-
-   initial
-     vma = 0;
+   assign vmadrive = srcvma & state_write;
 
 
    // page VMAS
 
    assign vmas = vmasel ? ob : { 8'b0,lc[25:2] };
 
-   assign mapi = memstart_n ? md[23:8] : vma[23:8];
+   assign mapi = ~memstart ? md[23:8] : vma[23:8];
 
 
    // page VMEM0 - virtual memory map stage 0
 
-   part_2kx5ram i_VMEM0 (
-			 .A(mapi[23:13]),
-			 .DO(vmap_n),
-			 .DI(vma[31:27]),
-			 .WE_N(vm0wp_n),
-			 .CE_N(1'b0)
-			 );
+`ifdef xxx
+   part_2kx5ram_async i_VMEM0 (
+			       .A(mapi[23:13]),
+			       .DO(vmap),
+			       .DI(vma[31:27]),
+			       .WE_N(~vm0wp),
+			       .CE_N(1'b0)
+			       );
+`else
+   part_2kx5ram_sync i_VMEM0 (
+			      .CLK(clk),
+			      .A(mapi[23:13]),
+			      .DO(vmap),
+			      .DI(vma[31:27]),
+			      .WE_N(~vm0wp),
+			      .CE_N(1'b0)
+			      );
+`endif
+   
+   assign use_map = srcmap | memstart;
 
-   assign srcmap = ~srcmap_n;
-   assign use_map_n = !(srcmap | memstart);
-   assign vmoparck = use_map_n | vmoparodd;
-   assign v0parok = use_map_n  | 1'b1;
-   assign vm0pari = 0;
-
-   assign vmopar = 0;
-
-   assign vmoparodd = vmopar ^ vmoparck;
-
+   assign v0parok = 1'b1;
 
    // page VMEM1&2
 
-   assign mapi_n = ~mapi[12:8];
-
-   assign vmo = ~vmo_n;
-
-   assign vmap = ~vmap_n;
-
    wire[9:0] vmem1_adr;
-   assign vmem1_adr = {mapi_n[12:8],vmap[4:0]};
 
-   part_1kx24ram  i_VMEM1_2 (
-			     .A(vmem1_adr),
-			     .DO(vmo_n),
-			     .DI(vma[23:0]),
-			     .WE_N(vm1wp_n),
-			     .CE_N(1'b0)
-			     );
+   assign vmem1_adr = {~mapi[12:8],vmap[4:0]};
 
-   assign vm1mpar = 0;
-   assign vm1lpar = 0;
-   assign vm0par = 0;
-   assign vm0parm = 0;
-   assign vm0parl = 0;
-
+`define async_vmem1
+`ifdef async_vmem1
+   part_1kx24ram_async  i_VMEM1_2 (
+				   .A(vmem1_adr),
+				   .DO(vmo),
+				   .DI(vma[23:0]),
+				   .WE_N(~vm1wp),
+				   .CE_N(1'b0)
+				   );
+`else
+   part_1kx24ram_sync  i_VMEM1_2 (
+				  .CLK(clk),
+				  .A(vmem1_adr),
+				  .DO(vmo),
+				  .DI(vma[23:0]),
+				  .WE_N(~vm1wp),
+				  .CE_N(1'b0)
+				  );
+`endif
 
    // page VMEMDR - map output drive
 
    // transparent latch
-   always @(memstart or vmo_n)
-     if (memstart == 1'b1)
-       { lvmo_n[23:22], pma } <= vmo_n;
+   always @(memstart or vmo or reset)
+     if (reset)
+       begin
+	  lvmo_23 <= 0;
+	  lvmo_22 <= 0;
+	  pma <= 0;
+       end
+     else
+       if (memstart)
+	 begin
+$display("vmem1_adr %x, vmo[23:22]=%b%b", vmem1_adr, vmo[23], vmo[22]);
+	    lvmo_23 <= vmo[23];
+	    lvmo_22 <= vmo[22];
+	    pma <= vmo[21:0];
+	 end
 
-   initial
-     begin
-	lvmo_n = 0;
-	pma = 0;
-     end
-
-   assign mapdrive_n = !(tse & srcmap);
+   assign mapdrive = srcmap & state_write;
 
    
    // page DEBUG
 
-   always @(posedge lddbirh_n)
-     spy_ir[47:32] <= spy;
+   always @(posedge lddbirh or reset)
+     if (reset)
+       spy_ir[47:32] <= 16'b0;
+     else
+       spy_ir[47:32] <= spy;
 
-   always @(posedge lddbirm_n)
-     spy_ir[31:16] <= spy;
+   always @(posedge lddbirm or reset)
+     if (reset)
+       spy_ir[31:16] <= 16'b0;
+     else
+       spy_ir[31:16] <= spy;
 
-   always @(posedge lddbirl_n)
-     spy_ir[15:0] <= spy;
+   always @(posedge lddbirl or reset)
+     if (reset)
+       spy_ir[15:0] <= 16'b0;
+     else
+       spy_ir[15:0] <= spy;
 
-   // put latched value on I bus when idebug_n asserted
+   // put latched value on I bus when idebug asserted
    assign i =
-	     ~idebug_n ? spy_ir :
-	     ~promenable_n ? iprom :
+	     idebug ? spy_ir :
+	     promenable ? iprom :
 	     iram;
-
-   initial
-     spy_ir = 0;
 
    
    // page ICTL - I RAM control
 
-   assign promdisabled_n = ~promdisabled;
-   
-   assign ramdisable = idebug | (promdisabled_n & iwrited_n);
+   assign ramdisable = idebug | ~(promdisabled | iwrited);
 
    // see clocks below
-   //assign iwe_n  = !(wp5& iwriteda);
+//   assign iwe  = !(wp5 & iwrited);
+assign iwe = state_write & iwrited;
 
 
    // page OLORD1 
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  promdisable <= 0;
 	  trapenb <= 0;
@@ -2060,7 +1979,7 @@ assign tse = state_wp;
 	  errstop <= 0;
        end
      else
-       if (~ldmode_n)
+       if (ldmode)
 	 begin
 	    promdisable <= spy[5];
 	    trapenb <= spy[4];
@@ -2070,41 +1989,23 @@ assign tse = state_wp;
 	    //speed0 <= spy[0];
 	 end
 
-   initial
-     begin
-	promdisable = 0;
-	trapenb = 0;
-	stathenb = 0;
-	errstop = 0;
-     end
-
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  opcinh <= 0;
 	  opcclk <= 0;
 	  lpc_hold <= 0;
        end
      else
-       if (~ldopc_n)
+       if (ldopc)
 	 begin
 	    opcinh <= spy[2];
 	    opcclk <= spy[1];
 	    lpc_hold <= spy[0];
 	 end
 
-   initial
-     begin
-	opcinh = 0;
-	opcclk = 0;
-	lpc_hold = 0;
-     end
-
-   assign opcinh_n = ~opcinh;
-   assign opcclk_n = ~opcclk;
-
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  ldstat <= 0;
 	  idebug <= 0;
@@ -2112,7 +2013,7 @@ assign tse = state_wp;
 	  step <= 0;
        end
      else
-       if (~ldclk_n)
+       if (ldclk)
 	 begin
 	    ldstat <= spy[4];
 	    idebug <= spy[3];
@@ -2120,30 +2021,18 @@ assign tse = state_wp;
 	    step <= spy[1];
 	 end
 
-   initial
-     begin
-	ldstat = 0;
-	idebug = 0;
-	nop11 = 0;
-	step = 0;
-     end
-
-   assign ldstat_n = ~ldstat;
-   assign idebug_n = ~idebug;
-   assign nop11_n = ~nop11;
-   assign step_n = ~step;
-
-   always @(posedge CLK)
-     if (~boot_n)
-       run <= 1'b1;
+   always @(posedge clk)
+     if (reset)
+       run <= 1'b0;
      else
-       if (~ldclk_n)
-	 run <= spy[0];
-//       else
-//	 run <= 1'b0;
+       if (boot)
+	 run <= 1'b1;
+       else
+	 if (ldclk)
+	   run <= spy[0];
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
 	  srun <= 1'b0;
 	  sstep <= 1'b0;
@@ -2158,22 +2047,12 @@ assign tse = state_wp;
 	  promdisabled <= promdisable;
        end
 
-   initial
-     begin
-	srun = 0;
-	sstep = 0;
-	ssdone = 0;
-	promdisabled = 0;
-     end
-
-   assign ssdone_n = ~ssdone;
-
-   assign machrun = (sstep & ssdone_n) | (srun & errhalt_n &
-					  wait_n & stathalt_n);
+   assign machrun = (sstep & ~ssdone) |
+		    (srun & ~errhalt & ~waiting & ~stathalt);
 
    //assign stat_ovf = ~stc32;
    assign stat_ovf = 1'b0;
-   assign stathalt_n = !(statstop & stathenb);
+   assign stathalt = statstop & stathenb;
 
 
    // page OLORD2
@@ -2182,100 +2061,93 @@ assign tse = state_wp;
    assign vm0parok = 1;
    assign pdlparok = 1;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk)
+     if (reset)
        begin
-	  ape_n <= 0;
-	  mpe_n <= 0;
-	  pdlpe_n <= 0;
-	  dpe_n <= 0;
-	  ipe_n <= 0;
-	  spe_n <= 0;
-	  higherr_n <= 0;
-	  mempe_n <= 0;
-
-	  v0pe_n <= 0;
-	  v1pe_n <= 0;
+	  halted <= 0;
 	  statstop <= 0;
-	  halted_n <= 0;
        end
      else
        begin
-	  ape_n <= aparok;
-	  mpe_n <= mmemparok;
-	  pdlpe_n <= pdlparok;
-	  dpe_n <= dparok;
-	  ipe_n <= iparok;
-	  spe_n <= spcparok;
-	  higherr_n <= highok;
-	  mempe_n <= memparok;
-
-	  v0pe_n <= v0parok;
-	  v1pe_n <= vm0parok;
+	  halted <= ext_halt;
 	  statstop <= stat_ovf;
-	  halted_n <= halt_n;
+       end
+   
+   always @(posedge clk)
+     if (reset)
+       begin
+	  ape <= 0;
+	  mpe <= 0;
+	  pdlpe <= 0;
+	  dpe <= 0;
+	  ipe <= 0;
+	  spe <= 0;
+	  higherr <= 0;
+	  mempe <= 0;
+
+	  v0pe <= 0;
+	  v1pe <= 0;
+       end
+     else
+       begin
+	  ape <= ~aparok;
+	  mpe <= ~mmemparok;
+	  pdlpe <= ~pdlparok;
+	  dpe <= ~dparok;
+	  ipe <= ~iparok;
+	  spe <= ~spcparok;
+	  higherr <= ~highok;
+	  mempe <= ~memparok;
+
+	  v0pe <= ~v0parok;
+	  v1pe <= ~vm0parok;
        end
 
-   assign lowerhighok_n = 0;
-   assign highok = 1;
-   assign ldmode = !ldmode_n;
+   assign lowerhighok = 1'b1;
+   assign highok = 1'b1;
 
-   assign prog_reset_n = !(ldmode & spy[6]);
+   assign prog_reset = ldmode & spy[6];
 
-   assign reset = ~(boot_n & prog_reset_n);
-   assign reset_n = ~reset;
+//   assign reset = boot | prog_reset;
+   assign reset = ext_reset | prog_reset;
 
-   assign err = ~ape_n | ~mpe_n | ~pdlpe_n | ~dpe_n |
-		~ipe_n | ~spe_n | ~higherr_n | ~mempe_n |
-		~v0pe_n | ~v1pe_n | ~halted_n;
+   assign err = ape | mpe | pdlpe | dpe |
+		ipe | spe | higherr | mempe |
+		v0pe | v1pe | halted;
 
-   assign errhalt_n = ~(errstop & err);
+   assign errhalt = errstop & err;
 
    // external
    assign prog_bus_reset = 0;
 
-   assign bus_reset_n  = ~(prog_bus_reset | power_reset);
-   assign bus_power_reset_n  = ~power_reset;
-
-   //external power_reset_n - low by rc, external input
-   assign power_reset  = ~power_reset_n;
+   assign bus_reset  = prog_bus_reset | ext_reset;
 
    // external
-   assign busint_lm_reset_n = 1;
-
-//   assign clock_reset_n = !(power_reset | !busint_lm_reset_n);
 
    assign prog_boot = ldmode & spy[7];
 
-   assign boot_n  = ~(~boot1_n | (~boot2_n | prog_boot));
+   assign boot  = ext_boot | prog_boot;
 
-   always @(posedge CLK)
-     if (~reset_n)
+   always @(posedge clk or boot or srun)
+     if (reset)
        boot_trap <= 0;
      else
-       if (boot_n == 1'b0)
+       if (boot)
 	 boot_trap <= 1'b1;
        else
-	 if (srun == 1'b1)
+	 if (srun)
            boot_trap <= 1'b0;
 
 
    // page OPCS
 
-//??? yucko. fix up opcclk opcclka
-   assign opcclka = ~(~CLK | opcclk);
+   assign opcclka = (state_fetch | opcclk) & ~opcinh;
 
-   wire opc_inh_or_clka;
-   assign opc_inh_or_clka = opcinh | opcclka;
-
-   always @(posedge opc_inh_or_clka)
-     if (~reset_n)
+   always @(posedge opcclka)
+     if (reset)
        opc <= 0;
      else
-       opc <= pc;
-
-   initial
-     opc = 0;
+	 opc <= pc;
 
    // With the machine stopped, taking OPCCLK high then low will
    // generate a clock to just the OPCS.
@@ -2287,19 +2159,19 @@ assign tse = state_wp;
    // page PCTL
 
    assign bottom_1k = ~(pc[13] | pc[12] | pc[11] | pc[10]);
-   assign promenable_n = ~(bottom_1k & idebug_n & promdisabled_n & iwrited_n);
+   assign promenable = bottom_1k & ~idebug & ~promdisabled & ~iwrited;
 
-   assign promce_n = promenable_n | pc[9];
+   assign promce = promenable & ~pc[9];
 
-   assign prompc_n = ~pc[11:0];
+   assign prompc = pc[11:0];
 
 
    // page PROM0
 
    part_512x49prom  i_PROM0 (
-			     .A(prompc_n[8:0]),
+			     .A(~prompc[8:0]),
 			     .D(iprom),
-			     .CE_N(promce_n)
+			     .CE_N(~promce)
 			     );
 
 
@@ -2309,7 +2181,7 @@ assign tse = state_wp;
 			   .A(pc),
 			   .DO(iram),
 			   .DI(iwr),
-			   .WE_N(iwe_n),
+			   .WE_N(~iwe),
 			   .CE_N(1'b0/*ice*/)
 			   );
 
@@ -2317,58 +2189,45 @@ assign tse = state_wp;
    // page SPY0
 
    /* read registers */
-   assign {spy_obh_n, spy_obl_n, spy_pc_n, spy_opc_n,
-	   spy_nc_n, spy_irh_n, spy_irm_n, spy_irl_n} =
-	  (eadr[3] & dbread_n) ? 8'b11111111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b11111110 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b11111101 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b11111011 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b11110111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b11101111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b11011111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b10111111 :
-		                                        8'b01111111;
+   assign {spy_obh, spy_obl, spy_pc, spy_opc,
+	   spy_nc, spy_irh, spy_irm, spy_irl} =
+	  (eadr[3] & ~dbread) ? 8'b0000000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b00001000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
+		                                        8'b00000000;
 
    /* read registers */
-   assign {spy_sth_n, spy_stl_n, spy_ah_n, spy_al_n,
-	   spy_mh_n, spy_ml_n, spy_flag2_n, spy_flag1_n} =
-	  (~eadr[3] & dbread_n) ? 8'b11111111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b11111110 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b11111101 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b11111011 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b11110111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b11101111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b11011111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b10111111 :
-		                                        8'b01111111;
+   assign {spy_sth, spy_stl, spy_ah, spy_al,
+	   spy_mh, spy_ml, spy_flag2, spy_flag1} =
+	  (~eadr[3] & ~dbread) ? 8'b00000000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b00001000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
+		                                        8'b00000000;
 
    /* load registers */
-   assign {ldmode_n, ldopc_n, ldclk_n, lddbirh_n, lddbirm_n, lddbirl_n} =
-	  (dbwrite_n) ? 6'b111111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 6'b111110 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 6'b111101 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 6'b111011 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 6'b110111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 6'b101111 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 6'b011111 :
-		                                        6'b111111;
+   assign {ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl} =
+	  (~dbwrite) ? 6'b000000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 6'b000001 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 6'b000010 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 6'b000100 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 6'b001000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 6'b010000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 6'b100000 :
+		                                        6'b000000;
 
    // *******
    // Resets!
    // *******
-
-   initial
-     begin
-     end
-
-//external
-//assign memack_n = 1;
-//assign memgrant_n = 1;
-//assign mempar_in = 0;
-//assign adrpar_n = 0;
-//assign loadmd = 0;
-//assign ignpar_n = 1;
-
 
 // traditional CADR signals to xbus
 // mem[31:0]
@@ -2387,22 +2246,20 @@ assign tse = state_wp;
    wire bus_int;
    
    busint busint(
-		 .mclk(CLK),
-		 .bus(busint_bus),
+		 .mclk(clk),
+		 .reset(reset),
 		 .addr({pma,vma[7:0]}),
+		 .busin(md),
+		 .busout(busint_bus),
 		 .spy(spy),
-		 .mempar_in(mempar_in),
-		 .adrpar_n(adrpar_n),
-		 .req(memrq),
-		 .ack_n(memack_n),
-		 .loadmd(loadmd),
-		 .ignpar(ignpar_n),
-		 .memgrant_n(memgrant_n),
-		 .wrcyc(wrcyc),
-		 .int(bus_int),
-		 .mempar_out(mempar_out),
-		 .reset_n(reset_n)
-		 );
 
+		 .req(memrq),
+		 .ack(memack),
+		 .write(wrcyc),
+		 .load(loadmd),
+		 
+		 .interrupt(bus_int)
+		 );
+   
 endmodule
 

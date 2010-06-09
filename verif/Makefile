@@ -5,29 +5,30 @@
 IVERILOG=iverilog
 VERILOG=cver
 
-all: igo
+all: crun
 
-PARTS = 74181.v 74182.v memory.v rom.v rompatch.v
+#RTL = ../rtl/caddr.v \
+#	../rtl/74181.v ../rtl/74182.v ../rtl/memory.v \
+#	../rtl/rom.v ../rtl/busint.v
 
-parts.o: $(PARTS)
-	$(VERILOG) -o parts.o $(PARTS)
+RTL = $(wildcard ../rtl/*.v)
 
-irun: $(PARTS) run.v caddr.v
+rtl.o: $(RTL)
+	$(VERILOG) -o rtl.o $(RTL)
+
+irun: $(RTL) run.v 
 	$(IVERILOG) -o run run.v
 
-crun: $(PARTS) run.v caddr.v
-	$(VERILOG) +change_port_type run.v
-	echo "exit 0" > run
-	chmod +x run
+CPLI = +loadvpi=../pli/busint/pli_busint.so:vpi_compat_bootstrap
+COPTS = +change_port_type $(CPLI) +cycles=500
 
-go: crun
-	./run
-igo: irun
-	./run
+
+crun: $(RTL) run.v
+	$(VERILOG) $(COPTS) run.v
 
 display:
-	./maketraces.sh >traces
-	gtkwave caddr.vcd traces
+	./maketraces.sh >traces.sav
+	gtkwave caddr.vcd traces.sav &
 
 snapshot:
 	(suffix=`date +%y%m%d`; tar cfz caddr_verilog_$$suffix.tar.gz *.v Makefile)

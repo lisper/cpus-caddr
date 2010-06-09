@@ -3,57 +3,16 @@
 (while read line; do
   echo $line
 done) <<EOF
-<?xml version="1.0"?>
-<!-- GTKWave saved traces, version 2.0.0pre5 -->
-<!-- at Fri Oct 29 08:33:19 2004 -->
-
-<config>
- <decors>
-  <decor name="default">
-   <trace-state-colors>
-    <named-color name="font" color="#00ff00"/>
-    <named-color name="low" color="#00ff00"/>
-    <named-color name="high" color="#00ff00"/>
-    <named-color name="x" color="#00ff00"/>
-    <named-color name="xfill" color="#008000"/>
-    <named-color name="trans" color="#00ff00"/>
-    <named-color name="mid" color="#00ff00"/>
-    <named-color name="vtrans" color="#00ff00"/>
-    <named-color name="vbox" color="#00ff00"/>
-    <named-color name="unloaded" color="#800000"/>
-    <named-color name="analog" color="#00ff00"/>
-    <named-color name="clip" color="#ff0000"/>
-    <named-color name="req" color="#ff0000"/>
-    <named-color name="ack" color="#008000"/>
-    <named-color name="hbox" color="#ffffff"/>
-   </trace-state-colors>
-  </decor>
- </decors>
-
- <trace-groups>
-  <trace-group name="default" decor="default">
-  </trace-group>
- </trace-groups>
-
- <pane-colors>
-  <named-color name="back" color="#181818"/>
-  <named-color name="grid" color="#808080"/>
-  <named-color name="mark" color="#0000ff"/>
-  <named-color name="umark" color="#ffff00"/>
-  <named-color name="pfont" color="#ffffff"/>
- </pane-colors>
-
- <markers>
-  <marker name="primary" time="0 s"/>
- </markers>
-
- <traces>
+[size] 1000 600
+[pos] 67 -22
+*-5.707018 260 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test.
 EOF
 
 # check for iverilog
 iverilog=0
 
-if  head cadr.vcd | grep -q Icarus ; then
+if  head caddr.vcd | grep -q Icarus ; then
     iverilog=1
 fi
 
@@ -66,37 +25,35 @@ fi
      fi
   fi
   if [ "$signalname" == "---" ]; then
-      echo '  <separator name="">'
-      echo '  </separator>'
+      echo '@30'
   else
       signalname="test.cpu.$signalname"
-      echo '  <trace name="'$signalname'" mode="oct" rjustified="yes">'
-      echo '    <signal name="'$signalname'"/>'
-      echo '  </trace>'
+#      echo $signalname' mode="oct" rjustified="yes"'
+      echo $signalname
   fi
 done) <<EOF
-CLK
-CLK
-tpw1
-tpw2
-wp
+clk
+reset
+state[4:0]
+state_decode
+state_write
+state_fetch
+--- {New Divider}
+machrun
+srun
+run
+boot
+reset
+halt
+waiting
 --- {New Divider}
 needfetch
 have_wrong_word
 last_byte_in_word
 lc0b
-newlc_n
-destlc_n
+newlc
+destlc
 lc[25:0] octal
---- {New Divider}
-machrun
-srun
-run
-boot_n
-boot2_n
-boot1_n
-power_reset_n
-clock_reset_n
 --- {New Divider}
 lpc[13:0] octal
 npc[13:0] octal
@@ -106,13 +63,13 @@ ipc[13:0] octal
 ir[48:0] hex
 ob[31:0] hex
 iob[47:0]
-destimod0_n
-destimod1_n
-irbyte_n
-irdisp_n
-irjump_n
-iralu_n
-CLK
+destimod0
+destimod1
+irbyte
+irdisp
+irjump
+iralu
+clk
 --- Jump
 jcond
 jfalse
@@ -124,6 +81,14 @@ aluadd
 alusub
 pcs0
 pcs1
+--- 
+n
+trap
+iwrited
+nop
+nopa
+inop
+nop11
 --- Shift
 r[31:0] hex
 sa[31:0] hex
@@ -139,31 +104,31 @@ aeqm_bits[7:0]
 a[31:0] hex
 m[31:0] hex
 mmem_latched[31:0] hex
-mpassm_n
-pdldrive_n
-spcdrive_n
-mfdrive_n
+mpassm
+pdldrive
+spcdrive
+mfdrive
 --- {M & A mem}
-CLK
+clk
 wadr[9:0] hex
 madr[4:0] hex
 mmem[31:0] hex
-mwp_n
+mwp
 aadr[9:0] hex
 amem[31:0] hex
-awp_n
+awp
 l[31:0] hex
 --- {New Divider}
 mf[31:0] hex
-lcdrive_n
-opcdrive_n
+lcdrive
+opcdrive
 dcdrive
-ppdrive_n
+ppdrive
 pidrive
 qdrive
-mddrive_n
-mpassl_n
-vmadrive_n
+mddrive
+mpassl
+vmadrive
 --- {New Divider}
 q[31:0] hex
 qs1
@@ -175,36 +140,36 @@ mskr[4:0] hex
 msk[31:0] octal
 r[31:0] octal
 a[31:0] octal
-CLK
+clk
 --- SPC
 spcptr[4:0] hex
-swp_n
-spcnt_n
-spush_n
-spop_n
+swp
+spcnt
+spush
+spop
 spcw[18:0] hex
 spco[18:0] hex
 spco_latched[18:0] hex
-spcdrive_n
+spcdrive
 spc[18:0] hex
 --- PDL
 pdlidx[9:0] hex
 pdlptr[9:0] hex
 pdla[9:0] hex
-pwp_n
+pwp
 pdlwrite
 pdlwrited
-destpdltop_n
-destpdl_x_n
-destpdl_p_n
+destpdltop
+destpdl_x
+destpdl_p
 destm
 --- {VMA memory}
 md[31:0] hex
 mdclk
 mds[31:0] hex
-vm0wp_n
+vm0wp
 mapi[23:8] hex
-vm1wp_n
+vm1wp
 wmap
 wmapd
 vma[31:0] hex
@@ -213,42 +178,43 @@ ob[31:0] hex
 --- IRAM
 pc[13:0] octal
 iwr[48:0] hex
-iwe_n
+iwe
+iwrite
 --- {Dispatch mem}
 md[31:0] hex
-dwe_n
-dadr_n[10:0] hex
+dwe
+dadr[10:0] hex
 dmask[6:0] hex
 r[31:0] hex
 lpc octal
 --- {New Divider}
 pgf_or_int
 pgf_or_int_or_sb
-pfr_n
-pfw_n
-lvmo_n
-pma hex
-vmem1_adr hex
-vmo hex
-vmaok_n
+pfr
+pfw
+lvmo_23
+lvmo_22
+pma[21:8] hex
+vmem1_adr[9:0] hex
+vmo[23:0] hex
+vmaok
 sint
 sintr
 int
 --- {Bus Interface}
-wmap_n
-memrd_n
-memwr_n
-destmem_n
-memop_n
+wmap
+memrd
+memwr
+destmem
+memop
 memstart
 memrq
 memprepare
-memack_n
-mfinish_n
-mfinishd_n
-rdfinish_n
-wait_n
-memgrant_n
+memack
+mfinish
+mfinishd
+waiting
+memgrant
 mbusy
 use_md
 wmap
@@ -257,12 +223,14 @@ rdcyc
 wrcyc
 vmo hex
 pma hex
+--- {Bus}
 loadmd
+mdclk
 mdsel
-memdrive_n
+memdrive
+mds[31:0] hex
 md[31:0] hex
+busint_bus[31:0] hex
 EOF
 
-echo " </traces>"
-echo "</config>"
 exit 0

@@ -660,6 +660,8 @@ module part_512x49prom( A, D, CE_N );
       9'h1ff: D <= 49'h0800000250a7;
     endcase
 
+`define patch_rom
+`ifdef patch_rom
     // patches for debugging
     case (A)
      ~9'o175 & 9'h1ff: D <= 49'h000000001000;
@@ -672,7 +674,8 @@ module part_512x49prom( A, D, CE_N );
      ~9'o256 & 9'h1ff: D <= 49'h000000001000;
      ~9'o263 & 9'h1ff: D <= 49'h000000001000;
      ~9'o314 & 9'h1ff: D <= 49'h000000001000;
-    endcase
+    endcase // case(A)
+`endif
    end
 
 //  always @(A or CE_N)

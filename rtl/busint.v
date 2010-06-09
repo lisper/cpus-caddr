@@ -71,10 +71,10 @@ module busint(mclk,
    output 	 ack, load, interrupt;
    
    //
-   parameter 	BUS_IDLE  = 4'b0000;
-   parameter 	BUS_REQ   = 4'b0001;
-   parameter 	BUS_WAIT  = 4'b0010;
-   parameter 	BUS_SLAVE = 4'b0100;
+   parameter 	 BUS_IDLE  = 4'b0000,
+ 		   BUS_REQ   = 4'b0001,
+ 		   BUS_WAIT  = 4'b0010,
+ 		   BUS_SLAVE = 4'b0100;
 
    reg [3:0] 	state;
    wire [3:0] 	next_state;
@@ -124,8 +124,8 @@ module busint(mclk,
 		  );
 
    xbus_tv tv (
-	       .reset(reset),
 	       .clk(mclk),
+	       .reset(reset),
 	       .addr(addr),
 	       .datain(busin),
 	       .dataout(dataout_tv),
@@ -174,10 +174,10 @@ module busint(mclk,
 
    //
    assign busout =
-		  (req & decode_dram & write) ? dataout_dram :
-		  (req & decode_disk & write) ? dataout_disk :
-		  (req & decode_tv & write) ? dataout_tv :
-		  (req & decode_io & write) ? dataout_io :
+		  (req & decode_dram & ~write) ? dataout_dram :
+		  (req & decode_disk & ~write) ? dataout_disk :
+		  (req & decode_tv & ~write) ? dataout_tv :
+		  (req & decode_io & ~write) ? dataout_io :
 		  32'hffffffff;
    
   always @(posedge mclk)
@@ -185,11 +185,11 @@ module busint(mclk,
        if (req)
 	 if (write)
 	   begin
-              #1 $display("xbus: write @%o", addr);
+              #1 $display("xbus: write @%o, %t", addr, $time);
 	   end
 	 else
 	   begin
-              #1 $display("xbus: read @%o", addr);
+              #1 $display("xbus: read @%o, %t", addr, $time);
 	   end
     end
 
@@ -220,7 +220,7 @@ module busint(mclk,
 		      (state == BUS_REQ && ack) ? BUS_WAIT :
 		      (state == BUS_REQ && ~req) ? BUS_IDLE :		      
 		      (state == BUS_WAIT && ~req) ? BUS_IDLE :
-		      (state == BUS_WAIT && req) ? BUS_REQ :
+		      (state == BUS_WAIT && req) ? BUS_WAIT :
 		      (state == BUS_IDLE && reqout_disk) ? BUS_SLAVE :
 		      (state == BUS_SLAVE && ~reqout_disk) ? BUS_IDLE :
 		      BUS_IDLE;

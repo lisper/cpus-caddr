@@ -48,17 +48,11 @@
  * 
  */
 
-module busint(mclk,
-	      reset,
-	      addr,
-	      busin,
-	      busout,
-	      spy, 
-	      req,
-	      ack,
-	      write, 
-	      load,
-	      interrupt);
+module busint(mclk, reset,
+	      addr, busin, busout, spy, 
+	      req, ack, write, load,
+	      interrupt,
+	      ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
 
    input mclk;
    input reset;
@@ -70,6 +64,12 @@ module busint(mclk,
    input 	 req, write;
    output 	 ack, load, interrupt;
    
+   inout [15:0] ide_data_bus;
+   output 	ide_dior;
+   output 	ide_diow;
+   output [1:0] ide_cs;
+   output [2:0] ide_da;
+
    //
    parameter 	 BUS_IDLE  = 4'b0000,
  		   BUS_REQ   = 4'b0001,
@@ -90,17 +90,21 @@ module busint(mclk,
    wire 	interrupt_disk, interrupt_tv, interrupt_io, interrupt_unibus;
    
    wire 	grantin_disk;
-   wire 	reqin_dram;
-   wire 	writein_dram;
+   wire 	dram_reqin;
+   wire 	dram_writein;
+
+   wire [21:0] 	dram_addr;
+   wire [31:0] 	dram_datain;
+   wire [31:0] 	disk_datain;
 
    xbus_ram dram (
 		  .reset(reset),
 		  .clk(mclk),
-		  .addr(addr),
-		  .datain(busin),
+		  .addr(dram_addr),
+		  .datain(dram_datain),
 		  .dataout(dataout_dram),
-		  .req(reqin_dram),
-		  .write(writein_dram),
+		  .req(dram_reqin),
+		  .write(dram_writein),
 		  .ack(ack_dram),
 		  .decode(decode_dram)
 		  );
@@ -110,7 +114,7 @@ module busint(mclk,
 		   .clk(mclk),
 		   .addrin(addr),
 		   .addrout(addrout_disk),
-		   .datain(busin),
+		   .datain(datain_disk),
 		   .dataout(dataout_disk),
 		   .reqin(req),
 		   .reqout(reqout_disk),
@@ -120,7 +124,12 @@ module busint(mclk,
 		   .writeout(writeout_disk),
 		   .decodein(decodein_disk),
 		   .decodeout(decode_disk),
-		   .interrupt(interrupt_disk)
+		   .interrupt(interrupt_disk),
+		   .ide_data_bus(ide_data_bus),
+		   .ide_dior(ide_dior),
+		   .ide_diow(ide_diow),
+		   .ide_cs(ide_cs),
+		   .ide_da(ide_da)
 		  );
 
    xbus_tv tv (
@@ -204,33 +213,40 @@ module busint(mclk,
 	  state <= next_state;
 
 `ifdef debug_detail
-	  if (next_state != BUS_IDLE)
+	  if (next_state != state)
 	    begin
 	       case (next_state)
-		 BUS_REQ:   $display("%t BUS_REQ   addr %o", $time, addr);
-		 BUS_WAIT:  $display("%t BUS_WAIT  addr %o", $time, addr);
-		 BUS_SLAVE: $display("%t BUS_SLAVE addr %o", $time, addr);
+		 BUS_REQ:   $display("%t BUS_REQ   addr %o", $time, dram_addr);
+		 BUS_WAIT:  $display("%t BUS_WAIT  addr %o", $time, dram_addr);
+		 BUS_SLAVE: $display("%t BUS_SLAVE addr %o", $time, dram_addr);
+		 BUS_IDLE:  $display("%t BUS_IDLE  addr %o", $time, dram_addr);
 	       endcase
 	    end
 `endif
        end
 
+   // basic bus arbiter
    assign next_state =
 		      (state == BUS_IDLE && req) ? BUS_REQ :
+		      (state == BUS_IDLE && reqout_disk) ? BUS_SLAVE :
 		      (state == BUS_REQ && ack) ? BUS_WAIT :
 		      (state == BUS_REQ && ~req) ? BUS_IDLE :		      
 		      (state == BUS_WAIT && ~req) ? BUS_IDLE :
 		      (state == BUS_WAIT && req) ? BUS_WAIT :
-		      (state == BUS_IDLE && reqout_disk) ? BUS_SLAVE :
-		      (state == BUS_SLAVE && ~reqout_disk) ? BUS_IDLE :
+		      (state == BUS_SLAVE && ack_dram) ? BUS_IDLE :
+		      (state == BUS_SLAVE && ~ack_dram) ? BUS_SLAVE :
 		      BUS_IDLE;
 		      
-   assign grantin_disk = state == BUS_SLAVE;
+   assign grantin_disk = state == BUS_SLAVE && next_state == BUS_IDLE;
    assign load = state == BUS_WAIT;
 
    // allow disk to drive dram
-   assign reqin_dram = req | grantin_disk;
-   assign writein_dram = write | (grantin_disk & writeout_disk);
+   assign dram_addr = state == BUS_SLAVE ? addrout_disk : addr;
+   assign dram_reqin = state == BUS_SLAVE ? reqout_disk : req;
+   assign dram_writein = state == BUS_SLAVE ? writeout_disk : write;
+   assign dram_datain = state == BUS_SLAVE ? dataout_disk : busin;
+
+   assign datain_disk = state == BUS_SLAVE ? dataout_dram : busin;
    assign decodein_disk = grantin_disk & decode_dram;
    
 endmodule

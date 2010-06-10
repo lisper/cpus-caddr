@@ -26,6 +26,14 @@ module xbus_ram (
    output 	 decode;
 
    //
+   reg [31:0] 	 ram[255:0];
+
+   integer i;
+   
+   initial
+     for (i = 0; i < 256; i = i + 1)
+       ram[i] = 0;
+   
    reg 		 req_delayed;
    reg [6:0] 	 ack_delayed;
    
@@ -49,7 +57,7 @@ module xbus_ram (
          ack_delayed[5] <= ack_delayed[4];
          ack_delayed[6] <= ack_delayed[5];
 
-`ifdef debug_detail
+`ifdef debug_detail_delay
 	 if (req & decode)
 	   $display("ddr: decode %b; %b %b",
 		    req & decode, req_delayed, ack_delayed);
@@ -64,16 +72,20 @@ module xbus_ram (
 
    always @(posedge clk)
      begin
-	if (req & decode)
+	if (req & decode & req_delayed & ~|ack_delayed)
 	  if (write)
 	    begin
-               #1 $display("ddr: write @%o", addr);
+               #1 $display("ddr: write @%o <- %o", addr, datain);
+	       if (addr < 256)
+		 ram[addr] = datain;
 	    end
 	  else
 	    begin
-               #1 $display("ddr: read @%o", addr);
+               #1 $display("ddr: read @%o -> %o, %t", addr, ram[addr], $time);
 	    end
      end
+
+   assign dataout = addr < 256 ? ram[addr] : 0;
 
 endmodule
 

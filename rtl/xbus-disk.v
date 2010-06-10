@@ -900,7 +900,6 @@ module xbus_disk (
 	       ata_addr = ATA_DATA;
 	       if (ata_done)
 		 begin
-		    inc_wc = 1;
 		    state_next = s_read2;
 		 end
 	    end
@@ -919,8 +918,9 @@ module xbus_disk (
 	       if (grantin)
 		 begin
 		    inc_ccw = 1;
+		    inc_wc = 1;
 		    
-		    if (wc == 8'h00)
+		    if (wc == 8'hff)
 		      state_next = s_last0;
 		    else
 		      state_next = s_read0;
@@ -945,7 +945,6 @@ module xbus_disk (
 
 	       if (ata_done)
 		 begin
-		    inc_wc = 1;
 		    state_next = s_write2;
 		 end
 	    end
@@ -959,7 +958,8 @@ module xbus_disk (
 	       if (ata_done)
 		 begin
 		    inc_ccw = 1;
-		    if (wc == 8'h00)
+		    inc_wc = 1;
+		    if (wc == 8'hff)
 		      state_next = s_last0;
 		    else
 		      state_next = s_write0;

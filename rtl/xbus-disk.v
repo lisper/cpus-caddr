@@ -33,12 +33,15 @@
 	  0
 	  1 cmd
 	  2
+
 	  3 cmd to memory
 	  4 servo offset plus
 	  5 servo offset
+
 	  6 data strobe early
 	  7 data strobe late
 	  8 fault clear
+
 	  9 recalibrate
 	  10 attn intr enb
 	  11 done intr enb
@@ -267,7 +270,6 @@ module xbus_disk (
    reg [21:0] 	 addrout;
    reg 		 reqout;
    reg 		 writeout;
-   reg 		 interrupt;
    
    inout [15:0] ide_data_bus;
    output 	ide_dior;
@@ -279,7 +281,10 @@ module xbus_disk (
    // -------------------------------------------------------------------
    
    reg [21:0] 	disk_clp;
-   reg [11:0] 	disk_cmd;
+   reg [9:0] 	disk_cmd;
+
+   reg 		attn_intr_enb;
+   reg 		done_intr_enb;
 
    reg [2:0] 	disk_unit;
    reg [11:0] 	disk_cyl;
@@ -290,16 +295,18 @@ module xbus_disk (
 
    reg [21:8] 	disk_ccw;
    reg 		more_ccws;
+
+   reg 		disk_interrupt;
    
-   parameter DISK_CMD_READ = 12'o0000,
-	       DISK_CMD_RDCMP = 12'o0010,
-	       DISK_CMD_WRITE = 12'o0011,
-	       DISK_CMD_RECAL = 12'o1005,
-	       DISK_CMD_CLEAR = 12'o0405;
+   parameter DISK_CMD_READ = 10'o0000,
+	       DISK_CMD_RDCMP = 10'o0010,
+	       DISK_CMD_WRITE = 10'o0011,
+	       DISK_CMD_RECAL = 10'o1005,
+	       DISK_CMD_CLEAR = 10'o0405;
 	       
    wire 	 addr_match;
    wire 	 decode;
-   reg 		 ack_delayed;
+   reg [1:0]	 ack_delayed;
 
    wire 	 active;
    reg 		 err;
@@ -395,7 +402,7 @@ module xbus_disk (
    reg        inc_clp;
    reg        inc_ccw;
    reg        assert_int;
-   reg 	       deassert_int;
+   reg 	      deassert_int;
 
    reg        disk_start;
    
@@ -406,6 +413,9 @@ module xbus_disk (
    // -----------------------------------------------------------------
    
 
+   assign interrupt = done_intr_enb & disk_interrupt;
+   
+
    // bus address
    assign addr_match = { addrin[21:3], 3'b0 } == 22'o17377770 ?
 		       1'b1 : 1'b0;
@@ -413,13 +423,13 @@ module xbus_disk (
    assign decode = (reqin && addr_match) ? 1'b1 : 1'b0;
 
    assign decodeout = decode;
-   assign ackout = ack_delayed;
+   assign ackout = ack_delayed[1];
 
    assign dataout = state == s_read2 ? dma_dataout : reg_dataout;
    
 		   
    // disk registers
-   assign disk_status = { 18'b0, err, 9'b0, interrupt, 2'b0, ~active };
+   assign disk_status = { 18'b0, err, 9'b0, disk_interrupt, 2'b0, ~active };
 
    assign active = state != s_idle;
    
@@ -431,12 +441,19 @@ module xbus_disk (
      if (reset)
        ack_delayed <= 0;
      else
-       ack_delayed <= decode;
+       begin
+	  ack_delayed[0] <= decode;
+	  ack_delayed[1] <= ack_delayed[0];
+       end
 
    always @(posedge clk)
      if (reset)
        begin
           disk_cmd <= 0;
+
+	  attn_intr_enb <= 0;
+	  done_intr_enb <= 0;
+	  
           disk_clp <= 0;
 
 	  reg_dataout = 0;
@@ -478,6 +495,10 @@ module xbus_disk (
 		  begin
 		     $display("disk: load cmd %o", datain);
 		     disk_cmd <= datain;
+
+		     attn_intr_enb <= datain[10];
+		     done_intr_enb <= datain[11];
+
 		     if (datain[11:10])
 		       deassert_int = 1;
 		  end
@@ -492,8 +513,8 @@ module xbus_disk (
 
 		     disk_unit <= datain[30:28];
 		     disk_cyl <= datain[27:16];
-		     disk_head <= datain[14:9];
-		     disk_block <= datain[5:0];
+		     disk_head <= datain[12:8];
+		     disk_block <= datain[4:0];
 		  end
 		3'o7:
 		  begin
@@ -613,19 +634,19 @@ module xbus_disk (
 
    always @(posedge clk)
      if (reset)
-       interrupt <= 0;
+       disk_interrupt <= 0;
      else
 	  if (assert_int)
 	    begin
 `ifdef debug
 	       $display("disk: assert interrupt\n");
 `endif
-	       interrupt <= 1;
+	       disk_interrupt <= 1;
 	    end
 	  else
 	    if (deassert_int)
 	      begin
-		 interrupt <= 0;
+		 disk_interrupt <= 0;
 `ifdef debug
 		 $display("disk: deassert interrupt\n");
 `endif
@@ -720,7 +741,7 @@ module xbus_disk (
 `endif
 		 endcase
 `ifdef debug
-		 $display("disk: go! disk %b", disk_cmd);
+		 $display("disk: go! disk_cmd %o", disk_cmd);
 `endif
 	      end
 
@@ -804,6 +825,13 @@ module xbus_disk (
 	  
 	  s_init5:
 	    begin
+`ifdef debug
+	       $display("disk: da %o (unit%d cyl%d head%d block%d) lba 0x%x",
+			disk_da,
+			disk_unit, disk_cyl, disk_head, disk_block,
+			lba);
+	       
+`endif
 	       ata_wr = 1;
 	       ata_addr = ATA_SECNUM;
 	       ata_in = {8'b0, lba[7:0]};	// LBA[7:0]
@@ -909,7 +937,15 @@ module xbus_disk (
 	       // mem write
 	       reqout = 1;
 	       addrout = { 10'b0, disk_ccw, wc };
-	       dma_dataout = { ata_hold, ata_out };
+
+//	       dma_dataout = { ata_hold, ata_out };
+
+//	       // byteswap disk data
+//	       dma_dataout = { ata_out[7:0], ata_out[15:8], 
+//			       ata_hold[7:0], ata_hold[15:8] };
+
+	       dma_dataout = { ata_out, ata_hold };
+	       
 	       writeout = 1;
 	       
 	       if (1) $display("s_read2: ata_out %o, dma_addr %o",
@@ -941,7 +977,8 @@ module xbus_disk (
 	    begin
 	       ata_wr = 1;
 	       ata_addr = ATA_DATA;
-	       ata_in = dma_data_hold[31:16];
+//	       ata_in = dma_data_hold[31:16];
+	       ata_in = dma_data_hold[15:0];
 
 	       if (ata_done)
 		 begin
@@ -953,7 +990,8 @@ module xbus_disk (
 	    begin
 	       ata_wr = 1;
 	       ata_addr = ATA_DATA;
-	       ata_in = dma_data_hold[15:0];
+//	       ata_in = dma_data_hold[15:0];
+	       ata_in = dma_data_hold[31:16];
 
 	       if (ata_done)
 		 begin

@@ -14,29 +14,73 @@ module part_1kx32ram_sync_a(CLK, A, DI, DO, CE_N, WE_N);
 
    reg [31:0] ram [0:1023];
 
-  integer i;
+`ifdef debug
+  integer i, debug;
 
   initial
     begin
-      for (i = 0; i < 1024; i=i+1)
-        ram[i] = 32'b0;
+       debug = 0;
+       for (i = 0; i < 1024; i=i+1)
+         ram[i] = 32'b0;
     end
+`endif
 
    always @(posedge CLK)
      if (~CE_N && ~WE_N)
        begin
           ram[ A ] <= DI;
-//	  if (A != 0)
-//	  $display("     amem: W %t addr %o val 0x%x", $time, A, ram[ A ]);
+	  if (A != 0 && debug)
+	    $display("amem: W addr %o val %o; %t", A, DI, $time);
        end
 
    always @(posedge CLK)
      if (~CE_N)
        begin
 	  DO <= ram[ A ];
-//	  if (A != 0)
-//	  $display("     amem: R %t addr %o val 0x%x", $time, A, ram[ A ]);
+	  if (A != 0 && debug)
+	    $display("amem: R addr %o val %o; %t", A, ram[ A ], $time);
        end
+
+endmodule
+
+module part_1kx32ram_async_a(A, DI, DO, CE_N, WE_N);
+
+  input[9:0] A;
+  input[31:0] DI;
+  input CE_N, WE_N;
+  output[31:0] DO;
+
+  reg[31:0] ram [0:1023];
+
+`ifdef debug
+  integer i, debug;
+
+  initial
+    begin
+       debug = 0;
+       for (i = 0; i < 1024; i=i+1)
+         ram[i] = 32'b0;
+    end
+`endif
+   
+   always @(negedge WE_N)
+     begin
+	if (CE_N == 0)
+          begin
+             ram[ A ] = DI;
+	     if (debug) $display("amem: W addr %o val %o; %t", A, DI, $time);
+          end
+     end
+
+   assign DO = ram[ A ];
+
+`ifdef debug
+   always @(A or WE_N)
+     begin
+	if (debug) $display("amem: R addr %o val %o, CE_N %d; %t",
+			    A, ram[A], CE_N, $time);
+     end
+`endif
 
 endmodule
 
@@ -66,15 +110,15 @@ always @(negedge WE_N)
       if (CE_N == 0)
         begin
           ram[ A ] = DI;
-	   $display("pdl: W %t addr %o val %o", $time, A, DI);
+	   $display("pdl: W addr %o val %o; %t", A, DI, $time);
         end
     end
 
   assign DO = ram[ A ];
 
-  always @(A)
+  always @(A or WE_N or CE_N)
     begin
-       $display("pdl: R %t addr %o val %o, CE_N %d", $time, A, ram[A], CE_N);
+//       $display("pdl: R %t addr %o val %o, CE_N %d", $time, A, ram[A], CE_N);
     end
 
 endmodule
@@ -101,15 +145,15 @@ module part_1kx32ram_sync_p(CLK, A, DI, DO, CE_N, WE_N);
      if (~CE_N && ~WE_N)
         begin
            ram[ A ] = DI;
-	   $display("pdl: W %t addr %o val %o", $time, A, DI);
+	   $display("pdl: W addr %o val %o; %t", A, DI, $time);
         end
 
    always @(posedge CLK)
      if (~CE_N)
        begin
 	  DO <= ram[ A ];
-	  if (A != 0)
-	  $display("pdl: R %t addr %o val %o", $time, A, ram[A]);
+//	  if (A != 0)
+//	  $display("pdl: R %t addr %o val %o", $time, A, ram[A]);
        end
 
 endmodule
@@ -138,7 +182,7 @@ module part_2kx5ram_async(A, DI, DO, CE_N, WE_N);
       if (CE_N == 0 && WE_N == 0)
         begin
           ram[ A ] = DI;
-	   $display("vmem0: W %t addr %o <- val %o", $time, A, ram[ A ]);
+	   $display("vmem0: W addr %o <- val %o; %t", A, DI, $time);
         end
     end
 
@@ -168,7 +212,7 @@ module part_2kx5ram_sync(CLK, A, DI, DO, CE_N, WE_N);
      if (~CE_N && ~WE_N)
         begin
           ram[ A ] = DI;
-	   $display("vmem0: W %t addr %o <- val %o", $time, A, ram[ A ]);
+	   $display("vmem0: W addr %o <- val %o; %t", A, DI, $time);
         end
 
    always @(posedge CLK)
@@ -203,17 +247,16 @@ module part_1kx24ram_async(A, DI, DO, CE_N, WE_N);
       if (CE_N == 0 && WE_N == 0)
         begin
            ram[ A ] = DI;
-	   $display("vmem1: W %t addr %o <- val %o (async)",
-		    $time, A, ram[ A ]);
+	   $display("vmem1: W addr %o <- val %o (async); %t", A, DI, $time);
         end
     end
 
   assign DO = ram[ A ];
 
-always @(A)
-  begin
-    $display("vmem1: R %t addr %o -> val %o", $time, A, ram[ A ]);
-  end
+   always @(A or CE_N or WE_N)
+     begin
+	$display("vmem1: R addr %o -> val %o; %t", A, ram[ A ], $time);
+     end
 
 endmodule
 
@@ -239,7 +282,7 @@ module part_1kx24ram_sync(CLK, A, DI, DO, CE_N, WE_N);
      if (~CE_N && ~WE_N)
        begin
           ram[ A ] <= DI;
-	  $display("vmem1: W %t addr %o <- val %o (sync)", $time, A, ram[ A ]);
+	  $display("vmem1: W addr %o <- val %o (sync); %t ", A, DI, $time);
        end
 
    always @(posedge CLK)
@@ -293,27 +336,34 @@ module part_32x32ram_sync(CLK, A, DI, DO, CE_N, WE_N);
 
    reg [31:0] ram [0:31];
 
-   integer index;
+`ifdef debug
+   integer index, debug;
 
    initial
-    begin
-      for (index = 0; index < 32; index=index+1)
-        ram[index] = 32'b0;
+     begin
+	debug = 0;
+	for (index = 0; index < 32; index=index+1)
+          ram[index] = 32'b0;
     end
-
+`endif
+   
    always @(posedge CLK)
     if (~CE_N && ~WE_N)
      begin
 	ram[ A ] = DI;
-//	if (A != 0)
-//	$display("     mmem: W %t addr %o val 0x%x", $time, A, ram[ A ]);
+`ifdef debug
+	if (A != 0 && debug)
+	  $display("mmem: W addr %o val %0o; %t", A, DI, $time);
+`endif
      end
 
-   always @(A)
+   always @(A or CE_N or WE_N or CLK)
      begin
 	DO <= ram[ A ];
-//	if (A != 0)
-//	$display("     mmem: R %t addr %o val 0x%x", $time, A, ram[ A ]);
+`ifdef debug
+	if (A != 0 && debug)
+	  $display("mmem: R addr %o val %0o; %t", A, ram[ A ], $time);
+`endif
      end
    
 endmodule
@@ -327,27 +377,33 @@ module part_32x32ram(A, DI, DO, WCLK_N, CE, WE_N);
 
    reg [31:0] ram [0:31];
 
-   integer index;
+`ifdef debug
+   integer    index, debug;
 
    initial
     begin
       for (index = 0; index < 32; index=index+1)
         ram[index] = 32'b0;
     end
-
+`endif
+   
    always @(posedge WCLK_N)
      begin
 	if (CE == 1 && WE_N == 0)
 	  begin
 	     ram[ A ] = DI;
-	     //$display("     mmem: W %t addr %o val 0x%x", $time, A, ram[ A ]);
+`ifdef debug
+	     if (debug) $display("mmem: W addr %o val %o; %t", A, DI, $time);
+`endif
 	  end
      end
 
-   always @(A)
+   always @(A or WCLK_N or CE or WE_N)
      begin
 	DO <= ram[ A ];
-	//$display("     mmem: R %t addr %o val 0x%x", $time, A, ram[ A ]);
+`ifdef debug
+	if (debug) $display("mmem: R addr %o val %o; %t", A, ram[ A ], $time);
+`endif
      end
    
 endmodule
@@ -374,14 +430,14 @@ module part_32x19ram_sync(CLK, A, DI, DO, WE_N, CE_N);
        begin
 	  ram[ A ] = DI;
 	  if (A != 0)
-	    $display("spc: W %t addr %o val %o", $time, A, DI);
+	    $display("spc: W addr %o val %o; %t", A, DI, $time);
        end
 
    always @(posedge CLK)
      begin
 	DO <= ram[ A ];
-	if (A != 0)
-	  $display("spc: R %t addr %o val %o", $time, A, ram[ A ]);
+//	if (A != 0)
+//	  $display("spc: R %t addr %o val %o", $time, A, ram[ A ]);
      end
 
 endmodule
@@ -407,7 +463,7 @@ module part_32x19ram(A, DI, DO, WCLK_N, WE_N, CE);
 	  ram[ A ] = DI;
      end
 
-   always @(A)
+   always @(A or WE_N)
      DO <= ram[ A ];
 
 endmodule
@@ -438,7 +494,7 @@ module part_16kx49ram(A, DI, DO, CE_N, WE_N);
       if (CE_N == 0)
 	begin
            ram[ A ] = DI;
-	   $display("iram: W %t addr %o val %o", $time, A, DI);
+	   $display("iram: W addr %o val %o; %t", A, DI, $time);
 	end
     end
 

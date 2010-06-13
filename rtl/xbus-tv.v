@@ -6,7 +6,10 @@
  * 
  * 768 x 896 pixels
  * = 688128 pixels
- * = 21504 words (32 bit)
+ * = 21504 words (32 bit) = 52000 octal
+ * 
+ * xbus = 17000000 + 52000
+ *
  * 
  * 1280w x 1024h timing
  * 60hz
@@ -56,68 +59,68 @@ module xbus_tv(
    input 	write;		/* request read#/write */
    
    output [31:0] dataout;
+reg [31:0] dataout;
+   
    output 	 ack;		/* request done */
    output 	 decode;	/* request addr ok */
    output 	 interrupt;
 
-   //
-//   reg [10:0]	 hcount;
-//   reg [10:0] 	 vcount;
+   // ----------------------------------------------------------------------
    
-//   reg [31:0] 	 video_ram[21503:0];
-//
-//   reg [13:0] 	 pixel_addr;
-//   wire [9:0] 	 video_addr;
-//   wire [4:0] 	 pixcount;
+   reg [1:0]	 ack_delayed;
+   
+   wire 	 in_fb;
+   wire 	 in_reg;
+   wire [14:0] 	 offset;
+   
+   assign in_fb =  {addr[21:15], 15'b0} == 22'o17000000;
+   assign in_reg = {addr[21:3],   3'b0} == 22'o17377760;
 
-//   assign 	 video_addr = pixel[13:5];
-//   assign 	 pixcount = pixel_addr[4:0];
+   assign offset = addr[14:0];
    
-   // 077000000, size = 210560(8)
-   assign 	 decode = req & (addr == 22'o1737776x);
+   assign 	 decode = req & (in_reg || in_fb);
+   
    reg [1:0]	 busy;
    
    assign 	 ack = busy[1];
    assign 	 interrupt = 0;
 
+`ifdef debug
+   integer 	 h, v;
+`endif
+   
    always @(posedge clk)
      if (reset)
        busy <= 2'b00;
      else
        begin
-	  if (decode)
-	    busy[0] <= 1'b1;
-
-//	  if (~shifter_load)
-	    busy[1] <= busy[0];
+	  busy[0] <= decode;
+	  busy[1] <= busy[0];
 	  
 	if (decode)
 	  if (write)
 	    begin
                #1 $display("tv: write @%o", addr);
+	       if (in_fb)
+		 begin
+`ifdef debug
+		    h = offset / 768;
+		    v = offset % 768;
+		    $display("tv: (%0d, %0d) <- %o", h, v, datain);
+`endif
+		 end
 	    end
 	  else
 	    begin
                #1 $display("tv: read @%o", addr);
+	       if (in_fb)
+		 begin
+		    dataout = 0;
+		 end
+	       if (in_reg)
+		 dataout = 0;
 	    end
      end
-
-//   write_en = busy[1] & write;
-//   read_en = busy[1] & ~write;
-
-//   video_ram_sync video_ram (
-//			     .clk(clk),
-//			     .a(video_addr),
-//			     .do(video_ram_out),
-//			     .di(video_ram_in),
-//			     .we_n(write_en),
-//			     .ce_n(1'b0)
-//			     );
-//
-//xxx clocked ram   
-//   posted reads
-//posted writes
-   
 
 
 endmodule // xbus_tv

@@ -26,12 +26,12 @@ module xbus_ram (
    output 	 decode;
 
    //
-   reg [31:0] 	 ram[255:0];
+   reg [31:0] 	 ram[131071:0];
 
    integer i;
    
    initial
-     for (i = 0; i < 256; i = i + 1)
+     for (i = 0; i < 131072; i = i + 1)
        ram[i] = 0;
    
    reg 		 req_delayed;
@@ -76,16 +76,17 @@ module xbus_ram (
 	  if (write)
 	    begin
                #1 $display("ddr: write @%o <- %o", addr, datain);
-	       if (addr < 256)
+	       if (addr < 131072)
 		 ram[addr] = datain;
 	    end
 	  else
 	    begin
-               #1 $display("ddr: read @%o -> %o, %t", addr, ram[addr], $time);
+               #1 $display("ddr: read @%o -> %o (0x%x), %t",
+			   addr, ram[addr], ram[addr], $time);
 	    end
      end
 
-   assign dataout = addr < 256 ? ram[addr] : 0;
+   assign dataout = addr < 131072 ? ram[addr] : 0;
 
 endmodule
 

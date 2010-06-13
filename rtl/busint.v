@@ -19,8 +19,14 @@
  * ------------------------
  *
  * xbus:
+ *   17000000- tv frame buffer
+ *   17051777
+ *
  *   17377760 tv
  *   17377770 disk
+ *
+ *   17772000 i/o board
+ *
  *
  * unibus:
  *   17400000  color?
@@ -43,7 +49,7 @@
  *
  *   17766140-
  *   17766176  unibus map
- *
+ * 
  * ------------------------
  * 
  */
@@ -52,7 +58,8 @@ module busint(mclk, reset,
 	      addr, busin, busout, spy, 
 	      req, ack, write, load,
 	      interrupt,
-	      ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
+	      ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da,
+	      promdisable);
 
    input mclk;
    input reset;
@@ -70,6 +77,8 @@ module busint(mclk, reset,
    output [1:0] ide_cs;
    output [2:0] ide_da;
 
+   output 	promdisable;
+   
    //
    parameter 	 BUS_IDLE  = 4'b0000,
  		   BUS_REQ   = 4'b0001,
@@ -97,6 +106,8 @@ module busint(mclk, reset,
    wire [31:0] 	dram_datain;
    wire [31:0] 	disk_datain;
 
+   wire 	device_ack;
+   
    xbus_ram dram (
 		  .reset(reset),
 		  .clk(mclk),
@@ -168,17 +179,23 @@ module busint(mclk, reset,
 	       .write(write),
 	       .ack(ack_unibus),
 	       .decode(decode_unibus),
-	       .interrupt(interrupt_unibus)
+	       .interrupt(interrupt_unibus),
+	       .promdisable(promdisable)
 	       );
 
-   assign 	decode_ok = decode_dram | decode_disk | decode_tv |
-			    decode_io | decode_unibus;
+   assign decode_ok = decode_dram | decode_disk | decode_tv |
+		      decode_io | decode_unibus;
    
-   assign 	ack = decode_ok &
-		      (ack_dram | ack_disk | ack_tv | ack_io | ack_unibus);
    
-   assign 	interrupt = interrupt_disk | interrupt_tv |
-			    interrupt_io | interrupt_unibus;
+   assign device_ack = ack_dram | ack_disk | ack_tv | ack_io | ack_unibus;
+   
+   assign ack = state == BUS_REQ && device_ack;
+
+   // disk - xbus
+   // iob, 60hz clock - xbus
+   // iob - unibus
+   assign interrupt = interrupt_disk | interrupt_tv |
+		      interrupt_io | interrupt_unibus;
    
 
    //
@@ -188,7 +205,7 @@ module busint(mclk, reset,
 		  (req & decode_tv & ~write) ? dataout_tv :
 		  (req & decode_io & ~write) ? dataout_io :
 		  32'hffffffff;
-   
+
   always @(posedge mclk)
     begin
        if (req)
@@ -229,8 +246,8 @@ module busint(mclk, reset,
    assign next_state =
 		      (state == BUS_IDLE && req) ? BUS_REQ :
 		      (state == BUS_IDLE && reqout_disk) ? BUS_SLAVE :
-		      (state == BUS_REQ && ack) ? BUS_WAIT :
-		      (state == BUS_REQ && ~req) ? BUS_IDLE :		      
+		      (state == BUS_REQ && device_ack) ? BUS_WAIT :
+		      (state == BUS_REQ && ~device_ack) ? BUS_REQ :
 		      (state == BUS_WAIT && ~req) ? BUS_IDLE :
 		      (state == BUS_WAIT && req) ? BUS_WAIT :
 		      (state == BUS_SLAVE && ack_dram) ? BUS_IDLE :
@@ -238,7 +255,7 @@ module busint(mclk, reset,
 		      BUS_IDLE;
 		      
    assign grantin_disk = state == BUS_SLAVE && next_state == BUS_IDLE;
-   assign load = state == BUS_WAIT;
+   assign load = req & ~write & (state == BUS_WAIT);
 
    // allow disk to drive dram
    assign dram_addr = state == BUS_SLAVE ? addrout_disk : addr;

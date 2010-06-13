@@ -19,6 +19,12 @@ module test;
    wire        dbread, dbwrite;
    wire [3:0]  eadr;
 
+   wire [15:0] 	ide_data_bus;
+   wire 	ide_dior;
+   wire 	ide_diow;
+   wire [1:0] 	ide_cs;
+   wire [2:0] 	ide_da;
+
    caddr cpu (.clk(clk),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
@@ -27,9 +33,15 @@ module test;
 	      .spy(spy),
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
-	      .eadr(eadr));
-
+	      .eadr(eadr),
+	      .ide_data_bus(ide_data_bus),
+	      .ide_dior(ide_dior),
+	      .ide_diow(ide_diow),
+	      .ide_cs(ide_cs),
+	      .ide_da(ide_da));
+   
    integer     addr;
+   integer     debug_level;
    integer     dumping;
    integer     cycles;
    integer     max_cycles;
@@ -52,15 +64,16 @@ module test;
 `endif
 `endif
 
-`ifdef debug_vcd
-	$dumpfile("caddr.vcd");
-	$dumpvars(0, test.cpu);
-//	$dumpoff;
-`endif
-
+	debug_level = 1;
 	dumping = 0;
 	cycles = 0;
 	max_cycles = 0;
+
+`ifdef debug_vcd
+	$dumpfile("caddr.vcd");
+	$dumpvars(0, test.cpu);
+	dumping = 1;
+`endif
 
 `ifdef __ICARUS__
        n = $value$plusargs("cycles=%d", arg);
@@ -96,12 +109,6 @@ module test;
 
 	#10 reset = 0;
 	#10 boot = 0;
-
-	#100000000
-	  begin
-	     $display("final pc %o, state %b", cpu.pc, cpu.state);
-	     $finish/*$stop*/;
-	  end
      end
 
    // 50mhz clock
@@ -116,49 +123,70 @@ module test;
 	if (cpu.state == 5'b00001)
 	  cycles = cycles + 1;
 
-	if (cycles > 25 && (cpu.lpc > 0 && cpu.lpc < 14'o50))
+	if (cycles > 25 && (cpu.lpc > 7 && cpu.lpc < 14'o50) &&
+	    (cpu.npc < 14'o50))
 	  begin
 	     $display("in microcode error routine; lpc %o", cpu.lpc);
 	     $finish;
 	  end
 
 	if (max_cycles > 0 && cycles >= max_cycles)
-	  $finish;
+	  begin
+	     $display("maximum cycles count (%0d) exceeded", max_cycles);
+	     $finish;
+	  end
      end
 
-//`define debug_short
-`define debug_detail
-   
-`ifdef debug_short
    always @(posedge cpu.clk)
-     #1 if (cpu.state == 5'b00001)
+     #1 if (debug_level == 1 && cpu.state == 5'b00001)
+       begin
+	  $display("%0o %o A=%x M=%x N=%b Q=%x R=%x L=%x",
+		   cpu.lpc, cpu.ir,
+		   cpu.a, cpu.m, cpu.n, cpu.q, cpu.r, cpu.l);
+
+	  if (dumping)
+	    begin
+	       $dumpoff;
+	       dumping = 0;
+	       $display("dumping: off");
+	    end
+	  
+//	  if (cpu.promdisable == 1 && cpu.npc == 14'o21636)
+//	    debug_level = 3;
+     end 
+   
+   always @(posedge cpu.clk)
+     #1 if (debug_level == 2 && cpu.state == 5'b00001)
        begin
 	if (cpu.state == 5'b00001) $display("-----");
 
-if (cpu.lpc == 14'o542) $finish;
-	  
-	$display("LPC=%o PC=%o NPC=%o OPC=%o PCS=%b%b IR=%o",
-		 cpu.lpc, cpu.pc, cpu.npc, cpu.opc, cpu.pcs1, cpu.pcs0, cpu.ir);
+	$display("LPC=%o PC=%o NPC=%o PCS=%b%b IR=%o",
+		 cpu.lpc, cpu.pc, cpu.npc, cpu.pcs1, cpu.pcs0, cpu.ir);
 	$display("     A=%x M=%x N=%b Q=%x R=%x L=%x",
 		 cpu.a, cpu.m, cpu.n, cpu.q, cpu.r, cpu.l);
      end 
-`endif
    
-`ifdef debug_detail
    always @(posedge cpu.clk)
-     #1
+     #1 if (debug_level == 3)
        begin
-	  if (!dumping)
+`ifdef debug_vcd
+	  if (dumping == 0)
 	    begin
 	       dumping = 1;
 	       $dumpon;
+	       $dumpall;
+	       $display("dumping: on");
+	    end
+`endif
+
+	  if (0)
+	    begin
+	       cpu.i_AMEM.debug = 1;
+	       cpu.i_MMEM.debug = 1;
 	    end
 	  
 	if (cpu.state == 5'b00001) $display("-----");
 
-//if (cpu.lpc == 14'o324) $finish;
-if (cpu.lpc == 14'o552) $finish;
-	  
 	case (cpu.state)
 	  5'b00000: $display("%0o %o reset  %t", cpu.lpc, cpu.ir, $time);
 	  5'b00001: $display("%0o %o decode %t", cpu.lpc, cpu.ir, $time);
@@ -168,45 +196,97 @@ if (cpu.lpc == 14'o552) $finish;
 	  5'b10000: $display("%0o %o wait   %t", cpu.lpc, cpu.ir, $time);
 	endcase
 	  
-//	$display("     LPC=%0o PC=%o NPC=%o OPC=%o PCS=%b%b IR=%o",
-//		 cpu.lpc, cpu.pc, cpu.npc, cpu.opc, cpu.pcs1, cpu.pcs0, cpu.ir);
 	$display("     A=%x M=%x, N=%x, Q=%x s=%b%b%b%b%b R=%x, L=%x",
 		 cpu.a, cpu.m, cpu.n, cpu.q,
 		 cpu.s4, cpu.s3, cpu.s2, cpu.s1, cpu.s0, cpu.r, cpu.l);
 
-	$display("     a_latch=%x m.latched=%x, aeqm %b %b, PCS=%b%b",
-		 cpu.a_latch, cpu.mmem_latched, cpu.aeqm, cpu.aeqm_bits,
-		 cpu.pcs1, cpu.pcs0);
-
-	$display("     conds=%b, jcond=%b, jfalse=%b (%b), popj %b, npc %o",
+	$display("     conds=%b, jcond=%b, jfalse=%b (%b), npc %o pcs=%b",
 		 cpu.conds, cpu.jcond, cpu.jfalse, cpu.jfalse & ~cpu.jcond,
-		 cpu.popj, cpu.npc);
+		 cpu.npc, {cpu.pcs1, cpu.pcs0});
 
-	$display("     mpassm=%b, pdldrive=%b, spcdrive=%b, mfdrive=%b",
-		 cpu.mpassm, cpu.pdldrive, cpu.spcdrive, cpu.mfdrive);
+	$display("     a_latch=%x m.latched=%x, aeqm %b %b",
+		 cpu.a_latch, cpu.mmem_latched, cpu.aeqm, cpu.aeqm_bits);
+	  
+//	$display("     vmaok %b, pfr %b, pfw %b; vmaenb %b",
+//		 cpu.vmaok, cpu.pfr, cpu.pfw, cpu.vmaenb);
 
-	$display("     vmaok %b, pfr %b, pfw %b; vmaenb %b",
-		 cpu.vmaok, cpu.pfr, cpu.pfw, cpu.vmaenb);
+//	$display("     apass=%b, apassenb=%b, amemenb=%b",
+//		 cpu.apass, cpu.amemenb, cpu.apassenb);
 
+//	$display("     wadr %o, dest %o, destd %o, ir[41:32] %o",
+//		 cpu.wadr, cpu.dest, cpu.destd, cpu.ir[41:32]);
+
+//	$display("     mpass=%b, mpassl=%b, mpassm=%b",
+//		 cpu.mpass, cpu.mpassl, cpu.mpassm);
+
+	$display("     mdrive: mp%b pdl%b spc%b mf%b destmdr%b; adrive amemenb%b apassenb%b",
+		 cpu.mpassm, cpu.pdldrive, cpu.spcdrive, cpu.mfdrive,
+		 cpu.destmdr,
+		 cpu.amemenb, cpu.apassenb);
+
+	$display("     mfdrive: lc%b ipc%b dc%b pp%b pi%b q%b md%b mp%b vma%b map%b",
+		 cpu.lcdrive, cpu.opcdrive, cpu.dcdrive, cpu.ppdrive,
+		 cpu.pidrive, cpu.qdrive, cpu.mddrive, cpu.mpassl,
+		 cpu.vmadrive, cpu.mapdrive);
+	  
+	$display("     vma %o, vmas %o, md %o, mds %o",
+		 cpu.vma, cpu.vmas, cpu.md, cpu.mds);
+
+	$display("     vmap %o, mapi %o",
+		 cpu.vmap, cpu.mapi);
+
+//		 cpu.pdldrive, cpu.spcdrive, cpu.mfdrive);
+
+//	$display("     md=%x, mds=%x, loadmd=%b, busint_bus=%o",
+//		 cpu.md, cpu.mds, cpu.mdsel, cpu.mdclk, cpu.loadmd, cpu.busint_bus);
+
+//	$display("     mf=%x, mfenb=%b, srcm=%b, srcq=%b",
+//		 cpu.mf, cpu.mfenb, cpu.srcm, cpu.srcq);
+
+//	$display("     popj %b, nop %b, jret %b, jretf %b, jcond %b, spop %b",
+//		 cpu.popj, cpu.nop, cpu.jret, cpu.jretf, cpu.jcond, cpu.spop);
+
+
+	$display("     aluf=%o, alu=%x, qs=%b%b, ob=%o, osel=%b",
+		 cpu.aluf, cpu.alu, cpu.qs1, cpu.qs0, cpu.ob, cpu.osel);
+
+	$display("     spcptr=%o, spc=%o, spco=%o, spco_latched=%o, jret=%b",
+		 cpu.spcptr, cpu.spc, cpu.spco, cpu.spco_latched, cpu.jret);
+
+//        $display("     spop%b, spush%b, spcnt%b",
+//		 cpu.spop, cpu.spush, cpu.spcnt);
+
+// ---------------------------------------------------------------
+
+//	$display("     destimod %b%b, iob %o, ob %o",
+//		 cpu.destimod0, cpu.destimod1, cpu.iob, cpu.ob, cpu.mo, cpu.msk);
+
+//	$display("     mo %o, msk %o, s %b, sr %b mr %b",
+//		 cpu.mo, cpu.msk,
+//		 { cpu.s4, cpu.s3, cpu.s2, cpu.s1, cpu.s0 }, cpu.sr, cpu.mr);
+
+//	$display("     destpdlx %b, pdlidx %o, pdlptr %o",
+//		 cpu.destpdlx, cpu.pdlidx, cpu.pdlptr);
+
+//	$display("     destm %b, destpdlx %b, ir[23:22] %b, ir[21:19]",
+//		 cpu.destm, cpu.destpdlx, cpu.ir[23:22], cpu.ir[21:19]);
+
+//        $display("     div %b, mul %b, divposlastime %b, divsubcond %d, divaddcond %b",
+//		 cpu.div, cpu.mul,
+//		 cpu.divposlasttime, cpu.divsubcond, cpu.divaddcond);
+
+`ifdef xxx	  
 	$display("     wmap %b, wmapd %b, wmapwr0d %b, wmapwr1d %b, vma %o, vmas %o",
 		 cpu.wmap, cpu.wmapd, cpu.mapwr0d, cpu.mapwr1d,
 		 cpu.vma, cpu.vmas);
-
-	$display("     md=%x, mds=%x, loadmd=%b, busint_bus=%o",
-		 cpu.md, cpu.mds, cpu.mdsel, cpu.mdclk, cpu.loadmd, cpu.busint_bus);
 
 //	$display("     trap=%x dispenb=%x dn=%x jfalse=%x jcond=%b, popj=%b",
 //		 cpu.trap, cpu.dispenb, cpu.dn,
 //		 cpu.jfalse, cpu.jcond, cpu.popj);
 
-	$display("     popj %b, nop %b, jret %b, jretf %b, jcond %b, spop %b",
-		 cpu.popj, cpu.nop, cpu.jret, cpu.jretf, cpu.jcond, cpu.spop);
-
-
 //	$display("     vma0wp=%b, vma1wp=%b, mapwr0d=%b, mapwr1=%b, wmapd=%b",
 //		 cpu.vm0wp, cpu.vm1wp, cpu.mapwr0d, cpu.mapwr1d, cpu.wmapd);
 		 
-`ifdef xxx	  
 	$display("     mwp=%x madr=%o awp=%x aadr=%o, aeqm %b %b",
 		 cpu.mwp, cpu.madr, cpu.awp, cpu.aadr, cpu.aeqm, cpu.aeqm_bits);
 
@@ -272,6 +352,10 @@ if (cpu.lpc == 14'o552) $finish;
 `endif
 	  
      end 
-`endif //  `ifdef debug_detail
+
+   always @(posedge clk)
+     begin
+	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
+     end
    
 endmodule

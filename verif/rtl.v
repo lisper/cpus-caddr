@@ -16,5 +16,6 @@
 `include "../rtl/xbus-io.v"
 `include "../rtl/xbus-unibus.v"
 
+`include "../rtl/ide.v"
 
   

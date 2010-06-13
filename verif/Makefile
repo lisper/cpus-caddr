@@ -19,15 +19,17 @@ rtl.o: $(RTL)
 irun: $(RTL) run.v 
 	$(IVERILOG) -o run run.v
 
-#CPLI = +loadvpi=../pli/busint/pli_busint.so:vpi_compat_bootstrap
-CPLI = +loadvpi=../pli/ide/pli_ide.so:vpi_compat_bootstrap
-COPTS = +change_port_type $(CPLI) +cycles=500
+CPLI_BUS = +loadvpi=../pli/busint/pli_busint.so:vpi_compat_bootstrap
+CPLI_IDE = +loadvpi=../pli/ide/pli_ide.so:vpi_compat_bootstrap
+
+COPTS = +change_port_type $(CPLI_IDE) +cycles=2000000
+#COPTS = +change_port_type $(CPLI_IDE) +cycles=10000
 
 
-#crun: $(RTL) run.v
-#	$(VERILOG) $(COPTS) run.v
+crun: $(RTL) run.v
+	$(VERILOG) $(COPTS) run.v
 
-crun: $(RTL) run-disk.v
+crun-disk: $(RTL) run-disk.v
 	$(VERILOG) $(COPTS) run-disk.v
 
 display:

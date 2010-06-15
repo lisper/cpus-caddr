@@ -58,7 +58,7 @@ module ram_controller(clk, reset,
    reg [3:0] 	 state;
    wire [3:0] 	 next_state;
 
-   always @(posedge clk or posedge reset)
+   always @(posedge clk/* or posedge reset*/)
      if (reset)
        state <= 0;
      else
@@ -83,20 +83,20 @@ module ram_controller(clk, reset,
    assign 	 mcr_ready = state == S_MCR_RD2;
    assign 	 mcr_done = state == S_MCR_WR1;
    
-   assign 	 vram_ready = state == S_SDRAM_RD;
-   assign 	 vram_done = state == S_SDRAM_WR;
-   
-   assign 	 sdram_ready = state == S_VRAM_RD;
-   assign 	 sdram_done = state == S_VRAM_WR;
+   assign 	 sdram_ready = state == S_SDRAM_RD;
+   assign 	 sdram_done = state == S_SDRAM_WR;
 
+   assign 	 vram_ready = state == S_VRAM_RD;
+   assign 	 vram_done = state == S_VRAM_WR;
+   
    // ---------------------------
 
    assign sram_a =
-		  (state == S_MCR_RD1 || state == S_MCR_WR1) ? { 5'b01000, mcr_addr, 1'b0 } :
-		  (state == S_MCR_RD2 || state == S_MCR_WR2) ? { 5'b01000, mcr_addr, 1'b1 } :
-		  (state == S_SDRAM_RD || state == S_SDRAM_WR) ? { 2'b00, sdram_addr[14:0] } :
-		  (state == S_VRAM_RD || state == S_VRAM_WR) ? { 2'b11, vram_addr } :
-		  0;
+    (state == S_MCR_RD1 || state == S_MCR_WR1) ? { 5'b01000, mcr_addr, 1'b0 } :
+    (state == S_MCR_RD2 || state == S_MCR_WR2) ? { 5'b01000, mcr_addr, 1'b1 } :
+    (state == S_SDRAM_RD || state == S_SDRAM_WR) ? { 2'b00, sdram_addr[14:0] } :
+    (state == S_VRAM_RD || state == S_VRAM_WR) ? { 2'b11, vram_addr } :
+    0;
 
    assign sram_oe_n =
 		     (state == S_MCR_RD1 || state == S_MCR_RD2 ||
@@ -141,20 +141,22 @@ module ram_controller(clk, reset,
 
    reg [31:0] mcr_hold;
 
-   always @(posedge clk or posedge reset)
+   always @(posedge clk/* or posedge reset*/)
      if (reset)
        mcr_hold <= 0;
      else
 	  if (state == S_MCR_RD1)
 	    mcr_hold <= { sram1_io, sram2_io };
    
-   assign mcr_data_out = (state == S_MCR_RD2) ? { mcr_hold, sram1_io, sram2_io } :
+   assign mcr_data_out = (state == S_MCR_RD2) ?
+			 { mcr_hold, sram1_io, sram2_io } :
 			 52'b0;
    
    assign sdram_data_out = (state == S_SDRAM_RD) ? { sram1_io, sram2_io } :
 			   32'b0;
    
    assign vram_data_out = (state == S_VRAM_RD) ? { sram1_io, sram2_io } :
-			  32'b11111111000000001111111100000000;
+			  32'b0;
+//   assign vram_data_out = 32'b11111111000000001111111100000000;
 
 endmodule

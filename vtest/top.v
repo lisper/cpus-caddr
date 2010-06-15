@@ -56,9 +56,10 @@ module top(rs232_txd, rs232_rxd,
    // -----------------------------------------------------------------
 
    wire 	 clk;
+   wire 	 clk100;
    wire 	 reset;
 
-   assign 	 clk = sysclk;
+//   assign 	 clk = sysclk;
 
    wire [11:0] 	 mcr_addr;
    wire [51:0] 	 mcr_data_out;
@@ -82,9 +83,18 @@ module top(rs232_txd, rs232_rxd,
    wire 	 vram_ready;
    wire 	 vram_write;
    wire 	 vram_done;
+
+   wire 	 sysclk_buf;
    
+   clk_dcm clk_dcm(.CLKIN_IN(sysclk), 
+		   .RST_IN(reset), 
+		   .CLKFX_OUT(clk100), 
+		   .CLKIN_IBUFG_OUT(sysclk_buf), 
+		   .CLK0_OUT(clk),
+		   .CLK2X_OUT(), 
+		   .LOCKED_OUT());
    
-   debounce reset_sw(.clk(sysclk), .in(button[3]), .out(reset));
+   debounce reset_sw(.clk(sysclk_buf), .in(button[3]), .out(reset));
 
    ram_controller ram_controller(.clk(clk),
 				 .reset(reset),
@@ -134,7 +144,8 @@ module top(rs232_txd, rs232_rxd,
 
    assign vram_write = 1'b0;
   
-   vga_display vga_display(.clk(sysclk),
+   vga_display vga_display(.clk(clk),
+			   .pixclk(clk100),
 			   .reset(reset),
 
 			   .vram_addr(vram_addr),
@@ -148,6 +159,19 @@ module top(rs232_txd, rs232_rxd,
 			   .vga_hsync(vga_hsync),
 			   .vga_vsync(vga_vsync)
 			   );
-	   
+
+   assign ide_data_bus = 0;
+   assign ide_dior = 0;
+   assign ide_diow = 0;
+   assign ide_cs = 0;
+   assign ide_da = 0;
+
+   assign sevenseg = 0;
+   assign sevenseg_an = 0;
+
+   assign led = 0;
+
+   assign rs232_txd = 1;
+   
 endmodule
 

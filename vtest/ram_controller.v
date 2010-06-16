@@ -14,14 +14,14 @@ module ram_controller(clk, reset,
    input clk;
    input reset;
    
-   input [11:0] mcr_addr;
+   input [11:0]  mcr_addr;
    output [51:0] mcr_data_out;
    input [51:0]  mcr_data_in;
    output 	 mcr_ready;
    input 	 mcr_write;
    output 	 mcr_done;
 
-   input [17:0] sdram_addr;
+   input [17:0]  sdram_addr;
    output [31:0] sdram_data_out;
    input [31:0]  sdram_data_in;
    output 	 sdram_ready;
@@ -29,7 +29,7 @@ module ram_controller(clk, reset,
    input 	 sdram_write;
    output 	 sdram_done;
 
-   input [14:0] vram_addr;
+   input [14:0]  vram_addr;
    output [31:0] vram_data_out;
    input [31:0]  vram_data_in;
    output 	 vram_ready;
@@ -38,7 +38,8 @@ module ram_controller(clk, reset,
    output 	 vram_done;
    
    output [17:0] sram_a;
-   output 	 sram_oe_n, sram_we_n;
+   output 	 sram_oe_n;
+   output 	 sram_we_n;
    inout [15:0]  sram1_io;
    inout [15:0]  sram2_io;
    output 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
@@ -58,7 +59,7 @@ module ram_controller(clk, reset,
    reg [3:0] 	 state;
    wire [3:0] 	 next_state;
 
-   always @(posedge clk/* or posedge reset*/)
+   always @(posedge clk)
      if (reset)
        state <= 0;
      else
@@ -154,9 +155,59 @@ module ram_controller(clk, reset,
    
    assign sdram_data_out = (state == S_SDRAM_RD) ? { sram1_io, sram2_io } :
 			   32'b0;
-   
+
+`define debug   
+`ifdef debug
+   wire [4:0] voffset;
+   assign     voffset = (vram_addr / 24) % 32;
+
+   assign vram_data_out =
+     ~vram_addr[0] ? (
+	voffset == 5'h0 ?  32'b00111111100000000000000000111100 :
+	voffset == 5'h1 ?  32'b01000000100000000000000001000010 :
+	voffset == 5'h2 ?  32'b01000000100000000000000010000001 :
+	voffset == 5'h3 ?  32'b00111111100000000000000011111111 :
+	voffset == 5'h4 ?  32'b01000000100000000000000010000001 :
+	voffset == 5'h5 ?  32'b01000000100000000000000010000001 :
+	voffset == 5'h6 ?  32'b01000000100000000000000010000001 :
+	voffset == 5'h7 ?  32'b00111111100000000000000010000001 :
+	voffset == 5'he ?  32'b11111111111111111111111111111111 :
+	voffset == 5'h10 ? 32'b00111111100000000000000000111110 :
+	voffset == 5'h11 ? 32'b01000000100000000000000001000001 :
+	voffset == 5'h12 ? 32'b01000000100000000000000000000001 :
+	voffset == 5'h13 ? 32'b01000000100000000000000000000001 :
+	voffset == 5'h14 ? 32'b01000000100000000000000000000001 :
+	voffset == 5'h15 ? 32'b01000000100000000000000000000001 :
+	voffset == 5'h16 ? 32'b01000000100000000000000001000001 :
+	voffset == 5'h17 ? 32'b00111111100000000000000000111110 :
+	voffset == 5'h1e ? 32'b11111111111111111111111111111111 :
+	0
+		    ) : (
+	voffset == 5'h0 ?  32'b01111111100000000000000011111111 :
+	voffset == 5'h1 ?  32'b01000000100000000000000000011000 :
+	voffset == 5'h2 ?  32'b01000000100000000000000000011000 :
+	voffset == 5'h3 ?  32'b01000000100000000000000000011000 :
+	voffset == 5'h4 ?  32'b01000000100000000000000000011000 :
+	voffset == 5'h5 ?  32'b01000000100000000000000000011000 :
+	voffset == 5'h6 ?  32'b01000000100000000000000000011000 :
+	voffset == 5'h7 ?  32'b01111111100000000000000011111111 :
+	voffset == 5'he ?  32'b11111111111111111111111111111111 :
+
+	voffset == 5'h10 ? 32'b00111111000000000000000000011100 :
+	voffset == 5'h11 ? 32'b01000001100000000000000000011110 :
+	voffset == 5'h12 ? 32'b01000010100000000000000000011011 :
+	voffset == 5'h13 ? 32'b01000100100000000000000000011000 :
+	voffset == 5'h14 ? 32'b01001000100000000000000000011000 :
+	voffset == 5'h15 ? 32'b01010000100000000000000000011000 :
+	voffset == 5'h16 ? 32'b01100000100000000000000000011000 :
+	voffset == 5'h17 ? 32'b00111111000000000000000001111111 :
+
+	voffset == 5'h1e ? 32'b11111111111111111111111111111111 :
+	0
+		    );
+`else
    assign vram_data_out = (state == S_VRAM_RD) ? { sram1_io, sram2_io } :
 			  32'b0;
-//   assign vram_data_out = 32'b11111111000000001111111100000000;
+`endif
 
 endmodule

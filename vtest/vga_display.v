@@ -93,6 +93,8 @@ module vga_display(clk,
    reg [10:0] h_pos;
    reg [10:0] v_pos;
 
+   reg [14:0] v_addr;
+
    parameter H_COUNTER_MAX = (H_DISP + H_FPORCH + H_SYNC + H_BPORCH);
    parameter V_COUNTER_MAX = (V_DISP + V_FPORCH + V_SYNC + V_BPORCH);
 
@@ -125,7 +127,7 @@ module vga_display(clk,
    //
    assign vclk = h_counter == H_COUNTER_MAX;
    
-   always @(posedge pixclk /*or posedge reset*/)
+   always @(posedge pixclk)
      if (reset)
        h_counter <= 0;
      else
@@ -134,14 +136,17 @@ module vga_display(clk,
        else
 	 h_counter <= h_counter + 1;
    
-   always @(posedge vclk or posedge reset)
+   always @(posedge pixclk or posedge reset)
      if (reset)
        v_counter <= 0;
      else
-       if (v_counter >= V_COUNTER_MAX)
-	 v_counter <= 0;
-       else
-	 v_counter <= v_counter + 1;
+       if (vclk)
+	 begin
+	    if (v_counter >= V_COUNTER_MAX)
+	      v_counter <= 0;
+	    else
+	      v_counter <= v_counter + 1;
+	 end
 
    //
    always @(posedge pixclk)
@@ -158,23 +163,50 @@ module vga_display(clk,
        else
 	 h_pos <= 0;
 
-   always @(posedge vclk or posedge reset)
+   always @(posedge pixclk or posedge reset)
      if (reset)
        v_pos <= 0;
      else
-       if (v_in_box)
+       if (vclk)
 	 begin
-	    if (v_pos >= BOX_HEIGHT-1)
-	      v_pos <= 0;
+	    if (v_in_box)
+	      begin
+		 if (v_pos >= BOX_HEIGHT-1)
+		   v_pos <= 0;
+		 else
+		   v_pos <= v_pos + 1;
+	      end
 	    else
-	      v_pos <= v_pos + 1;
+	      v_pos <= 0;
 	 end
-
-   //
+   
+   // negative sync
    assign vga_vsync = ~vsync;
    assign vga_hsync = ~hsync;
    
    // -----------------------------------------------------------------------
+   //
+   //  0..23
+   //  0..23
+   //
+   //
+   //        v ram_shift_load 
+   // hold 10987654321098765432109876543210
+   // shift   10987654321098765432109876543210
+   // pixel                                   0
+   // shift    x1098765432109876543210987654321
+   // pixel                                    1
+   // shift     xx109876543210987654321098765432
+   // pixel                                     2
+   // shift      xxx10987654321098765432109876543
+   // pixel                                      3
+   // pixclk            1111111111222222222233          1111111111222222222233
+   // hpos    0123456789012345678901234567890101234567890123456789012345678901
+   //
+   // hpos 0..2ff
+   //   98 7654 3210
+   //         |0..31
+   // ------------------------------------------------------------------------
 
    reg [31:0] ram_data_hold;
    reg [31:0] ram_shift;
@@ -183,57 +215,81 @@ module vga_display(clk,
    reg 	      ram_data_hold_empty;
    
    wire       ram_shift_load;
-   wire       pixel;
+   wire       preload, preload1, preload2;
+   wire       v_addr_inc;
+   
+   reg 	      pixel;
 
-   wire [4:0] h_pos_95_next;
-       
-   always @(posedge clk /*or posedge reset*/)
+   // grab vram_data when ready
+   always @(posedge clk)
      if (reset)
        ram_data_hold <= 0;
      else
        if (vram_ready)
 	 ram_data_hold <= vram_data;
 
-   always @(posedge clk /*or posedge reset*/)
+   // ask for new vram_data when hold empty
+   always @(posedge clk)
      if (reset)
        ram_req <= 0;
      else
        ram_req <= ram_data_hold_empty;
-   
-   always @(posedge pixclk /*or posedge reset*/)
+
+   // pixel shift register   
+   always @(posedge pixclk)
      if (reset)
        begin
-	  ram_shift <= 0;
-	  ram_data_hold_empty <= 0;
+	  ram_shift <= 32'b0;
+	  ram_data_hold_empty <= 1'b0;
+	  pixel <= 1'b0;
        end
      else
        if (ram_shift_load)
 	 begin
 	    ram_shift <= ram_data_hold;
-	    ram_data_hold_empty <= 1;
+	    ram_data_hold_empty <= 1'b1;
+	    pixel <= ram_shift[0];
 	 end
        else
 	 begin
 	    ram_shift <= { 1'b0, ram_shift[31:1] };
+	    pixel <= ram_shift[0];
+
 	    if (vram_ready)
 	      ram_data_hold_empty <= 0;
 	 end
 
-   assign pixel = ram_shift[0];
+   // vram address
+   always @(posedge pixclk)
+     if (reset)
+       v_addr <= 0;
+     else
+       begin
+	  if (~v_in_box)
+	    v_addr <= 0;
+	  else
+	    if (v_addr_inc)
+	      v_addr <= v_addr + 1;
+       end
 
-   assign h_pos_95_next = h_pos[9:5] + 5'd1;
-   
-   assign ram_shift_load = h_pos[4:0] == 5'h1f;
+   // increment once before visable, don't incr after last load
+   assign v_addr_inc = ram_shift_load &&
+		       (in_box || preload2) &&
+		       (h_pos != BOX_WIDTH-2);
 
-   wire [14:0] v_addr;
-   assign v_addr = { v_pos[9:0], h_pos[9:5] } + 15'd1;
-   
+   assign preload1 = h_counter == (H_BOX_OFFSET - 33);
+
+   assign preload2 = h_counter == (H_BOX_OFFSET - 2);
+
+   assign preload = preload1 || preload2;
+
+   assign ram_shift_load = (h_pos[4:0] == 5'h1e) || preload;
+
    // 32 = 0x20
-   // h_pos = 0..2ff / 32 = 0..0x18
-   assign vram_addr = { v_addr /*v_pos[9:0] , h_pos_95_next*/ };
+   // h_pos = 0..2ff / 32 = 0..017
+   assign vram_addr = v_addr;
 
    assign vram_req = ram_req;
-//   assign vram_req = ram_data_hold_empty;
    
 `ifdef debug_load
    assign vga_red = in_box & ram_shift_load;
@@ -243,8 +299,8 @@ module vga_display(clk,
 //   assign vga_blu = in_box & (h_pos[3] & v_counter[3]);
 //   assign vga_grn = in_box & (h_pos[3] & v_counter[3]);
 `else
-   assign vga_red = in_box ? pixel : 1'b0;
-   assign vga_blu = in_box ? pixel : 1'b0;
+   assign vga_red = in_box ? pixel : in_border/*1'b0*/;
+   assign vga_blu = in_box ? pixel : in_border/*1'b0*/;
    assign vga_grn = in_box ? pixel : in_border;
 `endif
    

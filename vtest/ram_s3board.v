@@ -76,14 +76,17 @@ module ram_s3board(ram_a, ram_oe_n, ram_we_n,
 
    initial
      begin
-	for (i = 0; i < 32768/*8192*/; i=i+1)
+	for (i = 0; i < 131072/*8192*/; i=i+1)
 	  begin
-             ram1.ram_h[i] = 7'b0;
-	     ram1.ram_l[i] = 7'b0;
+             ram1.ram_h[i] = 8'b0;
+	     ram1.ram_l[i] = 8'b0;
+             ram2.ram_h[i] = 8'b0;
+	     ram2.ram_l[i] = 8'b0;
 	  end
 
 	n = 0;
-
+	v = 0;
+	
 `ifdef verilator
  `define no_scan
 `endif

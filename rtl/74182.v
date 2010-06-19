@@ -1,3 +1,21 @@
+/*
+PB0GB0
+PB0GB01
+PB0GB012
+PB1GB1
+PB1GB12
+PB1GB123
+PB2GB2
+PB2GB23
+PB3GB3
+
+CNB
+CNBGB0
+CNBGB01
+CNBGB012
+
+GB0123
+*/
 /****************************************************************************
  *                                                                          *
  *  VERILOG HIGH-LEVEL DESCRIPTION OF THE TI 74182 CIRCUIT                  *
@@ -28,6 +46,12 @@ module TopLevel74182 (CN, PB, GB, PBo, GBo, CNX, CNY, CNZ);
   input         CN;
 
   output	PBo, GBo, CNX, CNY, CNZ;
+
+   wire 	PB0GB0, PB0GB01, PB0GB012;
+   wire 	PB1GB1, PB1GB12, PB1GB123;
+   wire 	PB2GB2, PB2GB23, PB3GB3;
+   wire 	CNB, CNBGB0, CNBGB01, CNBGB012;
+   wire 	GB0123;
 
   not CNBgate(CNB, CN);
 

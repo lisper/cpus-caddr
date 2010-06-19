@@ -360,6 +360,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // page VMAS
    wire [31:0] 	vmas;
 
+   //       22221111111111
+   // mapi  32109876543210
+   //       1
+   // vmem0 09876543210
+   //
    wire [23:8] 	mapi;
 
    wire [4:0] 	vmap;
@@ -519,6 +524,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign apass = destd & ( ir[41:32] == wadr[9:0] ? 1'b1 : 1'b0 );
 
+//should remove the phase1...
    assign apassenb = apass & phase1;
    assign amemenb = ~apass & phase1;
 //   assign apassenb = apass;
@@ -563,6 +569,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire[2:0] nc_alu;
    wire      cin32_n, cin28_n, cin24_n, cin20_n;
    wire      cin16_n, cin12_n, cin8_n, cin4_n;
+
+   wire      xx0, xx1;
+   wire      yy0, yy1;
+
+   wire      xout3, xout7, xout11, xout15, xout19, xout23, xout27, xout31;
+   wire      yout3, yout7, yout11, yout15, yout19, yout23, yout27, yout31;
    
    ic_74S181  i_ALU1_2A03 (
 			   .B({3'b0,a[31]}),
@@ -820,7 +832,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign swp = spushd & state_write;
    assign spcenb = srcspc | srcspcpop;
-   assign spcdrive = spcenb & state_write; /*xxx phase1*/
+   assign spcdrive = spcenb & phase1/*state_write*/; /*xxx phase1*/
    assign spcnt = spush | spop;
 
    always @(posedge clk)
@@ -929,6 +941,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_fetch && irdisp)
 	 dc <= ir[41:32];
 
+   wire   nc_dmask;
+   
    part_32x8prom  i_DMASK (
 			   .A( {1'b0, 1'b0, ir[7], ir[6], ir[5]} ),
 			   .O( {nc_dmask, dmask[6:0]} ),
@@ -1043,11 +1057,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	    if (destlc)
               lc <= { ob[25:4], ob[3:0] };
 	    else
-              lc <= { lc[25:4] + lcry3, lca[3:0] };
+              lc <= { lc[25:4] + { 21'b0, lcry3 }, lca[3:0] };
 	 end
 
    assign {lcry3, lca[3:0]} =
-		     lc[3:0] + { 3'b0, lcinc & ~lc_byte_mode } + lcinc;
+			     lc[3:0] +
+			     { 3'b0, lcinc & ~lc_byte_mode } +
+			     { 3'b0, lcinc };
 
    assign lcdrive  = srclc & phase1/*state_write*/;  /*xxx phase1*/
 
@@ -1092,14 +1108,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	vmadrive ?
 	      vma :
 	mapdrive ?
-	      { ~pfw, ~pfr, 1'b1, ~vmap[4:0], ~vmo[23:0] } :
+//	      { ~pfw, ~pfr, 1'b1, ~vmap[4:0], ~vmo[23:0] } :
+	      { ~pfw, ~pfr, 1'b1, vmap[4:0], vmo[23:0] } :
 	      32'b0;
 
 
    // page LCC
 
    assign lc0b = lc[0] & lc_byte_mode;
-   assign next_instr  = spop & ~(srcspcpopreal | ~spc[14]);
+//   assign next_instr  = spop & ~(srcspcpopreal | ~spc[14]);
+   assign next_instr  = spop & (~srcspcpopreal & spc[14]);
   
    assign newlc_in  = have_wrong_word & ~lcinc;
    assign have_wrong_word = newlc | destlc;
@@ -1122,7 +1140,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (state_fetch)
 	 begin
-	    newlc <= ~newlc_in;
+	    newlc <= /*~*/newlc_in;	/* XXX */
 	    sintr <= (ext_int | bus_int);
 	    next_instrd <= next_instr;
 	 end
@@ -1184,7 +1202,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    always @(posedge clk) 
      if (reset)
        begin
-	  md <= 1'b0;
+	  md <= 32'b0;
 	  mdhaspar <= 1'b0;
 	  mdpar <= 1'b0;
        end
@@ -1290,7 +1308,7 @@ $display("load md <- %o", mds);
 
    assign ob =
 	      osel == 2'b00 ? mo :
-	      osel == 2'b01 ? alu :
+	      osel == 2'b01 ? alu[31:0] :
 	      osel == 2'b10 ? alu[32:1] :
 	      /*2'b11*/ {alu[30:0],q[31]};
 
@@ -1328,7 +1346,7 @@ $display("load md <- %o", mds);
        if (state_fetch)
 	 pc <= npc;
 
-   assign ipc = pc + 1'b1;
+   assign ipc = pc + 14'd1;
 
 `ifdef debug_detail
    always @(posedge clk)
@@ -1446,9 +1464,9 @@ $display("load md <- %o", mds);
 	      if (pdlcnt)
 		begin
 		   if (srcpdlpop)
-		     pdlptr <= pdlptr - 1'b1;
+		     pdlptr <= pdlptr - 10'd1;
 		   else
-		     pdlptr <= pdlptr + 1'b1;
+		     pdlptr <= pdlptr + 10'd1;
 		end
 	 end
 
@@ -1482,7 +1500,7 @@ $display("load md <- %o", mds);
             case ( {qs1,qs0} )
               2'b01: q <= { q[30:0], ~alu[31] };
               2'b10: q <= { alu[0], q[31:1] };
-              2'b11: q <= alu;
+              2'b11: q <= alu[31:0];
             endcase
 	 end
 
@@ -1690,9 +1708,9 @@ $display("load md <- %o", mds);
 	    if (spcnt)
 	      begin
 		 if (spush)
-		   spcptr <= spcptr + 1'b1;
+		   spcptr <= spcptr + 5'd1;
 		 else
-		   spcptr <= spcptr - 1'b1;
+		   spcptr <= spcptr - 5'd1;
 	      end
 	 end
 
@@ -1703,7 +1721,7 @@ $display("load md <- %o", mds);
    assign spc = 
 		spcpass ? spco_latched :
 		spcwpass ? spcw :
-	        32'b0;
+	        19'b0;
 
    // transparent latch w/async reset
    always @(phase0 or spco or reset)
@@ -1789,7 +1807,7 @@ $display("load md <- %o", mds);
 	  mbusy_sync <= 0;
        end
      else
-       if (state_write)
+       if (phase1/*state_write*/)   /* XXX */
 	 begin
 	    memstart <= memprepare;
 	    mbusy_sync <= memrq;
@@ -1895,7 +1913,7 @@ end
 
    assign memdrive = wrcyc & lm_drive_enb;
 
-   assign mdsel = destmdr /*& ~state_write*/;
+   assign mdsel = destmdr & ~loadmd/*& ~state_write*/;
 
    assign use_md  = srcmd & ~nopa;
 
@@ -1920,7 +1938,7 @@ end
 
    // page VMAS
 
-   assign vmas = vmasel ? ob : { 8'b0,lc[25:2] };
+   assign vmas = vmasel ? ob : { 8'b0, lc[25:2] };
 
    assign mapi = ~memstart ? md[23:8] : vma[23:8];
 
@@ -1963,13 +1981,14 @@ end
 
    wire[9:0] vmem1_adr;
 
-   assign vmem1_adr = {mapi[12:8],vmap[4:0]};
+   assign vmem1_adr = {vmap[4:0], mapi[12:8]};
+//   assign vmem1_adr = {mapi[12:8],vmap[4:0]};
 //   assign vmem1_adr = {~mapi[12:8],vmap[4:0]};
 //   assign    vmem1_adr = {
 //			  ~mapi[8], ~mapi[9], ~mapi[10], ~mapi[11], ~mapi[12],
 //			  vmap[0], vmap[1], vmap[2], vmap[3], vmap[4]
 //			  };
-
+   wire   vmem1_we;
    assign vmem1_we = vm1wp & clk;
    
 `define async_vmem1
@@ -2005,7 +2024,7 @@ end
      else
        if (memprepare && memstart)
 	 begin
-`ifdef debug
+`ifdef debug_vmem
 	    $display("%t prep vmem0_adr %o, vmap=%o",
 		     $time, mapi[23:13], vmap);
 	    $display("%t prep vmem1_adr %o, vma=%o, vmo[23:22]=%b%b, vmo=%o",
@@ -2013,10 +2032,10 @@ end
 `endif
 	    lvmo_23 <= vmo[23];
 	    lvmo_22 <= vmo[22];
-	    pma <= vmo[21:0];
+	    pma <= vmo[13:0];
 	 end
 
-`ifdef debug
+`ifdef debug_vmem
    always @(memrq)
      if (memrq)
        begin
@@ -2029,7 +2048,7 @@ end
        end
 `endif
   
-   assign mapdrive = srcmap & state_write; /*xxx phase1*/
+   assign mapdrive = srcmap & phase1 /*state_write*/; /*xxx phase1*/
 
    
    // page DEBUG
@@ -2054,7 +2073,7 @@ end
 
    // put latched value on I bus when idebug asserted
    assign i =
-	     idebug ? spy_ir :
+	     idebug ? {1'b0, spy_ir} :
 	     promenable ? iprom :
 	     iram;
 
@@ -2065,6 +2084,7 @@ end
 
    // see clocks below
 //   assign iwe  = !(wp5 & iwrited);
+wire   iwe;
 assign iwe = state_write & iwrited;
 
 
@@ -2267,11 +2287,11 @@ assign iwe = state_write & iwrited;
 
    // page PROM0
 
-   part_512x49prom  i_PROM0 (
-			     .A(~prompc[8:0]),
-			     .D(iprom),
-			     .CE_N(~promce)
-			     );
+   part_512x49prom  i_PROM (
+			    .A(~prompc[8:0]),
+			    .D(iprom),
+			    .CE_N(~promce)
+			    );
 
 
    // page IRAM

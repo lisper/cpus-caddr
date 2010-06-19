@@ -494,12 +494,12 @@ module xbus_disk (
 		3'o4:
 		  begin
 		     $display("disk: load cmd %o", datain);
-		     disk_cmd <= datain;
+		     disk_cmd <= datain[9:0];
 
 		     attn_intr_enb <= datain[10];
 		     done_intr_enb <= datain[11];
 
-		     if (datain[11:10])
+		     if (datain[11:10] != 2'b00)
 		       deassert_int = 1;
 		  end
 		3'o5:
@@ -627,7 +627,7 @@ module xbus_disk (
        begin
 	  state <= state_next;
 `ifdef debug
-	  if (state_next && state != state_next)
+	  if (state_next != 0 && state != state_next)
 	    $display("disk: state %d", state_next);
 `endif
        end
@@ -751,7 +751,7 @@ module xbus_disk (
 	  s_read_ccw:
 	    begin
 	       reqout = 1;
-	       addrout = { 10'b0, disk_clp };
+	       addrout = { disk_clp };
 
 `ifdef debug
 	       $display("disk: dma clp @ %o", disk_clp);
@@ -853,7 +853,7 @@ module xbus_disk (
 	    begin
 	       ata_wr = 1;
 	       ata_addr = ATA_CYLHIGH;
-	       ata_in = lba[23:16];		// LBA[23:16]
+	       ata_in = {8'b0, lba[23:16]};		// LBA[23:16]
 	       if (ata_done)
 		 state_next = s_init8;
 	    end
@@ -936,7 +936,7 @@ module xbus_disk (
 	    begin
 	       // mem write
 	       reqout = 1;
-	       addrout = { 10'b0, disk_ccw, wc };
+	       addrout = { disk_ccw, wc };
 
 //	       dma_dataout = { ata_hold, ata_out };
 
@@ -967,7 +967,7 @@ module xbus_disk (
 	    begin
 	       //mem read
 	       reqout = 1;
-	       addrout = { 10'b0, disk_ccw, wc };
+	       addrout = { disk_ccw, wc };
 	       
 	       if (grantin)
 		 state_next = s_write1;

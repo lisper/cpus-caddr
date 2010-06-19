@@ -104,6 +104,12 @@ module CLAmodule(Gb, Pb, CNb, C, X, Y, CN4b);
   output [3:0] C;
   output X, Y, CN4b;
 
+   wire  Pb0, Pb1, Pb2, Pb3;
+   wire  Pb0Gb1, Pb1Gb2, Pb2Gb3;
+   wire  Pb0Gb12, Pb1Gb23, Pb0Gb123;
+   wire  CNbGb0, CNbGb01, CNbGb012;
+   wire  XCNb;
+   
   not C0gate(C[0], CNb);
 
   buf Pb0gate(Pb0, Pb[0]);
@@ -164,6 +170,7 @@ module Summodule(E, D, C, M, F, AEB);
   xor F3gate(F[3], EXD[3], CM[3]);
 
 //  and AEBgate(AEB, F[0], F[1], F[2], F[3]);
-  assign (strong0, weak1) AEB = F[0] & F[1] & F[2] & F[3];
+//  assign (strong0, weak1) AEB = F[0] & F[1] & F[2] & F[3];
+   assign AEB = F[0] & F[1] & F[2] & F[3];
 
 endmodule /* Summodule */

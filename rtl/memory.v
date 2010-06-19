@@ -29,16 +29,20 @@ module part_1kx32ram_sync_a(CLK, A, DI, DO, CE_N, WE_N);
      if (~CE_N && ~WE_N)
        begin
           ram[ A ] <= DI;
-	  if (A != 0 && debug)
+`ifdef debug
+	  if (A != 0 && debug != 0)
 	    $display("amem: W addr %o val %o; %t", A, DI, $time);
+`endif
        end
 
    always @(posedge CLK)
      if (~CE_N)
        begin
 	  DO <= ram[ A ];
-	  if (A != 0 && debug)
+`ifdef debug
+	  if (A != 0 && debug != 0)
 	    $display("amem: R addr %o val %o; %t", A, ram[ A ], $time);
+`endif
        end
 
 endmodule
@@ -68,7 +72,10 @@ module part_1kx32ram_async_a(A, DI, DO, CE_N, WE_N);
 	if (CE_N == 0)
           begin
              ram[ A ] = DI;
-	     if (debug) $display("amem: W addr %o val %o; %t", A, DI, $time);
+`ifdef debug
+	     if (debug != 0)
+	       $display("amem: W addr %o val %o; %t", A, DI, $time);
+`endif
           end
      end
 
@@ -77,8 +84,8 @@ module part_1kx32ram_async_a(A, DI, DO, CE_N, WE_N);
 `ifdef debug
    always @(A or WE_N)
      begin
-	if (debug) $display("amem: R addr %o val %o, CE_N %d; %t",
-			    A, ram[A], CE_N, $time);
+	if (debug != 0) $display("amem: R addr %o val %o, CE_N %d; %t",
+				 A, ram[A], CE_N, $time);
      end
 `endif
 
@@ -320,8 +327,8 @@ module part_2kx17ram(A, DI, DO,	CE_N, WE_N);
           ram[ A ] = DI;
     end
 
-//  assign DO = ram[ A ];
-assign DO = (^A === 1'bX || A === 1'bz) ? 17'b0 : ram[A];
+   assign DO = ram[ A ];
+   //assign DO = (^A === 1'bX || A === 1'bz) ? 17'b0 : ram[A];
 
 endmodule
 
@@ -352,7 +359,7 @@ module part_32x32ram_sync(CLK, A, DI, DO, CE_N, WE_N);
      begin
 	ram[ A ] = DI;
 `ifdef debug
-	if (A != 0 && debug)
+	if (A != 0 && debug != 0)
 	  $display("mmem: W addr %o val %0o; %t", A, DI, $time);
 `endif
      end
@@ -361,7 +368,7 @@ module part_32x32ram_sync(CLK, A, DI, DO, CE_N, WE_N);
      begin
 	DO <= ram[ A ];
 `ifdef debug
-	if (A != 0 && debug)
+	if (A != 0 && debug != 0)
 	  $display("mmem: R addr %o val %0o; %t", A, ram[ A ], $time);
 `endif
      end
@@ -493,6 +500,12 @@ module part_16kx49ram(A, DI, DO, CE_N, WE_N);
     begin
       if (CE_N == 0)
 	begin
+`ifdef debug
+	   // patch out disk-copy (which takes 12 hours to sim)
+	   if (A == 14'o24045)
+	     ram[ A ] = 49'h000000001000;
+	   else
+`endif
            ram[ A ] = DI;
 	   $display("iram: W addr %o val %o; %t", A, DI, $time);
 	end

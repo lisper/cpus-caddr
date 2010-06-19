@@ -100,19 +100,23 @@ reg [31:0] dataout;
 	if (decode)
 	  if (write)
 	    begin
+`ifdef debug
                #1 $display("tv: write @%o", addr);
+`endif
 	       if (in_fb)
 		 begin
 `ifdef debug
-		    h = offset / 768;
-		    v = offset % 768;
+		    h = { 17'b0, offset } / 768;
+		    v = { 17'b0, offset } % 768;
 		    $display("tv: (%0d, %0d) <- %o", h, v, datain);
 `endif
 		 end
 	    end
 	  else
 	    begin
+`ifdef debug
                #1 $display("tv: read @%o", addr);
+`endif
 	       if (in_fb)
 		 begin
 		    dataout = 0;

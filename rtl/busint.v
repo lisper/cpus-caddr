@@ -106,6 +106,15 @@ module busint(mclk, reset,
    wire [31:0] 	dram_datain;
    wire [31:0] 	disk_datain;
 
+   wire [31:0] 	dataout_dram;
+   wire [31:0] 	dataout_disk;
+   wire [31:0] 	dataout_tv;
+   wire [31:0] 	dataout_io;
+   wire [31:0] 	dataout_unibus;
+
+   
+   wire [21:0] 	addrout_disk;
+   
    wire 	device_ack;
    
    xbus_ram dram (
@@ -120,12 +129,16 @@ module busint(mclk, reset,
 		  .decode(decode_dram)
 		  );
 
+   wire 	writeout_disk;
+   wire 	reqout_disk;
+   wire 	decodein_disk;
+   
    xbus_disk disk (
 		   .reset(reset),
 		   .clk(mclk),
 		   .addrin(addr),
 		   .addrout(addrout_disk),
-		   .datain(datain_disk),
+		   .datain(disk_datain),
 		   .dataout(dataout_disk),
 		   .reqin(req),
 		   .reqout(reqout_disk),
@@ -204,8 +217,10 @@ module busint(mclk, reset,
 		  (req & decode_disk & ~write) ? dataout_disk :
 		  (req & decode_tv & ~write) ? dataout_tv :
 		  (req & decode_io & ~write) ? dataout_io :
+		  (req & decode_unibus & ~write) ? dataout_unibus :
 		  32'hffffffff;
 
+`ifdef debug
   always @(posedge mclk)
     begin
        if (req)
@@ -218,6 +233,7 @@ module busint(mclk, reset,
               #1 $display("xbus: read @%o, %t", addr, $time);
 	   end
     end
+`endif
 
    //
    always @ (posedge mclk)
@@ -263,7 +279,7 @@ module busint(mclk, reset,
    assign dram_writein = state == BUS_SLAVE ? writeout_disk : write;
    assign dram_datain = state == BUS_SLAVE ? dataout_disk : busin;
 
-   assign datain_disk = state == BUS_SLAVE ? dataout_dram : busin;
+   assign disk_datain = state == BUS_SLAVE ? dataout_dram : busin;
    assign decodein_disk = grantin_disk & decode_dram;
    
 endmodule

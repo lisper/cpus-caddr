@@ -3,13 +3,10 @@
 #
 
 IVERILOG=iverilog
-VERILOG=cver
+#VERILOG=cver
+VERILOG=../cver/gplcver-2.12a.src/bin/cver
 
 all: crun
-
-#RTL = ../rtl/caddr.v \
-#	../rtl/74181.v ../rtl/74182.v ../rtl/memory.v \
-#	../rtl/rom.v ../rtl/busint.v
 
 RTL = $(wildcard ../rtl/*.v)
 
@@ -22,7 +19,8 @@ irun: $(RTL) run.v
 CPLI_BUS = +loadvpi=../pli/busint/pli_busint.so:vpi_compat_bootstrap
 CPLI_IDE = +loadvpi=../pli/ide/pli_ide.so:vpi_compat_bootstrap
 
-COPTS = +change_port_type $(CPLI_IDE) +cycles=2000000
+COPTS = +change_port_type $(CPLI_IDE)
+# +cycles=2000000
 #COPTS = +change_port_type $(CPLI_IDE) +cycles=10000
 
 

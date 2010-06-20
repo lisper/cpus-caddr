@@ -1,6 +1,6 @@
 `timescale 1ns / 1ns
 
-`define debug
+//`define debug
 `define NEW_BUSINT
 
 `include "../rtl/caddr.v"

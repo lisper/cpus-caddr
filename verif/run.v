@@ -1,7 +1,8 @@
 /*
  */
 
-`define debug_vcd
+//`define debug_vcd
+`define debug
 
 `include "rtl.v"
 
@@ -124,7 +125,7 @@ module test;
 	  cycles = cycles + 1;
 
 	if (cycles > 25 && (cpu.lpc > 7 && cpu.lpc < 14'o50) &&
-	    (cpu.npc < 14'o50))
+	    (cpu.npc < 14'o50) && cpu.promdisable == 0)
 	  begin
 	     $display("in microcode error routine; lpc %o", cpu.lpc);
 	     $finish;
@@ -138,11 +139,11 @@ module test;
      end
 
    always @(posedge cpu.clk)
-     #1 if (debug_level == 1 && cpu.state == 5'b00001)
+     #1 if (debug_level == 1 && cpu.state == 5'b00100)
        begin
-	  $display("%0o %o A=%x M=%x N=%b Q=%x R=%x L=%x",
+	  $display("%0o %o A=%x M=%x N%b R=%x LC=%x",
 		   cpu.lpc, cpu.ir,
-		   cpu.a, cpu.m, cpu.n, cpu.q, cpu.r, cpu.l);
+		   cpu.a, cpu.m, cpu.n, cpu.r, cpu.lc);
 
 	  if (dumping)
 	    begin
@@ -150,9 +151,13 @@ module test;
 	       dumping = 0;
 	       $display("dumping: off");
 	    end
-	  
-//	  if (cpu.promdisable == 1 && cpu.npc == 14'o21636)
-//	    debug_level = 3;
+
+//	  if (cpu.promdisable == 1 && cpu.npc == 14'o23664/*21116*/)
+//	    begin
+//	       debug_level = 3;
+////	       cycles = 0;
+////	       max_cycles = 10000;
+//	    end
      end 
    
    always @(posedge cpu.clk)
@@ -179,32 +184,38 @@ module test;
 	    end
 `endif
 
-	  if (0)
+	  if (1)
 	    begin
 	       cpu.i_AMEM.debug = 1;
 	       cpu.i_MMEM.debug = 1;
 	    end
-	  
+
+//if (cpu.lc == 26'o077677030) $finish;
+	      
 	if (cpu.state == 5'b00001) $display("-----");
 
 	case (cpu.state)
-	  5'b00000: $display("%0o %o reset  %t", cpu.lpc, cpu.ir, $time);
-	  5'b00001: $display("%0o %o decode %t", cpu.lpc, cpu.ir, $time);
-	  5'b00010: $display("%0o %o exec   %t", cpu.lpc, cpu.ir, $time);
-	  5'b00100: $display("%0o %o write  %t", cpu.lpc, cpu.ir, $time);
-	  5'b01000: $display("%0o %o fetch  %t", cpu.lpc, cpu.ir, $time);
-	  5'b10000: $display("%0o %o wait   %t", cpu.lpc, cpu.ir, $time);
+  5'b00000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b00001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b00010: $display("%0o %o exec   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b00100: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b01000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b10000: $display("%0o %o wait   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
 	endcase
 	  
-	$display("     A=%x M=%x, N=%x, Q=%x s=%b%b%b%b%b R=%x, L=%x",
+//	$display("     A=%x M=%x, N=%x, Q=%x s=%b%b%b%b%b R=%x, L=%x",
+//		 cpu.a, cpu.m, cpu.n, cpu.q,
+//		 cpu.s4, cpu.s3, cpu.s2, cpu.s1, cpu.s0, cpu.r, cpu.l);
+
+	$display("     A=%o M=%o, N=%x, Q=%o s=%b%b%b%b%b",
 		 cpu.a, cpu.m, cpu.n, cpu.q,
-		 cpu.s4, cpu.s3, cpu.s2, cpu.s1, cpu.s0, cpu.r, cpu.l);
+		 cpu.s4, cpu.s3, cpu.s2, cpu.s1, cpu.s0);
 
 	$display("     conds=%b, jcond=%b, jfalse=%b (%b), npc %o pcs=%b",
 		 cpu.conds, cpu.jcond, cpu.jfalse, cpu.jfalse & ~cpu.jcond,
 		 cpu.npc, {cpu.pcs1, cpu.pcs0});
 
-	$display("     a_latch=%x m.latched=%x, aeqm %b %b",
+	$display("     a_latch=%o m.latched=%o, aeqm %b %b",
 		 cpu.a_latch, cpu.mmem_latched, cpu.aeqm, cpu.aeqm_bits);
 	  
 //	$display("     vmaok %b, pfr %b, pfw %b; vmaenb %b",
@@ -232,8 +243,8 @@ module test;
 	$display("     vma %o, vmas %o, md %o, mds %o",
 		 cpu.vma, cpu.vmas, cpu.md, cpu.mds);
 
-	$display("     vmap %o, mapi %o",
-		 cpu.vmap, cpu.mapi);
+	$display("     mapi %o (%o), vmap %o, vmem1_adr %o, vmo %o",
+		 cpu.mapi, cpu.mapi[23:13], cpu.vmap, cpu.vmem1_adr, cpu.vmo);
 
 //		 cpu.pdldrive, cpu.spcdrive, cpu.mfdrive);
 
@@ -249,6 +260,15 @@ module test;
 
 	$display("     aluf=%o, alu=%x, qs=%b%b, ob=%o, osel=%b",
 		 cpu.aluf, cpu.alu, cpu.qs1, cpu.qs0, cpu.ob, cpu.osel);
+
+	$display("     mem=%o, busint_bus=%o, l-b-i-w %b, n-f %b ifetch=%b",
+		 cpu.mem, cpu.busint_bus,
+		 cpu.last_byte_in_word, cpu.needfetch, cpu.ifetch);
+
+	$display("     l-b-i-w %b n-f %b lcinc %b newlc_in %b h-w-w %b lb0b %b n-i %b n-i-d %b",
+		 cpu.last_byte_in_word, cpu.needfetch, cpu.lcinc,
+		 cpu.newlc_in, cpu.have_wrong_word, cpu.lc0b,
+		 cpu.next_instr, cpu.next_instrd);
 
 	$display("     spcptr=%o, spc=%o, spco=%o, spco_latched=%o, jret=%b",
 		 cpu.spcptr, cpu.spc, cpu.spco, cpu.spco_latched, cpu.jret);

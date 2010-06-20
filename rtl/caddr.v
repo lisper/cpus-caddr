@@ -1214,7 +1214,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 //       if ((state_write && mdclk) || (state_decode && loadmd))
        if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
 	 begin
-$display("load md <- %o", mds);
+`ifdef debug
+	    $display("load md <- %o", mds);
+`endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
 	    mdpar <= mempar_in;
@@ -1485,7 +1487,7 @@ $display("load md <- %o", mds);
    // page PLATCH
 
    // transparent latch w/async reset
-   always @(state_decode or pdl)
+   always @(reset or phase0 or pdl)
      if (reset)
        begin
 	  pdl_latch <= 0;
@@ -2041,19 +2043,19 @@ $display("load md <- %o", mds);
   
    // page DEBUG
 
-   always @(posedge lddbirh or reset)
+   always @(posedge lddbirh or posedge reset)
      if (reset)
        spy_ir[47:32] <= 16'b0;
      else
        spy_ir[47:32] <= spy;
 
-   always @(posedge lddbirm or reset)
+   always @(posedge lddbirm or posedge reset)
      if (reset)
        spy_ir[31:16] <= 16'b0;
      else
        spy_ir[31:16] <= spy;
 
-   always @(posedge lddbirl or reset)
+   always @(posedge lddbirl or posedge reset)
      if (reset)
        spy_ir[15:0] <= 16'b0;
      else
@@ -2233,7 +2235,7 @@ $display("load md <- %o", mds);
 
    assign boot  = ext_boot | prog_boot;
 
-   always @(posedge clk or boot or srun)
+   always @(posedge clk)
      if (reset)
        boot_trap <= 0;
      else

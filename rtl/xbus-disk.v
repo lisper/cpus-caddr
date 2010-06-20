@@ -400,7 +400,6 @@ module xbus_disk (
    reg        inc_wc;
    reg        inc_da;
    reg        inc_clp;
-   reg        inc_ccw;
    reg        assert_int;
    reg 	      deassert_int;
 
@@ -480,7 +479,9 @@ module xbus_disk (
 		3'o0, 3'o4:
 		  begin
 		     reg_dataout = disk_status;
+`ifdef debug
 		     $display("disk: read status %o", disk_status);
+`endif
 		  end
 		3'o5: reg_dataout = { 8'b0, 2'b10, disk_clp };
 		3'o6: reg_dataout = disk_da;
@@ -493,7 +494,9 @@ module xbus_disk (
 	      case (addrin[2:0])
 		3'o4:
 		  begin
+`ifdef debug
 		     $display("disk: load cmd %o", datain);
+`endif
 		     disk_cmd <= datain[9:0];
 
 		     attn_intr_enb <= datain[10];
@@ -504,13 +507,16 @@ module xbus_disk (
 		  end
 		3'o5:
 		  begin
+`ifdef debug
 		     $display("disk: load clp %o", datain);
+`endif
 		     disk_clp <= datain[21:0];
 		  end
 		3'o6:
 		  begin
+`ifdef debug
 		     $display("disk: load da %o", datain);
-
+`endif
 		     disk_unit <= datain[30:28];
 		     disk_cyl <= datain[27:16];
 		     disk_head <= datain[12:8];
@@ -518,7 +524,9 @@ module xbus_disk (
 		  end
 		3'o7:
 		  begin
+`ifdef debug
 		     $display("disk: start!");
+`endif
 		     disk_start = 1;
 		  end
 	      endcase
@@ -690,7 +698,8 @@ module xbus_disk (
 
    
    // combinatorial logic based on state
-   always @(state or disk_cmd or disk_da or lba or disk_start or
+   always @(state or disk_cmd or disk_da or disk_ccw or disk_clp or
+	    lba or disk_start or wc or more_ccws or
             ata_done or ata_out or ata_hold or
 	    grantin or dma_data_hold)
      begin
@@ -853,7 +862,7 @@ module xbus_disk (
 	    begin
 	       ata_wr = 1;
 	       ata_addr = ATA_CYLHIGH;
-	       ata_in = {8'b0, lba[23:16]};		// LBA[23:16]
+	       ata_in = {8'b0, lba[23:16]};	// LBA[23:16]
 	       if (ata_done)
 		 state_next = s_init8;
 	    end
@@ -938,22 +947,17 @@ module xbus_disk (
 	       reqout = 1;
 	       addrout = { disk_ccw, wc };
 
-//	       dma_dataout = { ata_hold, ata_out };
-
-//	       // byteswap disk data
-//	       dma_dataout = { ata_out[7:0], ata_out[15:8], 
-//			       ata_hold[7:0], ata_hold[15:8] };
-
 	       dma_dataout = { ata_out, ata_hold };
 	       
 	       writeout = 1;
 	       
+`ifdef debug
 	       if (1) $display("s_read2: ata_out %o, dma_addr %o",
 			       ata_out, { 10'b0, disk_ccw, wc });
+`endif
 			    
 	       if (grantin)
 		 begin
-		    inc_ccw = 1;
 		    inc_wc = 1;
 		    
 		    if (wc == 8'hff)
@@ -995,7 +999,6 @@ module xbus_disk (
 
 	       if (ata_done)
 		 begin
-		    inc_ccw = 1;
 		    inc_wc = 1;
 		    if (wc == 8'hff)
 		      state_next = s_last0;

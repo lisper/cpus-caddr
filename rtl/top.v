@@ -56,10 +56,10 @@ module top(rs232_txd, rs232_rxd,
 
    support support(.sysclk(sysclk),
 		   .clk(clk),
-		   .ext_reset(reset),
-		   .ext_int(interrupt),
-		   .ext_boot(boot),
-		   .ext_halt(halt));
+		   .reset(reset),
+		   .interrupt(interrupt),
+		   .boot(boot),
+		   .halt(halt));
    
    caddr cpu (.clk(clk),
 	      .ext_int(interrupt),

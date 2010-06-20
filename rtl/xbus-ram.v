@@ -25,7 +25,11 @@ module xbus_ram (
    output 	 ack;
    output 	 decode;
 
+`ifdef debug
    parameter 	 RAM_SIZE = 2097152/*131072*/;
+`else
+   parameter 	 RAM_SIZE = 4;
+`endif
    
    //
    reg [31:0] 	 ram[RAM_SIZE-1:0];

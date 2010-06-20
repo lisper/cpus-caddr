@@ -401,6 +401,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire 	opcclka;
 
+   // page VMEM1&2
+
+   wire [9:0] 	vmem1_adr;
+   wire 	vmem1_we;
+
    // page PCTL
    wire 	promenable, promce, bottom_1k;
 
@@ -524,11 +529,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign apass = destd & ( ir[41:32] == wadr[9:0] ? 1'b1 : 1'b0 );
 
-//should remove the phase1...
+   // should remove the phase1...
    assign apassenb = apass & phase1;
    assign amemenb = ~apass & phase1;
-//   assign apassenb = apass;
-//   assign amemenb = ~apass;
 
    assign awp = destd & state_write;
 
@@ -543,7 +546,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        a_latch <= 0;
      else
-       if (phase0/*state_decode*/)
+       if (phase0)
 	 a_latch <= amem;
 
 `ifdef debug_detail
@@ -832,7 +835,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign swp = spushd & state_write;
    assign spcenb = srcspc | srcspcpop;
-   assign spcdrive = spcenb & phase1/*state_write*/; /*xxx phase1*/
+   assign spcdrive = spcenb & phase1;
    assign spcnt = spush | spop;
 
    always @(posedge clk)
@@ -1065,7 +1068,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			     { 3'b0, lcinc & ~lc_byte_mode } +
 			     { 3'b0, lcinc };
 
-   assign lcdrive  = srclc & phase1/*state_write*/;  /*xxx phase1*/
+   assign lcdrive  = srclc & phase1;
 
    // xxx
    // I think the above is really
@@ -1140,7 +1143,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (state_fetch)
 	 begin
-	    newlc <= /*~*/newlc_in;	/* XXX */
+	    newlc <= newlc_in;
 	    sintr <= (ext_int | bus_int);
 	    next_instrd <= next_instr;
 	 end
@@ -1253,16 +1256,24 @@ $display("load md <- %o", mds);
 	  mmem_latched <= 0;
        end
      else
-       if (phase0/*state_decode*/)
+       if (phase0)
 	 mmem_latched <= mmem;
 
 `ifdef debug_detail
    always @(state or mmem or reset)
      begin
-	if (state_fetch) $display("F m <- %o; madr %o, mpassm %b, mpass %b %t", mmem, madr,mpassm,mpass,$time);
-	if (state_decode) $display("D m <- %o; madr %o, mpassm %b, mpass %b %t", mmem, madr,mpassm,mpass,$time);
-	if (state_write) $display("W m <- %o; madr %o, mpassm %b, mpass %b %t", mmem, madr,mpassm,mpass,$time);
-	if (state_execute) $display("E m <- %o; madr %o, mpassm %b, mpass %b %t", mmem, madr,mpassm,mpass,$time);
+	if (state_fetch)
+	  $display("F m <- %o; madr %o, mpassm %b, mpass %b %t",
+		   mmem, madr,mpassm,mpass,$time);
+	if (state_decode)
+	  $display("D m <- %o; madr %o, mpassm %b, mpass %b %t",
+		   mmem, madr,mpassm,mpass,$time);
+	if (state_write)
+	  $display("W m <- %o; madr %o, mpassm %b, mpass %b %t",
+		   mmem, madr,mpassm,mpass,$time);
+	if (state_execute)
+	  $display("E m <- %o; madr %o, mpassm %b, mpass %b %t",
+		   mmem, madr,mpassm,mpass,$time);
      end
 `endif
 
@@ -1354,8 +1365,8 @@ $display("load md <- %o", mds);
        begin
 	  $display("; npc %o ipc %o, spc %o, pc %o pcs %b%b state %b",
 		   npc, ipc, spc, pc, pcs1, pcs0, state);
-//	  $display("; spcpass=%b, spcwpass=%b, spco_latched %o, spcw %o",
-//	  	   spcpass, spcwpass, spco_latched, spcw);
+	  $display("; spcpass=%b, spcwpass=%b, spco_latched %o, spcw %o",
+	  	   spcpass, spcwpass, spco_latched, spcw);
 	  $display("; %b %b %b %b (%b %b)", 
 		   (popj & ~ignpopj),
 		   (jfalse & ~jcond),
@@ -1364,8 +1375,8 @@ $display("load md <- %o", mds);
 		   popj, ignpopj);
 	  $display("; conds=%b,  aeqm=%b, aeqm_bits=%b",
 		   conds, aeqm, aeqm_bits);
-//	  $display("; trap=%b,  parerr_n=%b, trapenb=%b boot_trap=%b",
-//		   trap, parerr, trapenb, boot_trap);
+	  $display("; trap=%b,  parerr_n=%b, trapenb=%b boot_trap=%b",
+		   trap, parerr, trapenb, boot_trap);
 	  $display("; nopa %b, inop %b, nop11 %b",
 		   nopa, inop, nop11);
        end
@@ -1373,8 +1384,9 @@ $display("load md <- %o", mds);
 
    // page OPCD
 
-   assign dcdrive = srcdc & phase1/*state_write*/;  /*xxx phase1*/	/* dispatch constant */
-   assign opcdrive  = srcopc & phase1/*state_write*/; /*xxx phase1*/
+   assign dcdrive = srcdc & phase1; 	/* dispatch constant */
+
+   assign opcdrive  = srcopc & phase1;
 
    assign zero16 = srcopc | srcpdlidx | srcpdlptr | srcdc;
 
@@ -1441,15 +1453,15 @@ $display("load md <- %o", mds);
    
    // page PDLPTR
 
-   assign pidrive = phase1/*state_write*/ & srcpdlidx;
+   assign pidrive = phase1 & srcpdlidx;
 
-   assign ppdrive  = phase1/*state_write*/ & srcpdlptr;
+   assign ppdrive  = phase1 & srcpdlptr;
 
    always @(posedge clk)
      if (reset)
        pdlidx <= 0;
      else
-       if (state_write/*state_fetch*/ && destpdlx)
+       if (state_write && destpdlx)
 	 pdlidx <= ob[9:0];
 
    always @(posedge clk)
@@ -1479,7 +1491,7 @@ $display("load md <- %o", mds);
 	  pdl_latch <= 0;
        end
      else
-       if (phase0/*state_decode*/)
+       if (phase0)
 	 pdl_latch <= pdl;
 
 
@@ -1490,12 +1502,11 @@ $display("load md <- %o", mds);
 
    assign qdrive = srcq & phase1;
 
-//??? double check this
    always @(posedge clk)
      if (reset)
        q <= 0;
      else
-       if (state_fetch/*state_write*/ && (qs1 | qs0))
+       if (state_fetch && (qs1 | qs0))
 	 begin
             case ( {qs1,qs0} )
               2'b01: q <= { q[30:0], ~alu[31] };
@@ -1698,7 +1709,6 @@ $display("load md <- %o", mds);
 			      .CE_N(1'b0)
 			      );
 
-//??? double check this
    always @(posedge clk)
      if (reset)
        spcptr <= 0;
@@ -1730,7 +1740,7 @@ $display("load md <- %o", mds);
 	  spco_latched <= 0;
        end
      else
-       if (phase0/*state_fetch*/)
+       if (phase0)
 	 begin
             spco_latched <= spco;
 	 end
@@ -1799,7 +1809,6 @@ $display("load md <- %o", mds);
    assign memop  = memrd | memwr | ifetch;
    assign memprepare = memop;
 
-//??? double check
    always @(posedge clk)
      if (reset)
        begin
@@ -1807,7 +1816,7 @@ $display("load md <- %o", mds);
 	  mbusy_sync <= 0;
        end
      else
-       if (phase1/*state_write*/)   /* XXX */
+       if (phase1)
 	 begin
 	    memstart <= memprepare;
 	    mbusy_sync <= memrq;
@@ -1822,20 +1831,16 @@ $display("load md <- %o", mds);
      if (reset)
 	  wmapd <= 0;
      else
-       if (state_write/*state_fetch*/)
+       if (state_write)
 	 wmapd <= wmap;
    
    always @(posedge clk)
      if (reset)
        begin
 	  rdcyc <= 0;
-wrcyc <= 0;
-end
+	  wrcyc <= 0;
+       end
      else
-//       if (state_write/*state_fetch*/)
-//	 rdcyc <= (memprepare & ~memwr);
-////	    rdcyc <= (memprepare & ~memwr) | (~memprepare & rdcyc);
-//
        if (state_write && memprepare)
 	 begin
 	    if (memwr)
@@ -1850,8 +1855,6 @@ end
 	      wrcyc <= 0;
 	   end
 
-//   assign wrcyc = ~rdcyc;
-   
    assign memrq = mbusy | (memstart & (pfr | pfw));
 
    always @(posedge clk)
@@ -1872,16 +1875,6 @@ end
     end
 `endif
    
-//always @(posedge Mclk or negedge reset_n)
-//  if (reset)
-//    mbusy <= 1'b0;
-//  else
-//    mbusy <= memrq;
-//
-//always @(mfinishd_n)
-//  if (mfinishd_n == 1'b0)
-//      mbusy <= 1'b0;
-
    //------
 
    assign mfinish = memack | reset;
@@ -1894,7 +1887,7 @@ end
    
    assign waiting =
 		(destmem & mbusy/*_sync*/) |
-		(use_md & mbusy /*& ~memgrant*/) |		/* hang loses */
+		(use_md & mbusy /*& ~memgrant*/) |	/* hang loses */
 		(lcinc & needfetch & mbusy/*_sync*/);	/* ifetch */
 
    // page VCTRL2
@@ -1930,10 +1923,10 @@ end
      if (reset)
        vma <= 0;
      else
-       if (state_write/*state_fetch*/ && vmaenb)
+       if (state_write && vmaenb)
 	 vma <= vmas;
 
-   assign vmadrive = srcvma & phase1/*state_write*/;
+   assign vmadrive = srcvma & phase1;
 
 
    // page VMAS
@@ -1979,16 +1972,8 @@ end
 
    // page VMEM1&2
 
-   wire[9:0] vmem1_adr;
-
    assign vmem1_adr = {vmap[4:0], mapi[12:8]};
-//   assign vmem1_adr = {mapi[12:8],vmap[4:0]};
-//   assign vmem1_adr = {~mapi[12:8],vmap[4:0]};
-//   assign    vmem1_adr = {
-//			  ~mapi[8], ~mapi[9], ~mapi[10], ~mapi[11], ~mapi[12],
-//			  vmap[0], vmap[1], vmap[2], vmap[3], vmap[4]
-//			  };
-   wire   vmem1_we;
+
    assign vmem1_we = vm1wp & clk;
    
 `define async_vmem1
@@ -2024,18 +2009,24 @@ end
      else
        if (memprepare && memstart)
 	 begin
-`ifdef debug_vmem
-	    $display("%t prep vmem0_adr %o, vmap=%o",
-		     $time, mapi[23:13], vmap);
-	    $display("%t prep vmem1_adr %o, vma=%o, vmo[23:22]=%b%b, vmo=%o",
-		     $time, vmem1_adr, vma, vmo[23], vmo[22], vmo[21:0]);
-`endif
 	    lvmo_23 <= vmo[23];
 	    lvmo_22 <= vmo[22];
 	    pma <= vmo[13:0];
 	 end
 
+   assign mapdrive = srcmap & phase1;
+
+   
 `ifdef debug_vmem
+   always @(memprepare or memstart or mapi or vmo or vmap or clk)
+     if (memprepare && memstart)
+       begin
+	  $display("%t prep vmem0_adr %o, vmap=%o",
+		   $time, mapi[23:13], vmap);
+	  $display("%t prep vmem1_adr %o, vma=%o, vmo[23:22]=%b%b, vmo=%o",
+		   $time, vmem1_adr, vma, vmo[23], vmo[22], vmo[21:0]);
+       end
+   
    always @(memrq)
      if (memrq)
        begin
@@ -2048,9 +2039,6 @@ end
        end
 `endif
   
-   assign mapdrive = srcmap & phase1 /*state_write*/; /*xxx phase1*/
-
-   
    // page DEBUG
 
    always @(posedge lddbirh or reset)
@@ -2083,9 +2071,8 @@ end
    assign ramdisable = idebug | ~(promdisabled | iwrited);
 
    // see clocks below
-//   assign iwe  = !(wp5 & iwrited);
-wire   iwe;
-assign iwe = state_write & iwrited;
+   wire   iwe;
+   assign iwe = state_write & iwrited;
 
 
    // page OLORD1 
@@ -2227,7 +2214,6 @@ assign iwe = state_write & iwrited;
 
    assign prog_reset = ldmode & spy[6];
 
-//   assign reset = boot | prog_reset;
    assign reset = ext_reset | prog_reset;
 
    assign err = ape | mpe | pdlpe | dpe |

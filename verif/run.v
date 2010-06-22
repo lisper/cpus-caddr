@@ -3,6 +3,7 @@
 
 //`define debug_vcd
 `define debug
+`define DBG_DLY #1
 
 `include "rtl.v"
 
@@ -16,11 +17,14 @@ module test;
    // controlled by rc circuit at power up
    reg boot;
 
-   wire [15:0] spy;
+   reg [15:0] spyin;
+   wire [15:0] spyout;
    wire        dbread, dbwrite;
    wire [3:0]  eadr;
 
    wire [15:0] 	ide_data_bus;
+   wire [15:0] 	ide_data_in;
+   wire [15:0] 	ide_data_out;
    wire 	ide_dior;
    wire 	ide_diow;
    wire [1:0] 	ide_cs;
@@ -31,11 +35,13 @@ module test;
 	      .ext_reset(reset),
 	      .ext_boot(boot),
 	      .ext_halt(halt),
-	      .spy(spy),
+	      .spyin(spyin),
+	      .spyout(spyout),
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
-	      .ide_data_bus(ide_data_bus),
+	      .ide_data_in(ide_data_in),
+	      .ide_data_out(ide_data_out),
 	      .ide_dior(ide_dior),
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
@@ -99,6 +105,7 @@ module test;
 	clk = 0;
 	interrupt = 0;
 	reset = 0;
+	spyin = 0;
 
 	#1 begin
 	   reset = 1;
@@ -373,6 +380,10 @@ module test;
 	  
      end 
 
+   assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
+
+   assign ide_data_in = ide_data_bus;
+     
    always @(posedge clk)
      begin
 	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);

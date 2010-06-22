@@ -17,5 +17,13 @@
 `include "../rtl/xbus-unibus.v"
 
 `include "../rtl/ide.v"
-
   
+`include "../rtl/part_1kx32ram_a.v"
+`include "../rtl/part_1kx32ram.v"
+`include "../rtl/part_32x19ram.v"
+`include "../rtl/part_1kx24ram.v"
+`include "../rtl/part_2kx17ram.v"
+`include "../rtl/part_32x32ram.v"
+`include "../rtl/part_2kx5ram.v"
+
+`include "../rtl/part_16kx49ram.v"

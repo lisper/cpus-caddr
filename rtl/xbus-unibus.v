@@ -64,8 +64,9 @@ reg [31:0] 	 dataout;
 	  if (write)
 	    begin
 `ifdef debug
-               #1 $display("unibus: write @%o <- %o", addr, datain);
+               `DBG_DLY $display("unibus: write @%o <- %o", addr, datain);
 `endif
+	       /* verilator lint_off CASEINCOMPLETE */
 	       case (offset)
 		 6'o05:
 		   begin
@@ -78,11 +79,12 @@ reg [31:0] 	 dataout;
 			promdisable = 1;
 		   end
 	       endcase
+	       /* verilator lint_on CASEINCOMPLETE */
 	    end
 	  else
 	    begin
 `ifdef debug
-               #1 $display("unibus: read @%o", addr);
+               `DBG_DLY $display("unibus: read @%o", addr);
 `endif
 	       dataout = 0;
 	    end

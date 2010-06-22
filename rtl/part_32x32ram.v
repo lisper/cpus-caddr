@@ -32,7 +32,7 @@ module part_32x32ram_sync(CLK, A, DI, DO, CE_N, WE_N);
 
    always @(A or CE_N or WE_N or CLK)
      begin
-	DO <= ram[ A ];
+	DO = ram[ A ];
 `ifdef debug
 	if (A != 0 && debug != 0)
 	  $display("mmem: R addr %o val %0o; %t", A, ram[ A ], $time);
@@ -41,12 +41,12 @@ module part_32x32ram_sync(CLK, A, DI, DO, CE_N, WE_N);
    
 endmodule
 
-module part_32x32ram(A, DI, DO, WCLK_N, CE, WE_N);
+module part_32x32ram_async(A, DI, DO, WE_N, CE_N);
 
    input[4:0] A;
    input [31:0] DI;
-   input WE_N, WCLK_N, CE;
-   output reg [31:0] DO;
+   input WE_N, CE_N;
+   output [31:0] DO;
 
    reg [31:0] ram [0:31];
 
@@ -60,22 +60,25 @@ module part_32x32ram(A, DI, DO, WCLK_N, CE, WE_N);
     end
 `endif
    
-   always @(posedge WCLK_N)
+   always @(negedge WE_N)
      begin
-	if (CE == 1 && WE_N == 0)
+	if (CE_N == 0)
 	  begin
 	     ram[ A ] = DI;
 `ifdef debug
-	     if (debug) $display("mmem: W addr %o val %o; %t", A, DI, $time);
+	     if (debug == 1)
+	       $display("mmem: W addr %o val %o; %t", A, DI, $time);
 `endif
 	  end
      end
 
-   always @(A or WCLK_N or CE or WE_N)
+   assign DO = ram[ A ];
+
+   always @(A or CE_N or WE_N)
      begin
-	DO <= ram[ A ];
 `ifdef debug
-	if (debug) $display("mmem: R addr %o val %o; %t", A, ram[ A ], $time);
+	if (CE_N == 0 && WE_N && debug == 1)
+	  $display("mmem: R addr %o val %o; %t", A, ram[ A ], $time);
 `endif
      end
    

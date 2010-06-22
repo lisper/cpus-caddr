@@ -32,12 +32,12 @@ module part_32x19ram_sync(CLK, A, DI, DO, WE_N, CE_N);
 
 endmodule
 
-module part_32x19ram(A, DI, DO, WCLK_N, WE_N, CE);
+module part_32x19ram_async(A, DI, DO, WE_N, CE_N);
 
    input [4:0] A;
    input [18:0] DI;
-   input WE_N, WCLK_N, CE;
-   output reg [18:0] DO;
+   input WE_N, CE_N;
+   output [18:0] DO;
 
    reg [18:0] ram [0:31];
 
@@ -47,14 +47,13 @@ module part_32x19ram(A, DI, DO, WCLK_N, WE_N, CE);
 	ram[ 5'b11111 ] = 19'b0;
      end
 
-  always @(posedge WCLK_N)
+  always @(negedge WE_N)
      begin
-	if (CE == 1 && WE_N == 0)
+	if (CE_N == 0)
 	  ram[ A ] = DI;
      end
 
-   always @(A or WE_N)
-     DO <= ram[ A ];
+   assign DO = ram[ A ];
 
 endmodule
 

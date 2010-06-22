@@ -84,8 +84,8 @@
  */
 
 module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
-	       spy, dbread, dbwrite, eadr,
-	       ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da );
+	       spyin, spyout, dbread, dbwrite, eadr,
+	       ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da );
 
    input clk;
    input ext_int;
@@ -93,16 +93,18 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    input ext_boot;
    input ext_halt;
 
-   inout [15:0] spy;
+   input [15:0] spyin;
+   output [15:0] spyout;
    input 	dbread;
    input 	dbwrite;
    input [3:0] 	eadr;
 
-   inout [15:0] ide_data_bus;
-   output 	ide_dior;
-   output 	ide_diow;
-   output [1:0] ide_cs;
-   output [2:0] ide_da;
+   input [15:0]  ide_data_in;
+   output [15:0] ide_data_out;
+   output 	 ide_dior;
+   output 	 ide_diow;
+   output [1:0]  ide_cs;
+   output [2:0]  ide_da;
 
    // ------------------------------------------------------------
    
@@ -332,7 +334,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    reg 		rdcyc, wmapd, mbusy;
    wire 	memrq;
-//   wire 	wrcyc;
    reg 		wrcyc;
 
    wire 	pfw, pfr;		/* vma permissions */
@@ -475,7 +476,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	       STATE_S4 = 5'b01000,
 	       STATE_S5 = 5'b10000;
 
+/* verilator lint_off UNOPTFLAT */
    reg [4:0] state;
+/* verilator lint_on UNOPTFLAT */
+
    wire [4:0] next_state;
    wire       state_decode, state_execute, state_write, state_fetch;
    wire       state_wait;
@@ -544,10 +548,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // transparent latch w/async reset
    always @(phase0 or amem or reset)
      if (reset)
-       a_latch <= 0;
+       a_latch = 0;
      else
        if (phase0)
-	 a_latch <= amem;
+	 a_latch = amem;
 
 `ifdef debug_detail
    always @(state or amem or reset)
@@ -773,7 +777,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page AMEM0-1
 
-`define async_amem
+//`define async_amem
 `ifdef async_amem
    part_1kx32ram_async_a i_AMEM (
 			       .A(aadr),
@@ -1111,7 +1115,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	vmadrive ?
 	      vma :
 	mapdrive ?
-//	      { ~pfw, ~pfr, 1'b1, ~vmap[4:0], ~vmo[23:0] } :
 	      { ~pfw, ~pfr, 1'b1, vmap[4:0], vmo[23:0] } :
 	      32'b0;
 
@@ -1255,11 +1258,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    always @(phase0 or mmem or reset)
      if (reset)
        begin
-	  mmem_latched <= 0;
+	  mmem_latched = 0;
        end
      else
        if (phase0)
-	 mmem_latched <= mmem;
+	 mmem_latched = mmem;
 
 `ifdef debug_detail
    always @(state or mmem or reset)
@@ -1290,6 +1293,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page MMEM
 
+//`define async_mmem
+`ifdef async_mmem
+   part_32x32ram_async i_MMEM (
+			       .A(madr),
+			       .DI(l),
+			       .DO(mmem),
+			       .WE_N(~mwp),
+			       .CE_N(1'b0)
+			       );
+`else   
    part_32x32ram_sync  i_MMEM (
 			       .CLK(clk),
 			       .A(madr),
@@ -1298,7 +1311,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			       .WE_N(~mwp),
 			       .CE_N(1'b0)
 			       );
-
+`endif
 
    // page MO
 
@@ -1399,7 +1412,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page PDL
 
-`ifdef xxx
+//`define async_pdl
+`ifdef async_pdl
    part_1kx32ram_async i_PDL (
 			     .A(pdla),
 			     .DO(pdl),
@@ -1490,11 +1504,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    always @(reset or phase0 or pdl)
      if (reset)
        begin
-	  pdl_latch <= 0;
+	  pdl_latch = 0;
        end
      else
        if (phase0)
-	 pdl_latch <= pdl;
+	 pdl_latch = pdl;
 
 
    // page Q
@@ -1511,7 +1525,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_fetch && (qs1 | qs0))
 	 begin
             case ( {qs1,qs0} )
-              2'b01: q <= { q[30:0], ~alu[31] };
+              2'b00: q <= q;
+	      2'b01: q <= { q[30:0], ~alu[31] };
               2'b10: q <= { alu[0], q[31:1] };
               2'b11: q <= alu[31:0];
             endcase
@@ -1702,6 +1717,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
     // page SPC
 
+//`define async_spc
+`ifdef async_spc
+   part_32x19ram_async  i_SPC (
+			      .A(spcptr),
+			      .DI(spcw),
+			      .DO(spco),
+			      .WE_N(~swp),
+			      .CE_N(1'b0)
+			      );
+`else
    part_32x19ram_sync  i_SPC (
 			      .CLK(clk),
 			      .A(spcptr),
@@ -1710,7 +1735,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			      .WE_N(~swp),
 			      .CE_N(1'b0)
 			      );
-
+`endif
+   
    always @(posedge clk)
      if (reset)
        spcptr <= 0;
@@ -1738,14 +1764,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // transparent latch w/async reset
    always @(phase0 or spco or reset)
      if (reset)
-       begin
-	  spco_latched <= 0;
-       end
+       spco_latched = 0;
      else
        if (phase0)
-	 begin
-            spco_latched <= spco;
-	 end
+         spco_latched = spco;
 
 
    // page SPCPAR
@@ -1767,7 +1789,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire[15:0] spy_mux;
 
-   assign spy = dbread ? spy_mux : 16'bz;
+   assign spyout = dbread ? spy_mux : 16'b1111111111111111;
 
    assign spy_mux =
 	spy_irh ? ir[47:32] :
@@ -2004,16 +2026,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    always @(memprepare or memstart or vmo or reset or clk)
      if (reset)
        begin
-	  lvmo_23 <= 0;
-	  lvmo_22 <= 0;
-	  pma <= 0;
+	  lvmo_23 = 0;
+	  lvmo_22 = 0;
+	  pma = 0;
        end
      else
        if (memprepare && memstart)
 	 begin
-	    lvmo_23 <= vmo[23];
-	    lvmo_22 <= vmo[22];
-	    pma <= vmo[13:0];
+	    lvmo_23 = vmo[23];
+	    lvmo_22 = vmo[22];
+	    pma = vmo[13:0];
 	 end
 
    assign mapdrive = srcmap & phase1;
@@ -2047,19 +2069,19 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        spy_ir[47:32] <= 16'b0;
      else
-       spy_ir[47:32] <= spy;
+       spy_ir[47:32] <= spyin;
 
    always @(posedge lddbirm or posedge reset)
      if (reset)
        spy_ir[31:16] <= 16'b0;
      else
-       spy_ir[31:16] <= spy;
+       spy_ir[31:16] <= spyin;
 
    always @(posedge lddbirl or posedge reset)
      if (reset)
        spy_ir[15:0] <= 16'b0;
      else
-       spy_ir[15:0] <= spy;
+       spy_ir[15:0] <= spyin;
 
    // put latched value on I bus when idebug asserted
    assign i =
@@ -2090,12 +2112,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (ldmode)
 	 begin
-	    promdisable <= spy[5];
-	    trapenb <= spy[4];
-	    stathenb <= spy[3];
-	    errstop <= spy[2];
-	    //speed1 <= spy[1];
-	    //speed0 <= spy[0];
+	    promdisable <= spyin[5];
+	    trapenb <= spyin[4];
+	    stathenb <= spyin[3];
+	    errstop <= spyin[2];
+	    //speed1 <= spyin[1];
+	    //speed0 <= spyin[0];
 	 end
        else
 	 if (set_promdisable)
@@ -2111,9 +2133,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (ldopc)
 	 begin
-	    opcinh <= spy[2];
-	    opcclk <= spy[1];
-	    lpc_hold <= spy[0];
+	    opcinh <= spyin[2];
+	    opcclk <= spyin[1];
+	    lpc_hold <= spyin[0];
 	 end
 
    always @(posedge clk)
@@ -2127,10 +2149,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (ldclk)
 	 begin
-	    ldstat <= spy[4];
-	    idebug <= spy[3];
-	    nop11 <= spy[2];
-	    step <= spy[1];
+	    ldstat <= spyin[4];
+	    idebug <= spyin[3];
+	    nop11 <= spyin[2];
+	    step <= spyin[1];
 	 end
 
    always @(posedge clk)
@@ -2141,7 +2163,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	 run <= 1'b1;
        else
 	 if (ldclk)
-	   run <= spy[0];
+	   run <= spyin[0];
 
    always @(posedge clk)
      if (reset)
@@ -2214,7 +2236,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign lowerhighok = 1'b1;
    assign highok = 1'b1;
 
-   assign prog_reset = ldmode & spy[6];
+   assign prog_reset = ldmode & spyin[6];
 
    assign reset = ext_reset | prog_reset;
 
@@ -2231,7 +2253,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // external
 
-   assign prog_boot = ldmode & spy[7];
+   assign prog_boot = ldmode & spyin[7];
 
    assign boot  = ext_boot | prog_boot;
 
@@ -2356,7 +2378,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .addr({pma,vma[7:0]}),
 		 .busin(md),
 		 .busout(busint_bus),
-		 .spy(spy),
+		 .spyin(spyin),
+		 .spyout(spyout),
 
 		 .req(memrq),
 		 .ack(memack),
@@ -2365,7 +2388,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 
 		 .interrupt(bus_int),
 		 
-		 .ide_data_bus(ide_data_bus),
+		 .ide_data_in(ide_data_in),
+		 .ide_data_out(ide_data_out),
 		 .ide_dior(ide_dior),
 		 .ide_diow(ide_diow),
 		 .ide_cs(ide_cs),
@@ -2373,6 +2397,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 		 .promdisable(set_promdisable)
 		 );
-   
+
 endmodule
 

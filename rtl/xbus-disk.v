@@ -17,17 +17,17 @@
 	  7 start
 
 	Commands (cmd reg)
-	  00 read
-	  10 read compare
-	  11 write
-	  02 read all
-	  13 write all
-	  04 seek
-	  05 at ease
+	  0000 read
+	  0010 read compare
+	  0011 write
+	  0002 read all
+	  0013 write all
+	  0004 seek
+	  0005 at ease
 	  1005 recalibreate
-	  405 fault clear
-	  06 offset clear
-	  16 stop,reset
+	  0405 fault clear
+	  0006 offset clear
+	  0016 stop,reset
 
 	Command bits
 	  0
@@ -247,7 +247,8 @@ module xbus_disk (
 		  writein, writeout,
 		  decodein, decodeout,
 		  interrupt,
-		  ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da
+		  ide_data_in, ide_data_out,
+		  ide_dior, ide_diow, ide_cs, ide_da
 		);
 
    input reset;
@@ -271,11 +272,12 @@ module xbus_disk (
    reg 		 reqout;
    reg 		 writeout;
    
-   inout [15:0] ide_data_bus;
-   output 	ide_dior;
-   output 	ide_diow;
-   output [1:0] ide_cs;
-   output [2:0] ide_da;
+   input [15:0]  ide_data_in;
+   output [15:0] ide_data_out;
+   output 	 ide_dior;
+   output 	 ide_diow;
+   output [1:0]  ide_cs;
+   output [2:0]  ide_da;
    
    
    // -------------------------------------------------------------------
@@ -292,6 +294,8 @@ module xbus_disk (
    reg [4:0] 	disk_block;
    
    wire [31:0] 	disk_da;
+
+   reg [31:0] 	disk_ma;
 
    reg [21:8] 	disk_ccw;
    reg 		more_ccws;
@@ -476,7 +480,11 @@ module xbus_disk (
 	  if (~writein)
 	    begin
 	      case (addrin[2:0])
-		3'o0, 3'o4:
+		3'o0: reg_dataout = disk_status;
+		3'o1: reg_dataout = disk_ma;
+		3'o2: reg_dataout = disk_da;
+		3'o3: reg_dataout = 0;
+		3'o4:
 		  begin
 		     reg_dataout = disk_status;
 `ifdef debug
@@ -492,6 +500,10 @@ module xbus_disk (
 	 if (writein)
 	   begin
 	      case (addrin[2:0])
+		3'o0, 3'o1, 3'o2, 3'o3:
+		  begin
+		  end
+	       
 		3'o4:
 		  begin
 `ifdef debug
@@ -570,7 +582,7 @@ module xbus_disk (
    ide ide(.clk(clk), .reset(reset),
 	   .ata_rd(ata_rd), .ata_wr(ata_wr), .ata_addr(ata_addr),
 	   .ata_in(ata_in), .ata_out(ata_out), .ata_done(ata_done),
-	   .ide_data_bus(ide_data_bus),
+	   .ide_data_in(ide_data_in), .ide_data_out(ide_data_out),
 	   .ide_dior(ide_dior), .ide_diow(ide_diow),
 	   .ide_cs(ide_cs), .ide_da(ide_da));
 
@@ -695,6 +707,14 @@ module xbus_disk (
 	    disk_ccw <= datain[21:8];
 	    more_ccws <= datain[0];
 	 end
+
+   //
+   always @(posedge clk)
+     if (reset)
+       disk_ma <= 0;
+     else
+       if (state == s_read2 || state == s_write0)
+	 disk_ma <= { 10'b0, addrout };
 
    
    // combinatorial logic based on state
@@ -952,7 +972,7 @@ module xbus_disk (
 	       writeout = 1;
 	       
 `ifdef debug
-	       if (1) $display("s_read2: ata_out %o, dma_addr %o",
+	       if (grantin) $display("s_read2: ata_out %o, dma_addr %o",
 			       ata_out, { 10'b0, disk_ccw, wc });
 `endif
 			    

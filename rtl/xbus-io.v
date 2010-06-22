@@ -96,7 +96,7 @@ module xbus_io(
 	    if (write)
 	      begin
 `ifdef debug
-		 #1 $display("io: write @%o <- %o", addr, datain);
+		 `DBG_DLY $display("io: write @%o <- %o", addr, datain);
 `endif
 	       case (addr)
 		 22'o17772045: /* KBD CSR */
@@ -108,7 +108,7 @@ module xbus_io(
 	    else
 	      begin
 `ifdef debug
-               #1 $display("io: read @%o", addr);
+               `DBG_DLY $display("io: read @%o", addr);
 `endif
 	       case (addr)
 		 22'o17772040: /* KBD LOW */

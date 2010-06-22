@@ -66,6 +66,15 @@ reg [31:0] dataout;
    output 	 interrupt;
 
    // ----------------------------------------------------------------------
+
+`ifdef debug
+   reg [31:0] 	 fb[0:21503];
+   integer 	 i;
+
+   initial
+     for (i = 0; i < 21504; i = i + 1)
+       fb[i] = 0;
+`endif
    
    reg [1:0]	 ack_delayed;
    
@@ -101,7 +110,7 @@ reg [31:0] dataout;
 	  if (write)
 	    begin
 `ifdef debug
-               #1 $display("tv: write @%o", addr);
+               `DBG_DLY $display("tv: write @%o", addr);
 `endif
 	       if (in_fb)
 		 begin
@@ -109,20 +118,24 @@ reg [31:0] dataout;
 		    h = { 17'b0, offset } / 768;
 		    v = { 17'b0, offset } % 768;
 		    $display("tv: (%0d, %0d) <- %o", h, v, datain);
+
+		    fb[offset] <= datain;
 `endif
 		 end
 	    end
 	  else
 	    begin
 `ifdef debug
-               #1 $display("tv: read @%o", addr);
+               `DBG_DLY $display("tv: read @%o", addr);
 `endif
 	       if (in_fb)
 		 begin
-		    dataout = 0;
+`ifdef debug
+		    dataout <= fb[offset];
+`endif
 		 end
 	       if (in_reg)
-		 dataout = 0;
+		 dataout <= 0;
 	    end
      end
 

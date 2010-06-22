@@ -55,29 +55,33 @@
  */
 
 module busint(mclk, reset,
-	      addr, busin, busout, spy, 
+	      addr, busin, busout, spyin, spyout,
 	      req, ack, write, load,
 	      interrupt,
-	      ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da,
+	      ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
 	      promdisable);
 
    input mclk;
    input reset;
    input [21:0] addr;
+
    input [31:0] busin;
-   inout [15:0] spy;
+   input [15:0] spyin;
    
    output [31:0] busout;
+   output [15:0] spyout;
+
    input 	 req, write;
    output 	 ack, load, interrupt;
    
-   inout [15:0] ide_data_bus;
-   output 	ide_dior;
-   output 	ide_diow;
-   output [1:0] ide_cs;
-   output [2:0] ide_da;
+   input [15:0]  ide_data_in;
+   output [15:0] ide_data_out;
+   output 	 ide_dior;
+   output 	 ide_diow;
+   output [1:0]  ide_cs;
+   output [2:0]  ide_da;
 
-   output 	promdisable;
+   output 	 promdisable;
    
    //
    parameter 	 BUS_IDLE  = 4'b0000,
@@ -130,7 +134,9 @@ module busint(mclk, reset,
 		  );
 
    wire 	writeout_disk;
+/* verilator lint_off UNOPTFLAT */
    wire 	reqout_disk;
+/* verilator lint_on UNOPTFLAT */
    wire 	decodein_disk;
    
    xbus_disk disk (
@@ -149,7 +155,8 @@ module busint(mclk, reset,
 		   .decodein(decodein_disk),
 		   .decodeout(decode_disk),
 		   .interrupt(interrupt_disk),
-		   .ide_data_bus(ide_data_bus),
+		   .ide_data_in(ide_data_in),
+		   .ide_data_out(ide_data_out),
 		   .ide_dior(ide_dior),
 		   .ide_diow(ide_diow),
 		   .ide_cs(ide_cs),
@@ -226,11 +233,11 @@ module busint(mclk, reset,
        if (req)
 	 if (write)
 	   begin
-              #1 $display("xbus: write @%o, %t", addr, $time);
+              `DBG_DLY $display("xbus: write @%o, %t", addr, $time);
 	   end
 	 else
 	   begin
-              #1 $display("xbus: read @%o, %t", addr, $time);
+              `DBG_DLY $display("xbus: read @%o, %t", addr, $time);
 	   end
     end
 `endif

@@ -7,7 +7,7 @@ module part_16kx49ram(A, DI, DO, CE_N, WE_N);
   input CE_N, WE_N;
   output[48:0] DO;
 
-`define no_iram
+//`define no_iram
 
 `ifdef no_iram
    parameter IRAM_SIZE = 2;

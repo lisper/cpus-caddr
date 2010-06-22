@@ -49,9 +49,8 @@ module xbus_ram (
 
    assign 	 ack = ack_delayed[6];
 
-   wire [16:0] 	 addr17;
-   
-   assign addr17 = addr[16:0];
+   wire [20:0] 	 addr20;
+   assign addr20 = addr[20:0];
    
    always @(posedge clk)
      if (reset)
@@ -89,21 +88,21 @@ module xbus_ram (
 	  if (write)
 	    begin
 `ifdef debug
-               #1 $display("ddr: write @%o <- %o", addr17, datain);
+               `DBG_DLY $display("ddr: write @%o <- %o", addr20, datain);
 `endif
 	       if (addr < RAM_SIZE)
-		 ram[addr17] = datain;
+		 ram[addr20] = datain;
 	    end
 	  else
 	    begin
 `ifdef debug
-               #1 $display("ddr: read @%o -> %o (0x%x), %t",
-			   addr, ram[addr17], ram[addr17], $time);
+               `DBG_DLY $display("ddr: read @%o -> %o (0x%x), %t",
+			   addr20, ram[addr20], ram[addr20], $time);
 `endif
 	    end
      end
 
-   assign dataout = addr < RAM_SIZE ? ram[addr17] : 32'hffffffff;
+   assign dataout = addr < RAM_SIZE ? ram[addr20] : 32'hffffffff;
 
 endmodule
 

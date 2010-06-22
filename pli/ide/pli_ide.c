@@ -36,6 +36,8 @@ int last_evh;
 char last_dior_bit;
 char last_diow_bit;
 
+int running_cver;
+
 static struct state_s {
     vpiHandle bus_aref;
     unsigned short reg_seccnt, reg_secnum, reg_cyllow, reg_cylhigh, reg_drvhead;
@@ -366,12 +368,11 @@ PLI_INT32 pli_ide(void)
             break;
         }
 
-#ifdef __CVER__
-        if (s->bus_aref == 0)
-            s->bus_aref = vpi_put_value(busref, NULL, NULL, vpiAddDriver);
-#else
-        s->bus_aref = busref;
-#endif
+        if (running_cver) {
+            if (s->bus_aref == 0)
+                s->bus_aref = vpi_put_value(busref, NULL, NULL, vpiAddDriver);
+        } else
+            s->bus_aref = busref;
 
         outval.format = vpiIntVal;
         outval.value.integer = bus;
@@ -385,6 +386,10 @@ PLI_INT32 pli_ide(void)
         if (s->bus_aref)
             vpi_put_value(s->bus_aref, &outval, NULL, vpiNoDelay);
     }
+
+    vpi_free_object(iter);
+    vpi_free_object(href);
+    vpi_free_object(mhref);
 
     return(0);
 }
@@ -428,19 +433,18 @@ void ide_vpi_compat_bootstrap(void)
 
 void vpi_compat_bootstrap(void)
 {
+    running_cver = 1;
     ide_vpi_compat_bootstrap();
 }
 
 void __stack_chk_fail_local(void) {}
 #endif
 
-#ifdef __MODELSIM__
-static void (*vlog_startup_routines[]) () =
+/*static*/ void (*vlog_startup_routines[]) () =
 {
  register_my_systfs, 
  0
 };
-#endif
 
 
 /*

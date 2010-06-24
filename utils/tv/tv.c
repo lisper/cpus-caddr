@@ -73,14 +73,30 @@ main(int argc, char *argv[])
 	char line[1024];
 	unsigned int i, h, v, bits, aoffset, offset, addr, show;
 	unsigned char *ps;
+	int do_window, do_set, do_full, do_show;
 
-	if (argc <= 1)
+	do_window = 1;
+	do_set = 1;
+	do_full = 1;
+	do_show = 0;
+
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '-')
+			switch (argv[i][1]) {
+			case 'n': do_window = 0; break;
+			case 'f': do_full = 0; break;
+			case 's': do_show = 1; break;
+			case 'x': do_set = 0; break;
+			}
+	}
+
+	if (do_window)
 		sdl_init();
 
 	ps = screen ? screen->pixels : NULL;
 
 	while (fgets(line, sizeof(line), stdin)) {
-
+		
 		if (line[0] == 't' && line[1] == 'v')
 			;
 		else
@@ -103,14 +119,17 @@ main(int argc, char *argv[])
 
 		offset = (v * HH) + h;
 
-//		if (bits != 0 && bits != 0xffffffff)
-//			show = 1;
-//		else {
-//			show = 0;
-//			continue;
-//		}
+		/* only look at writes which have some bits set */
+		if (!do_full) {
+			if (bits != 0 && bits != 0xffffffff)
+				show = 1;
+			else {
+				show = 0;
+				continue;
+			}
+		}
 
-		if (ps) show = 0; else show = 1;
+		if (do_show) show = 1;
 
 		if (show) printf("addr=%o, offset=%o v=%o, h=%o bits=%o\n",
 				 addr, aoffset, v, h, bits);
@@ -119,7 +138,11 @@ main(int argc, char *argv[])
 			continue;
 
 		for (i = 0; i < 32; i++) {
-			ps[offset + i] = (bits & 1) ? 0 : 0xff;
+			if (do_set)
+				ps[offset + i] = (bits & 1) ? 0xff : 0;
+			else
+				ps[offset + i] += (bits & 1) ? 1 : 2;
+
 			bits >>= 1;
 		}
 

@@ -85,7 +85,7 @@ module xbus_io(
 	  iob_csr <= 0;
 	  iob_rdy <= 0;
 
-	  hz60_enabled <= 0;
+	  hz60_enabled <= 0/*1'b1*/;	//DEBUG
        end
      else
        begin
@@ -147,7 +147,9 @@ module xbus_io(
 
 		 22'o17772050: /* USEC CLK */
 		   begin
-		      dataout = { 16'b0, us_clock[15:0] };
+//		      dataout = { 16'b0, us_clock[15:0] };
+dataout = 0;
+
 `ifdef debug
 		      $display("io: usec lo %o", { 16'b0, us_clock[15:0] });
 `endif
@@ -155,7 +157,9 @@ module xbus_io(
 
 		 22'o17772051: /* USEC CLK */
 		   begin
-		      dataout = { 16'b0, us_clock[31:16] };
+//		      dataout = { 16'b0, us_clock[31:16] };
+dataout = 0;
+		      
 `ifdef debug
 		      $display("io: usec hi %o", { 16'b0, us_clock[31:16] });
 `endif

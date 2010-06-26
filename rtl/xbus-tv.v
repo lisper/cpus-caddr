@@ -80,14 +80,17 @@ reg [31:0] dataout;
    
    wire 	 in_fb;
    wire 	 in_reg;
+   wire 	 in_color;
    wire [14:0] 	 offset;
    
-   assign in_fb =  {addr[21:15], 15'b0} == 22'o17000000;
-   assign in_reg = {addr[21:3],   3'b0} == 22'o17377760;
+   assign in_fb    =  {addr[21:15], 15'b0} == 22'o17000000;
+   assign in_reg   = {addr[21:3],   3'b0} == 22'o17377760;
+   assign in_color = {addr[21:15], 15'b0} == 22'o17200000;
 
    assign offset = addr[14:0];
-   
-   assign 	 decode = req & (in_reg || in_fb);
+
+   // we need to respond to "color probe" even if we're b&w
+   assign 	 decode = req & (in_reg || in_fb || in_color);
    
    reg [1:0]	 busy;
    
@@ -136,6 +139,8 @@ reg [31:0] dataout;
 		 end
 	       if (in_reg)
 		 dataout <= 0;
+	       if (in_color)
+		 dataout <= 32'hffffffff;
 	    end
      end
 

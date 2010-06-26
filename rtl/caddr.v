@@ -249,7 +249,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire [31:0] 	msk_right_out, msk_left_out, msk;
 
    wire 	dcdrive, opcdrive;
-   wire 	zero16, zero12_drive, zero16_drive;
 
    // page PDL
    wire [31:0] 	pdl;
@@ -337,8 +336,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    reg 		wrcyc;
 
    wire 	pfw, pfr;		/* vma permissions */
-   wire 	vmaok;			/* vma access ok */
-
+//   wire 	vmaok;			/* vma access ok */
+reg vmaok;
+   
    wire 	mfinish;
 
    wire 	memack;
@@ -917,7 +917,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign daddr0 = 
 		   (ir[8] & vmo[18]) |
 		   (ir[9] & vmo[19]) |
-		   (~dmapbenb & dmask[0] & r[0]) |
+//note: the hardware shows bit 0 replaced, 
+// 	but usim or's it instead.
+		   (/*~dmapbenb &*/ dmask[0] & r[0]) |
 		   (ir[12]);
 
    assign dadr =
@@ -989,8 +991,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  sequence_break <= 0;
        end
      else
+//xxx
        if (state_fetch && destintctl)
 	 begin
+`ifdef debug
+	    $display("destintctl: ob %o (%b %b %b %b)",
+		     ob, ob[29], ob[28], ob[27], ob[26]);
+`endif
             lc_byte_mode <= ob[29];
             prog_unibus_reset <= ob[28];
             int_enable <= ob[27];
@@ -1025,7 +1032,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_fetch)
 	 begin
 	    ir[47:26] <= ~destimod1 ? i[47:26] : iob[47:26]; 
-	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0]; 
+	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0];
+`ifdef debug
+	    if (destimod1)
+	      $display("destimod1: lpc %o ob %o ir %o",
+		       lpc, ob[21:0], { iob[47:26], i[25:0] });
+`endif
 	 end
 
 
@@ -1049,7 +1061,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        l <= 0;
      else
-       if (state_fetch)
+//xxx
+       // vma is latched during write, so this must be too
+//       if (state_fetch)
+       if ((vmaenb && state_write) || (~vmaenb && state_fetch))
 	 l <= ob;
 
 
@@ -1058,7 +1073,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    always @(posedge clk)
      if (reset)
        lc <= 0;
+
      else
+//xxx
        if (state_fetch)
 	 begin
 	    if (destlc)
@@ -1095,11 +1112,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		int_enable, sequence_break, lc[25:1], lc0b } :
         opcdrive ?
 	      { 16'b0, 2'b0, opc[13:0] } :
-   // zero16_drive drives top 16 bits to zero
-   // zero12_drive drives top 4 bits of lower 16 to zero
-   // don't need this since we don't pull up mf bus
-   //   zero12_drive ?
-   //	      { 16'b0, 4'b0, 12'b0 } :
         dcdrive ?
 	      { 16'b0, 4'b0, 2'b0, dc[9:0] } :
 	ppdrive ?
@@ -1144,6 +1156,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  next_instrd <= 0;
        end
      else
+//xxx
        if (state_fetch)
 	 begin
 	    newlc <= newlc_in;
@@ -1218,7 +1231,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
 	 begin
 `ifdef debug
-	    $display("load md <- %o", mds);
+//	    $display("load md <- %o", mds);
+	    if (state_fetch && destmdr)
+	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o",
+		       mds, mdsel, osel, alu, mo);
+	    else
+	      $display("load md <- %o; L", mds);
 `endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
@@ -1282,6 +1300,14 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      end
 `endif
 
+`ifdef debug
+   always @(posedge clk)
+	if (state_fetch)
+	  busint.disk.fetch = 1;
+	else
+	  busint.disk.fetch = 0;
+`endif
+       
    // mux M
    assign m = 
 	      mpassm ? mmem_latched :
@@ -1374,6 +1400,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign ipc = pc + 14'd1;
 
+`ifdef debug
+   always @(posedge clk)
+     if (state_fetch && irdisp/*({pcs1,pcs0} == 2'b10)*/)
+       begin
+	  $display("dispatch: dadr=%o %b%b%b %o; dmask %o r %o ir %b vmo %b md %o; mapi %o vmap %o vmem1_adr %o vmo %o",
+		   dadr, dr, dp, dn, dpc, dmask, r[11:0],
+		   {ir[8], ir[9]}, {vmo[19],vmo[18]}, md,
+		   mapi[23:13], vmap, vmem1_adr, vmo);
+       end
+`endif
+   
 `ifdef debug_detail
    always @(posedge clk)
      if (~reset)
@@ -1402,12 +1439,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign dcdrive = srcdc & phase1; 	/* dispatch constant */
 
    assign opcdrive  = srcopc & phase1;
-
-   assign zero16 = srcopc | srcpdlidx | srcpdlptr | srcdc;
-
-   assign zero12_drive  = zero16 & ~srcopc & state_write;
-
-   assign zero16_drive  = zero16 & state_write;
 
 
    // page PDL
@@ -1846,11 +1877,23 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	    mbusy_sync <= memrq;
 	 end
 
-   assign pfw = lvmo_22 & wrcyc;	/* write permission */
-   assign pfr = lvmo_23;		/* read permission */
+//   assign pfw = lvmo_22 & wrcyc;	/* write permission */
+//   assign pfr = lvmo_23;		/* read permission */
 
-   assign vmaok = pfr | pfw;
+   assign pfw = (lvmo_23 & lvmo_22) & wrcyc;	/* write permission */
+   assign pfr = lvmo_23 & ~wrcyc;	/* read permission */
 
+//   assign vmaok = pfr | pfw;
+   always @(posedge clk)
+     if (reset) 
+       vmaok <= 1'b0;
+     else
+       if (memprepare)
+	 vmaok <= pfr | pfw;
+//       else 
+//	 if (~memrq)
+//	   vmaok <= 0;
+    
    always @(posedge clk)
      if (reset)
 	  wmapd <= 0;
@@ -1868,19 +1911,45 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_write && memprepare)
 	 begin
 	    if (memwr)
+begin
+//$display("vma: turn on wrcyc; memrq %b %t", memrq, $time);
+	      rdcyc <= 0;
 	      wrcyc <= 1;
+end
 	    else
+begin
+//$display("vma: turn on rdcyc; memrq %b %t", memrq, $time);
 	      rdcyc <= 1;
+	      wrcyc <= 0;
+end
 	 end
        else
-	 if (~memrq)
+	 if (~memrq && ~memprepare && ~memstart)
 	   begin
+//if (rdcyc || wrcyc) $display("vma: turn off rd/wr; memrq %b %t", memrq, $time);
 	      rdcyc <= 0;
 	      wrcyc <= 0;
 	   end
 
    assign memrq = mbusy | (memstart & (pfr | pfw));
+//   assign memrq = mbusy | (memstart & vmaok);
 
+`ifdef debug
+   always @(posedge clk)
+     begin
+	if (memstart & ~vmaok)
+//	  $display("xbus: access fault, %t", $time);
+	  $display("xbus: access fault, l1[%o]=%o, l2[%o]= %b%b %o; %t",
+		   mapi[23:13], vmap,
+		   vmem1_adr, vmo[23], vmo[22], vmo[21:0],
+		   $time);
+	if (memstart & vmaok)
+	  $display("xbus: start l1[%o]=%o, l2[%o]= %b%b %o",
+		   mapi[23:13], vmap,
+		   vmem1_adr, vmo[23], vmo[22], vmo[21:0]);
+     end
+`endif
+   
    always @(posedge clk)
      if (reset)
        mbusy <= 0;
@@ -1985,11 +2054,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 `ifdef debug
    always @(vm0wp or mapwr0d or state_write)
      if (vm0wp)
-       $display("vm0wp %b, a=%o, di=%o", vm0wp, mapi[23:13], vma[31:27]);
+       $display("vm0wp %b, a=%o, di=%o; %t",
+		vm0wp, mapi[23:13], vma[31:27], $time);
 
    always @(vm1wp or mapwr1d or state_write)
      if (vm1wp)
-       $display("vm1wp %b, a=%o, di=%o", vm1wp, vmem1_adr, vma[23:0]);
+       $display("vm1wp %b, a=%o, di=%o; %t",
+		vm1wp, vmem1_adr, vma[23:0], $time);
 `endif
    
    assign use_map = srcmap | memstart;
@@ -1998,7 +2069,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign vmem1_adr = {vmap[4:0], mapi[12:8]};
 
-   assign vmem1_we = vm1wp & clk;
+   assign vmem1_we = vm1wp & ~clk;
    
 `define async_vmem1
 `ifdef async_vmem1
@@ -2272,10 +2343,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign opcclka = (state_fetch | opcclk) & ~opcinh;
 
-   always @(posedge opcclka)
+//   always @(posedge opcclka)
+//     if (reset)
+//       opc <= 0;
+//     else
+//	 opc <= pc;
+
+   always @(posedge clk)
      if (reset)
        opc <= 0;
      else
+       if (opcclka)
 	 opc <= pc;
 
    // With the machine stopped, taking OPCCLK high then low will

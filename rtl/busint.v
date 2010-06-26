@@ -22,11 +22,17 @@
  *   17000000- tv frame buffer
  *   17051777
  *
+ *   17200000  tv color frame buffer
+ *
  *   17377760 tv
  *   17377770 disk
  *
- *   17772000 i/o board
+ *   17740000 unknown
  *
+ *   17772000 i/o board
+ *   17773000 unibus
+ *
+ *   17777700 unknown
  *
  * unibus:
  *   17400000  color?

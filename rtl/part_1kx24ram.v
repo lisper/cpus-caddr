@@ -26,7 +26,7 @@ module part_1kx24ram_async(A, DI, DO, CE_N, WE_N);
         begin
            ram[ A ] = DI;
 `ifdef debug
-	   if (debug != 0)
+//	   if (debug != 0)
 	     $display("vmem1: W addr %o <- val %o (async); %t", A, DI, $time);
 `endif
         end

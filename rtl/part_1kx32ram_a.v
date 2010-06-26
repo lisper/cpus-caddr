@@ -26,7 +26,7 @@ module part_1kx32ram_sync_a(CLK, A, DI, DO, CE_N, WE_N);
        begin
           ram[ A ] <= DI;
 `ifdef debug
-	  if (A != 0 && debug != 0)
+	  if (A != 0/* && debug != 0*/)
 	    $display("amem: W addr %o val %o; %t", A, DI, $time);
 `endif
        end

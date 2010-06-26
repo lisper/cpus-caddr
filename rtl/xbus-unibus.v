@@ -31,9 +31,23 @@ reg [31:0] 	 dataout;
    
    reg [1:0]	 ack_delayed;
    wire [5:0] 	 offset;
+
+   wire 	 in_unibus;
+   wire 	 in_other;
+
+   wire 	 decode_unibus;
+   wire 	 decode_other;
+   
+   assign 	 in_unibus = ({addr[21:6], 6'b0} == 22'o17773000);
+   assign 	 in_other  =
+			    ({addr[21:6],   6'b0} == 22'o17777700) |
+   			    ({addr[21:12], 12'b0} == 22'o17740000);
    
    // 766000-766777 spy, mode, unibus, two machine lashup
-   assign 	 decode = req & ({addr[21:6], 6'b0} == 22'o17773000);
+   assign 	 decode_unibus = req & in_unibus;
+   assign 	 decode_other = req & in_other;
+
+   assign 	 decode = decode_unibus || decode_other;
 
    assign 	 ack = ack_delayed[1];
 
@@ -60,7 +74,7 @@ reg [31:0] 	 dataout;
      begin
 	promdisable = 0;
 	
-	if (req & decode)
+	if (decode_unibus)
 	  if (write)
 	    begin
 `ifdef debug
@@ -88,6 +102,22 @@ reg [31:0] 	 dataout;
 `endif
 	       dataout = 0;
 	    end
+
+	if (decode_other)
+	  if (write)
+	    begin
+`ifdef debug
+               `DBG_DLY $display("unibus: other write @%o <- %o", addr, datain);
+`endif
+	    end
+	  else
+	    begin
+`ifdef debug
+               `DBG_DLY $display("unibus: other read @%o", addr);
+`endif
+	       dataout = 0;
+	    end
+
      end
 
 

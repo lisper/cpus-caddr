@@ -346,7 +346,8 @@ module xbus_disk (
       	       s_last1 = 25,
 	       s_last2 = 26,
       	       s_done0 = 27,
-      	       s_done1 = 28;
+      	       s_done1 = 28,
+      	       s_debug_wait = 29;
 		      
    reg [4:0] state;
    reg [4:0] state_next;
@@ -420,7 +421,7 @@ module xbus_disk (
    
 
    // bus address
-   assign addr_match = { addrin[21:3], 3'b0 } == 22'o17377770 ?
+   assign addr_match = { addrin[21:6], 6'b0 } == 22'o17377700 ?
 		       1'b1 : 1'b0;
    
    assign decode = (reqin && addr_match) ? 1'b1 : 1'b0;
@@ -479,6 +480,7 @@ module xbus_disk (
 `endif
 	  if (~writein)
 	    begin
+	       if (addrin[5:3] == 3'o7)
 	      case (addrin[2:0])
 		3'o0: reg_dataout = disk_status;
 		3'o1: reg_dataout = disk_ma;
@@ -491,14 +493,23 @@ module xbus_disk (
 		     $display("disk: read status %o", disk_status);
 `endif
 		  end
-		3'o5: reg_dataout = { 8'b0, 2'b10, disk_clp };
+		3'o5: reg_dataout = { 8'b0, 2'b00, disk_clp };
 		3'o6: reg_dataout = disk_da;
 		3'o7: reg_dataout = 0;
-	      endcase
+	      endcase // case(addrin[2:0])
+	       else
+		 begin
+`ifdef debug
+		    $display("disk: unknown read %o", addrin);
+		    
+`endif
+		    reg_dataout = 0;
+		 end
 	   end
 
 	 if (writein)
 	   begin
+	       if (addrin[5:3] == 3'o7)
 	      case (addrin[2:0])
 		3'o0, 3'o1, 3'o2, 3'o3:
 		  begin
@@ -541,7 +552,14 @@ module xbus_disk (
 `endif
 		     disk_start = 1;
 		  end
-	      endcase
+	      endcase // case(addrin[2:0])
+	       else
+		 begin
+`ifdef debug
+		    $display("disk: unknown write %o <- %o", addrin, datain);
+		    
+`endif
+		 end
 	   end
 	 end // if (decode)
        else
@@ -721,7 +739,11 @@ module xbus_disk (
    always @(state or disk_cmd or disk_da or disk_ccw or disk_clp or
 	    lba or disk_start or wc or more_ccws or
             ata_done or ata_out or ata_hold or
-	    grantin or dma_data_hold)
+	    grantin or dma_data_hold
+`ifdef debug
+	    or done_waiting or busy_cycles
+`endif
+	    )
      begin
 	state_next = state;
 
@@ -775,6 +797,9 @@ module xbus_disk (
 	      end
 
 	  s_busy:
+`ifdef debug
+	    if (busy_cycles >= 2)
+`endif
 	    state_next = s_idle;
 
 	  s_read_ccw:
@@ -1001,7 +1026,6 @@ module xbus_disk (
 	    begin
 	       ata_wr = 1;
 	       ata_addr = ATA_DATA;
-//	       ata_in = dma_data_hold[31:16];
 	       ata_in = dma_data_hold[15:0];
 
 	       if (ata_done)
@@ -1014,7 +1038,6 @@ module xbus_disk (
 	    begin
 	       ata_wr = 1;
 	       ata_addr = ATA_DATA;
-//	       ata_in = dma_data_hold[15:0];
 	       ata_in = dma_data_hold[31:16];
 
 	       if (ata_done)
@@ -1051,14 +1074,32 @@ module xbus_disk (
 
 	  s_last2:
 	    begin
-	       inc_da = 1;
-	       inc_clp = 1;
 	       if (more_ccws)
-		 state_next = s_read_ccw;
+		 begin
+		    inc_da = 1;
+		    inc_clp = 1;
+		    state_next = s_read_ccw;
+		 end
 	       else
+`ifdef debug
+		 state_next = s_debug_wait;
+`else
 		 state_next = s_done0;
+`endif
 	    end
-	  
+	
+`ifdef debug
+	  s_debug_wait:
+	    begin
+	       if (0) $display("xxx: s_debug_wait; done_waiting %d busy_cycles %d",
+			       done_waiting, busy_cycles);
+	       if (done_waiting != 0)
+		 state_next = s_done0;
+	       else
+		 state_next = s_debug_wait;
+	    end
+`endif
+  
 	  s_done0:
 	    begin
 	       assert_int = 1;
@@ -1084,6 +1125,54 @@ module xbus_disk (
 	  
 	endcase
      end
+
+`ifdef debug
+   integer busy_cycles;
+   integer blocks_io;
+   integer fetch;
+   integer done_waiting;
+   
+   initial
+     begin
+	busy_cycles = 0;
+	blocks_io = 0;
+	fetch = 0;
+	done_waiting = 0;
+     end
+   
+   always @(posedge clk)
+     begin
+	if (state != s_idle && state_next == s_idle)
+	  begin
+	     $display("xxx: going idle; busy_cycles %d, blocks_io %d",
+		      busy_cycles, blocks_io);
+	  end
+	else
+	  if (state == s_idle && state_next != s_idle)
+	    begin
+	       $display("xxx: going busy");
+	       busy_cycles = 0;
+	       blocks_io = 0;
+	       done_waiting = 0;
+	    end
+	  else
+//	    if (state != s_idle)
+	    if (fetch != 0 && state != s_idle)
+	      begin
+		 busy_cycles = busy_cycles + 1;
+		 if (0) $display("xxx: busy_cycles %d; state %d",
+				 busy_cycles, state);
+		 if (busy_cycles == (1400 * blocks_io)-1)
+		   begin
+		      done_waiting = 1;
+		      $display("xxx: done waiting; state %d", state);
+		   end
+	      end
+
+	if (state == s_read_ccw_done)
+	  blocks_io = blocks_io + 1;
+     end
+`endif
    
 endmodule
 

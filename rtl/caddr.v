@@ -316,18 +316,21 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 
    // page SPC
+
    reg [4:0] 	spcptr;
 
    wire [18:0] 	spcw;
    wire [18:0] 	spco;
 
    // page SPCPAR
+
    wire 	mdparerr, parerr, memparok;
    wire 	trap;
    reg 		boot_trap;
 
 
    // page VCTRL1
+
    reg 		memstart, mbusy_sync;
    wire 	memop, memprepare;
 
@@ -335,10 +338,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire 	memrq;
    reg 		wrcyc;
 
-   wire 	pfw, pfr;		/* vma permissions */
-//   wire 	vmaok;			/* vma access ok */
-reg vmaok;
-   
+   wire 	pfw;			/* vma permissions */
+   wire 	pfr;
+   reg 		vmaok;			/* vma access ok */
+
+   reg 		last_pfr;		/* result of last mem op */
+   reg 		last_pfw;
+	
    wire 	mfinish;
 
    wire 	memack;
@@ -347,6 +353,7 @@ reg vmaok;
    wire 	waiting;
    
    // page VCTRL2
+
    wire 	mapwr0d, mapwr1d, vm0wp, vm1wp;
    wire 	vmaenb, vmasel;
    wire 	memdrive, mdsel, use_md;
@@ -355,10 +362,12 @@ reg vmaok;
    wire 	lm_drive_enb;
 
    // page VMA
+
    reg [31:0] 	vma;
    wire 	vmadrive;
 
    // page VMAS
+
    wire [31:0] 	vmas;
 
    //       22221111111111
@@ -371,6 +380,7 @@ reg vmaok;
    wire [4:0] 	vmap;
 
    // page VMEM0 - virtual memory map stage 0
+
    wire 	use_map;
 
    wire [23:0] 	vmo;
@@ -553,16 +563,6 @@ reg vmaok;
        if (phase0)
 	 a_latch = amem;
 
-`ifdef debug_detail
-   always @(state or amem or reset)
-     begin
-	if (state_fetch) $display("F a <- %o %t", amem, $time);
-	if (state_decode) $display("D a <- %o %t", amem, $time);
-	if (state_write) $display("W a <- %o %t", amem, $time);
-	if (state_execute) $display("E a <- %o %t", amem, $time);
-     end
-`endif
-   
    assign a = amemenb ? a_latch :
 	      apassenb ? l :
 	      32'hffffffff;
@@ -991,7 +991,6 @@ reg vmaok;
 	  sequence_break <= 0;
        end
      else
-//xxx
        if (state_fetch && destintctl)
 	 begin
 `ifdef debug
@@ -1033,7 +1032,7 @@ reg vmaok;
 	 begin
 	    ir[47:26] <= ~destimod1 ? i[47:26] : iob[47:26]; 
 	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0];
-`ifdef debug
+`ifdef debug_detail
 	    if (destimod1)
 	      $display("destimod1: lpc %o ob %o ir %o",
 		       lpc, ob[21:0], { iob[47:26], i[25:0] });
@@ -1075,7 +1074,6 @@ reg vmaok;
        lc <= 0;
 
      else
-//xxx
        if (state_fetch)
 	 begin
 	    if (destlc)
@@ -1127,14 +1125,14 @@ reg vmaok;
 	vmadrive ?
 	      vma :
 	mapdrive ?
-	      { ~pfw, ~pfr, 1'b1, vmap[4:0], vmo[23:0] } :
+//	      { ~pfw, ~pfr, 1'b1, vmap[4:0], vmo[23:0] } :
+	      { ~last_pfw, ~last_pfr, 1'b0, vmap[4:0], vmo[23:0] } :
 	      32'b0;
 
 
    // page LCC
 
    assign lc0b = lc[0] & lc_byte_mode;
-//   assign next_instr  = spop & ~(srcspcpopreal | ~spc[14]);
    assign next_instr  = spop & (~srcspcpopreal & spc[14]);
   
    assign newlc_in  = have_wrong_word & ~lcinc;
@@ -1156,7 +1154,6 @@ reg vmaok;
 	  next_instrd <= 0;
        end
      else
-//xxx
        if (state_fetch)
 	 begin
 	    newlc <= newlc_in;
@@ -1231,7 +1228,6 @@ reg vmaok;
        if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
 	 begin
 `ifdef debug
-//	    $display("load md <- %o", mds);
 	    if (state_fetch && destmdr)
 	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o",
 		       mds, mdsel, osel, alu, mo);
@@ -1282,25 +1278,8 @@ reg vmaok;
        if (phase0)
 	 mmem_latched = mmem;
 
-`ifdef debug_detail
-   always @(state or mmem or reset)
-     begin
-	if (state_fetch)
-	  $display("F m <- %o; madr %o, mpassm %b, mpass %b %t",
-		   mmem, madr,mpassm,mpass,$time);
-	if (state_decode)
-	  $display("D m <- %o; madr %o, mpassm %b, mpass %b %t",
-		   mmem, madr,mpassm,mpass,$time);
-	if (state_write)
-	  $display("W m <- %o; madr %o, mpassm %b, mpass %b %t",
-		   mmem, madr,mpassm,mpass,$time);
-	if (state_execute)
-	  $display("E m <- %o; madr %o, mpassm %b, mpass %b %t",
-		   mmem, madr,mpassm,mpass,$time);
-     end
-`endif
-
 `ifdef debug
+   // tell disk controller when each fetch passes to force sync with usim
    always @(posedge clk)
 	if (state_fetch)
 	  busint.disk.fetch = 1;
@@ -1877,22 +1856,19 @@ reg vmaok;
 	    mbusy_sync <= memrq;
 	 end
 
-//   assign pfw = lvmo_22 & wrcyc;	/* write permission */
-//   assign pfr = lvmo_23;		/* read permission */
-
    assign pfw = (lvmo_23 & lvmo_22) & wrcyc;	/* write permission */
-   assign pfr = lvmo_23 & ~wrcyc;	/* read permission */
+   assign pfr = lvmo_23 & ~wrcyc;		/* read permission */
 
-//   assign vmaok = pfr | pfw;
    always @(posedge clk)
      if (reset) 
        vmaok <= 1'b0;
      else
        if (memprepare)
-	 vmaok <= pfr | pfw;
-//       else 
-//	 if (~memrq)
-//	   vmaok <= 0;
+	 begin
+	    last_pfr <= pfr;
+	    last_pfw <= wrcyc ? pfw : 1'b1; /* wrong, but matches usim */
+	    vmaok <= pfr | pfw;
+	 end
     
    always @(posedge clk)
      if (reset)
@@ -1911,34 +1887,29 @@ reg vmaok;
        if (state_write && memprepare)
 	 begin
 	    if (memwr)
-begin
-//$display("vma: turn on wrcyc; memrq %b %t", memrq, $time);
-	      rdcyc <= 0;
-	      wrcyc <= 1;
-end
+	      begin
+		 rdcyc <= 0;
+		 wrcyc <= 1;
+	      end
 	    else
-begin
-//$display("vma: turn on rdcyc; memrq %b %t", memrq, $time);
-	      rdcyc <= 1;
-	      wrcyc <= 0;
-end
+	      begin
+		 rdcyc <= 1;
+		 wrcyc <= 0;
+	      end
 	 end
        else
 	 if (~memrq && ~memprepare && ~memstart)
 	   begin
-//if (rdcyc || wrcyc) $display("vma: turn off rd/wr; memrq %b %t", memrq, $time);
 	      rdcyc <= 0;
 	      wrcyc <= 0;
 	   end
 
    assign memrq = mbusy | (memstart & (pfr | pfw));
-//   assign memrq = mbusy | (memstart & vmaok);
 
 `ifdef debug
    always @(posedge clk)
      begin
 	if (memstart & ~vmaok)
-//	  $display("xbus: access fault, %t", $time);
 	  $display("xbus: access fault, l1[%o]=%o, l2[%o]= %b%b %o; %t",
 		   mapi[23:13], vmap,
 		   vmem1_adr, vmo[23], vmo[22], vmo[21:0],
@@ -1959,15 +1930,6 @@ end
        else
 	 mbusy <= memrq;
 
-`ifdef debug_xx
-   always @(posedge clk)
-     begin
-       if (memrq)
-	 $display("xbus memrq %t; rdcyc %b, memrd %b, memwr %b, addr %o, ir[20:19] %b",
-		  $time, rdcyc, memrd, memwr, {pma,vma[7:0]}, ir[20:19]);
-    end
-`endif
-   
    //------
 
    assign mfinish = memack | reset;
@@ -2255,7 +2217,6 @@ end
    assign machrun = (sstep & ~ssdone) |
 		    (srun & ~errhalt & ~waiting & ~stathalt);
 
-   //assign stat_ovf = ~stc32;
    assign stat_ovf = 1'b0;
    assign stathalt = statstop & stathenb;
 
@@ -2342,12 +2303,6 @@ end
    // page OPCS
 
    assign opcclka = (state_fetch | opcclk) & ~opcinh;
-
-//   always @(posedge opcclka)
-//     if (reset)
-//       opc <= 0;
-//     else
-//	 opc <= pc;
 
    always @(posedge clk)
      if (reset)

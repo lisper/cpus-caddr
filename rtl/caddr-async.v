@@ -1018,7 +1018,7 @@ assign mf =
 	~vmadrive_n ?
 	  vma :
 	~mapdrive_n ?
-	  { pfw_n, pfr_n, 1'b1, vmap_n[4:0], vmo[23:0] } :
+	  { pfw_n, pfr_n, 1'b0, vmap_n[4:0], vmo[23:0] } :
 	32'b0;
 
 

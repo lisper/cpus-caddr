@@ -97,7 +97,9 @@ module busint(mclk, reset,
 
    reg [3:0] 	state;
    wire [3:0] 	next_state;
-   
+
+   reg [4:0] 	timeout_count;
+ 	
    //
    wire 	decode_ok;
    wire 	decode_dram, decode_disk, decode_tv, decode_io, decode_unibus;
@@ -126,6 +128,8 @@ module busint(mclk, reset,
    wire [21:0] 	addrout_disk;
    
    wire 	device_ack;
+
+   wire 	timed_out;
    
    xbus_ram dram (
 		  .reset(reset),
@@ -196,24 +200,26 @@ module busint(mclk, reset,
 	       );
 
    xbus_unibus unibus (
-	       .reset(reset),
-	       .clk(mclk),
-	       .addr(addr),
-	       .datain(busin),
-	       .dataout(dataout_unibus),
-	       .req(req),
-	       .write(write),
-	       .ack(ack_unibus),
-	       .decode(decode_unibus),
-	       .interrupt(interrupt_unibus),
-	       .promdisable(promdisable)
-	       );
+		       .reset(reset),
+		       .clk(mclk),
+		       .addr(addr),
+		       .datain(busin),
+		       .dataout(dataout_unibus),
+		       .req(req),
+		       .write(write),
+		       .ack(ack_unibus),
+		       .decode(decode_unibus),
+		       .interrupt(interrupt_unibus),
+		       .promdisable(promdisable),
+		       .timeout(timed_out)
+		       );
 
    assign decode_ok = decode_dram | decode_disk | decode_tv |
 		      decode_io | decode_unibus;
    
    
-   assign device_ack = ack_dram | ack_disk | ack_tv | ack_io | ack_unibus;
+   assign device_ack = ack_dram | ack_disk | ack_tv | ack_io | ack_unibus |
+		       timed_out;
    
    assign ack = state == BUS_REQ && device_ack;
 
@@ -231,19 +237,22 @@ module busint(mclk, reset,
 		  (req & decode_tv & ~write) ? dataout_tv :
 		  (req & decode_io & ~write) ? dataout_io :
 		  (req & decode_unibus & ~write) ? dataout_unibus :
+		  (req & timed_out & ~write) ? 32'h00000000 :
 		  32'hffffffff;
 
-`ifdef debug
+`ifdef debug_xbus
   always @(posedge mclk)
     begin
        if (req)
 	 if (write)
 	   begin
-              `DBG_DLY $display("xbus: write @%o, %t", addr, $time);
+              `DBG_DLY $display("xbus: write @%o <- %o; %t",
+				addr, busin, $time);
 	   end
 	 else
 	   begin
-              `DBG_DLY $display("xbus: read @%o, %t", addr, $time);
+              `DBG_DLY $display("xbus: read @%o -> %o; %t",
+				addr, busout, $time);
 	   end
     end
 `endif
@@ -294,6 +303,25 @@ module busint(mclk, reset,
 
    assign disk_datain = state == BUS_SLAVE ? dataout_dram : busin;
    assign decodein_disk = grantin_disk & decode_dram;
+
+   // bus timeout
+   always @(posedge mclk)
+     if (reset)
+       timeout_count <= 0;
+     else
+       if (state == BUS_REQ && ~timed_out)
+	 timeout_count <= timeout_count + 1;
+       else
+	 if (state == BUS_WAIT)
+	   timeout_count <= 0;
+
+   assign timed_out = timeout_count == 5'b11111;
+
+`ifdef debug
+   always @(posedge mclk)
+     if (timed_out)
+       $display("busint: timeout; addr %o", addr);
+`endif
    
 endmodule
      

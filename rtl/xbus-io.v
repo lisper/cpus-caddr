@@ -6,7 +6,7 @@ module xbus_io(
 	       reset, clk,
 	       addr, datain, dataout,
 	       req, ack, write, decode,
-	       interrupt
+	       interrupt, vector
 	       );
 
    input reset;
@@ -22,7 +22,8 @@ module xbus_io(
    output 	 ack;		/* request done */
    output 	 decode;	/* request addr ok */
    output 	 interrupt;
-
+   output [7:0]  vector;
+   
    // -------------------------------------------------------------
 
    parameter SYS_CLK = 26'd50000000,
@@ -46,8 +47,6 @@ module xbus_io(
    assign 	 decode = req & ({addr[21:6], 6'b0} == 22'o17772000);
    
    assign 	 ack = ack_delayed[1];
-
-   assign 	 interrupt = 0;
 
    reg [3:0] 	 iob_csr;
    reg [3:0] 	 iob_rdy;
@@ -185,6 +184,7 @@ dataout = 0;
      end
 
 //   assign interrupt = hz60_clk_int_enable && clk_done;
+   assign 	 interrupt = 0;
 
    assign hz60_clk_fired = hz60_counter == hz60_clk_div[19:0];
 

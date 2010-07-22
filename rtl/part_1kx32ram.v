@@ -59,7 +59,9 @@ module part_1kx32ram_sync_p(CLK, A, DI, DO, CE_N, WE_N);
      if (~CE_N && ~WE_N)
         begin
            ram[ A ] = DI;
+`ifdef debug
 	   $display("pdl: W addr %o val %o; %t", A, DI, $time);
+`endif
         end
 
    always @(posedge CLK)

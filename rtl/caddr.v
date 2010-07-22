@@ -227,6 +227,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire [31:0] 	mds;
    wire [31:0] 	mem;
    wire [31:0] 	busint_bus;
+   wire [15:0] 	busint_spyout;
    wire 	mempar_out;
 
    wire 	bus_int;
@@ -2412,7 +2413,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .busin(md),
 		 .busout(busint_bus),
 		 .spyin(spyin),
-		 .spyout(spyout),
+		 .spyout(busint_spyout),
 
 		 .req(memrq),
 		 .ack(memack),

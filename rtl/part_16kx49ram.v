@@ -37,7 +37,9 @@ module part_16kx49ram(A, DI, DO, CE_N, WE_N);
 	   else
 `endif
            ram[ A ] = DI;
+`ifdef debug
 	   $display("iram: W addr %o val %o; %t", A, DI, $time);
+`endif
 	end
     end
 

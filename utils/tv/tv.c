@@ -9,7 +9,7 @@ typedef unsigned int u32;
 
 #define HH 768
 #define VV 896
-u32 fb[(HH/32)*VV];
+u32 fb[32768/*(HH/32)*VV*/];
 
 static SDL_Surface *screen;
 
@@ -139,7 +139,8 @@ main(int argc, char *argv[])
 
 		for (i = 0; i < 32; i++) {
 			if (do_set)
-				ps[offset + i] = (bits & 1) ? 0xff : 0;
+//				ps[offset + i] = (bits & 1) ? 0xff : 0;
+				ps[offset + i] ^= (bits & 1) ? 0x0 : 0xff;
 			else
 				ps[offset + i] += (bits & 1) ? 1 : 2;
 

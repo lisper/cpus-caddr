@@ -33,12 +33,15 @@ int needline1 = 1;
 int line_num1, line_num2;
 int l1, l2;
 unsigned int lpc1, lpc2;
-int gap, ok;
+int gap, ok, amemgap;
 
 int f1_in_iram, f2_in_iram;
 
 int instr1, instr2;
 int disk_busy1, disk_busy2;
+
+unsigned int amem1[1024]; char amem1_fill[1024]; char amem_report[1024];
+unsigned int amem2[1024]; char amem2_fill[1024];
 
 void dump_state(void)
 {
@@ -140,6 +143,38 @@ void show_events(int i)
     }
 }
 
+int check_amem(int show)
+{
+    int i, mismatch;
+
+    mismatch = 0;
+
+    for (i = 0; i < 1024; i++) {
+        if (amem1_fill[i] == 0 ||
+            amem2_fill[i] == 0)
+            continue;
+
+        if (amem1[i] != amem2[i]) {
+            if (amem_report[i])
+                continue;
+
+            if (show) {
+                printf("amem %o 1: %11o  2: %11o\n",
+                       i, amem1[i], amem2[i]);
+
+                amem_report[i] = 1;
+                continue;
+            } else {
+                mismatch++;
+            }
+        }
+    }
+
+    if (mismatch)
+        return -1;
+
+    return 0;
+}
 
 int get1(void)
 {
@@ -184,6 +219,7 @@ int get1(void)
             continue;
         }
 
+        /* spc: */
         if (line1[0] == 's' && line1[1] == 'p' && line1[3] == ':') {
             if (line1[5] == 'W') {
                 sscanf(line1, "spc: W addr %o val %o",
@@ -194,6 +230,7 @@ int get1(void)
             continue;
         }
 
+        /* pdl: */
         if (line1[0] == 'p' && line1[1] == 'd' && line1[3] == ':') {
             if (line1[5] == 'W') {
                 sscanf(line1, "pdl: W addr %o val %o",
@@ -209,17 +246,24 @@ int get1(void)
             continue;
         }
 
-       if (line1[0] == 's' && line1[1] == 'p' && line1[3] == ':') {
-            if (line1[5] == 'W') {
-                sscanf(line1, "spc: W addr %o val %o",
-                       &spcaddr[1], &spcwrite[1]);
-                e_spcwrite[1] = 1;
+        /* amem: */
+        if (line1[0] == 'a' && line1[1] == 'm' && line1[4] == ':') {
+            if (line1[6] == 'W') {
+                sscanf(line1, "amem: W addr %o val %o", &aaddr[1], &awrite[1]);
+                e_awrite[1] = 1;
+
+                amem1[aaddr[1] & 01777] = awrite[1];
+                amem1_fill[aaddr[1] & 01777] = 1;
+                amem_report[aaddr[1] & 01777] = 0;
+		if (0) printf("1: >amem[%o]\n", aaddr[1] & 01777);
             }
+
             advance1();
             continue;
         }
 
-       if (line1[0] == 'i' && line1[1] == 'r' && line1[4] == ':') {
+        /* iram: */
+        if (line1[0] == 'i' && line1[1] == 'r' && line1[4] == ':') {
             if (line1[6] == 'W') {
                 sscanf(line1, "iram: W addr %o val %llo",
                        &iraddr[1], &irwrite[1]);
@@ -229,6 +273,7 @@ int get1(void)
             continue;
         }
 
+        /* vmem0 */
         if (line1[0] == 'v' && line1[1] == 'm' && line1[4] == '0') {
             if (line1[7] == 'W') {
                 sscanf(line1, "vmem0: W addr %o <- val %o;",
@@ -239,6 +284,7 @@ int get1(void)
             continue;
         }
 
+        /* vmem1 */
         if (line1[0] == 'v' && line1[1] == 'm' && line1[4] == '1') {
             if (line1[7] == 'W') {
                 sscanf(line1, "vmem1: W addr %o <- val %o;",
@@ -249,6 +295,7 @@ int get1(void)
             continue;
         }
 
+        /* vm0 vm1 */
         if (line1[0] == 'v' && line1[1] == 'm' &&
             (line1[2] == '0' || line1[2] == '1'))
         {
@@ -256,6 +303,13 @@ int get1(void)
             continue;
         }
 
+        if (line1[0] == 'v' && line1[1] == 'm' && line1[2] == 'a')
+        {
+            advance1();
+            continue;
+        }
+
+        /* xbus: */
         if (line1[0] == 'x' && line1[1] == 'b' && line1[2] == 'u')
         {
             if (line1[6] == 'a')
@@ -272,6 +326,7 @@ int get1(void)
             continue;
         }
 
+        /* unibus: */
         if (line1[0] == 'u' && line1[1] == 'n' && line1[2] == 'i')
         {
             if (line1[8] == 'w') {
@@ -286,6 +341,7 @@ int get1(void)
             continue;
         }
 
+        /* ddr: */
         if (line1[0] == 'd' && line1[1] == 'd' && line1[2] == 'r')
         {
             advance1();
@@ -304,17 +360,14 @@ int get1(void)
             continue;
         }
 
-        if (memcmp(line1, "dispatch:", 9) == 0) {
-            advance1();
-            continue;
-        }
-
+        /* tv: */
         if (line1[0] == 't' && line1[1] == 'v')
         {
             advance1();
             continue;
         }
 
+        /* io: */
         if (line1[0] == 'i' && line1[1] == 'o')
         {
             advance1();
@@ -336,6 +389,22 @@ int get1(void)
             continue;
         }
 
+        if (memcmp(line1, "destimod1:", 10) == 0) {
+            advance1();
+            continue;
+        }
+
+        if (memcmp(line1, "destintctl:", 11) == 0) {
+            advance1();
+            continue;
+        }
+
+        if (memcmp(line1, "dispatch:", 9) == 0) {
+            advance1();
+            continue;
+        }
+
+        /* xxx: */
         if (line1[0] == 'x' && line1[1] == 'x' && line1[2] == 'x')
         {
             int count;
@@ -357,6 +426,43 @@ int get1(void)
     show_events(1);
 
     return 0;
+}
+
+struct {
+    int what;
+    int addr;
+    int v;
+} dstack[10];
+int dcount;
+#define AMEM 1
+#define MMEM 2
+
+void defer2(int what, int addr, int v)
+{
+    dstack[dcount].what = what;
+    dstack[dcount].addr = addr;
+    dstack[dcount].v = v;
+    dcount++;
+}
+
+void do_defered(void)
+{
+    int i, a;
+
+    for (i = 0; i < dcount; i++) {
+        switch (dstack[i].what) {
+        case AMEM:
+            a = dstack[i].addr;
+
+            if (0) printf("2: >amem[%o]\n", a);
+            amem2[a] = dstack[i].v;
+            amem2_fill[a] = 1;
+            amem_report[a] = 0;
+            break;
+        }
+    }
+
+    dcount = 0;
 }
 
 void getline2(void)
@@ -387,9 +493,16 @@ int get2(void)
             if (eof)
                 return 0;
 
-
             if (line2[0] == '-')
                 break;
+
+            if (line2[0] == 'a' && line2[1] == '_' && line2[2] == 'm') {
+                sscanf(line2, "a_memory[%o] <- %o", &aaddr[2], &awrite[2]);
+                amem2[aaddr[2] & 01777] = awrite[2];
+                amem2_fill[aaddr[2] & 01777] = 1;
+                amem_report[aaddr[2] & 01777] = 0;
+                if (0) printf("2: >amem[%o]\n", aaddr[2] & 01777);
+            }
         }
     }
     state2 = 1;
@@ -406,6 +519,7 @@ int get2(void)
 
     if (show) printf("2: %o\n", pc2);
     instr2++;
+    do_defered();
 
     while (1) {
         getline2();
@@ -422,6 +536,7 @@ int get2(void)
         if (line2[0] == 'a' && line2[1] == '_' && line2[2] == 'm') {
             sscanf(line2, "a_memory[%o] <- %o", &aaddr[2], &awrite[2]);
             e_awrite[2] = 1;
+            defer2(AMEM, aaddr[2], awrite[2]);
         }
         if (line2[0] == 'm' && line2[1] == '_' && line2[2] == 'm') {
             sscanf(line2, "m_memory[%o] <- %o", &maddr[2], &mwrite[2]);
@@ -665,6 +780,17 @@ int process(void)
 
         } else
             ok++;
+
+        if (check_amem(0) == 0)
+            amemgap = 0;
+        else
+            amemgap++;
+
+        if (amemgap > 5) {
+            printf("amem mismatch: pc1=%o pc2=%o; (1=%d, 2=%d)\n",
+                   pc1, pc2, line_num1, line_num2);
+            check_amem(1);
+        }
 
         if (show) printf("----\n");
     }

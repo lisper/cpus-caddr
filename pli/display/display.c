@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include "SDL/SDL.h"
+#include "SDL.h"
 #else
 #include <SDL/SDL.h>
 #endif

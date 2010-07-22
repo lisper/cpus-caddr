@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 		    top->v__DOT__reset = 0;
 	    }
 	    if (main_time == 260) {
-		    VL_PRINTF("boot off\n");
+		    //VL_PRINTF("boot off\n");
 		    top->v__DOT__boot = 0;
 	    }
 	}
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
         if (top->v__DOT__clk &&
 	    top->v__DOT__cpu__DOT__state == 4)
 	{
-		VL_PRINTF("%o %017llo A=%08x M=%08x N=%d R=%08x LC=%08x\n",
+		VL_PRINTF("%o %017llo A=%08x M=%08x N%d R=%08x LC=%08x\n",
 			  top->v__DOT__cpu__DOT__lpc,
 			  (QData)top->v__DOT__cpu__DOT__ir,
 			  top->v__DOT__cpu__DOT__a,
@@ -70,6 +70,11 @@ int main(int argc, char** argv)
 			  top->v__DOT__cpu__DOT__n,
 			  top->v__DOT__cpu__DOT__r,
 			  top->v__DOT__cpu__DOT__lc);
+
+		VL_PRINTF("vma: vma %o ob %o alu %llo\n",
+			  top->v__DOT__cpu__DOT__vma,
+			  top->v__DOT__cpu__DOT__ob,
+			  top->v__DOT__cpu__DOT__alu);
 	}
 
 	if (tfp)

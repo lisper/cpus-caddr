@@ -1,7 +1,8 @@
 /*
  */
 
-//`define debug_vcd
+`define patch_rw_test // test rw
+`define debug_vcd
 `define debug
 `define DBG_DLY #1
 
@@ -113,6 +114,22 @@ module test;
 
         end
 
+`ifdef patch_rw_test
+	cpu.i_AMEM.ram[10'o436] = 32'o403447;
+	cpu.i_VMEM0.ram[11'o20] = 5'o31;
+	cpu.i_VMEM1.ram[10'o1447] = 24'o63200254;
+
+	cpu.i_AMEM.ram[10'o2] = 32'o400000;
+	cpu.i_AMEM.ram[10'o4] = 32'o401000;
+	cpu.i_AMEM.ram[10'o6] = 32'o402000;
+	cpu.i_AMEM.ram[10'o10] = 32'o403000;
+
+	cpu.i_VMEM1.ram[10'o1440] = 24'o03200254;
+	cpu.i_VMEM1.ram[10'o1442] = 24'o23200254;
+	cpu.i_VMEM1.ram[10'o1444] = 24'o43200254;
+	cpu.i_VMEM1.ram[10'o1446] = 24'o63200254;
+`endif
+		
 	#240 boot = 1;
 
 	#10 reset = 0;
@@ -131,12 +148,14 @@ module test;
 	if (cpu.state == 5'b00001)
 	  cycles = cycles + 1;
 
+`ifdef xxx
 	if (cycles > 25 && (cpu.lpc > 7 && cpu.lpc < 14'o50) &&
 	    (cpu.npc < 14'o50) && cpu.promdisable == 0)
 	  begin
 	     $display("in microcode error routine; lpc %o", cpu.lpc);
 	     $finish;
 	  end
+`endif
 
 	if (max_cycles > 0 && cycles >= max_cycles)
 	  begin
@@ -151,13 +170,15 @@ module test;
 	  $display("%0o %o A=%x M=%x N%b R=%x LC=%x",
 		   cpu.lpc, cpu.ir,
 		   cpu.a, cpu.m, cpu.n, cpu.r, cpu.lc);
+	  $display("vma: vma %0o ob %0o alu %0o",
+		   cpu.vma, cpu.ob, cpu.alu);
 
-	  if (dumping)
-	    begin
-	       $dumpoff;
-	       dumping = 0;
-	       $display("dumping: off");
-	    end
+//	  if (dumping)
+//	    begin
+//	       $dumpoff;
+//	       dumping = 0;
+//	       $display("dumping: off");
+//	    end
 
 //	  if (cpu.promdisable == 1 && cpu.npc == 14'o23664/*21116*/)
 //	    begin

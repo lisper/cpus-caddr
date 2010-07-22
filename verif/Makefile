@@ -21,7 +21,7 @@ CPLI_IDE = +loadvpi=../pli/ide/pli_ide.so:vpi_compat_bootstrap
 
 COPTS = +change_port_type $(CPLI_IDE)
 # +cycles=2000000
-#COPTS = +change_port_type $(CPLI_IDE) +cycles=10000
+COPTS = +change_port_type $(CPLI_IDE) +cycles=60
 
 
 crun: $(RTL) run.v

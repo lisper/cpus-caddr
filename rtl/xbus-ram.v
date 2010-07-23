@@ -28,7 +28,7 @@ module xbus_ram (
 `ifdef debug
    parameter 	 RAM_SIZE = 2097152/*131072*/;
 `else
-   parameter 	 RAM_SIZE = 4;
+   parameter 	 RAM_SIZE = 16;
 `endif
    
    //

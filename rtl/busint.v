@@ -310,7 +310,7 @@ module busint(mclk, reset,
        timeout_count <= 0;
      else
        if (state == BUS_REQ && ~timed_out)
-	 timeout_count <= timeout_count + 1;
+	 timeout_count <= timeout_count + 5'd1;
        else
 	 if (state == BUS_WAIT)
 	   timeout_count <= 0;
@@ -322,6 +322,8 @@ module busint(mclk, reset,
      if (timed_out)
        $display("busint: timeout; addr %o", addr);
 `endif
+
+   assign spyout = 16'b0;
    
 endmodule
      

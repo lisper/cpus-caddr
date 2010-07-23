@@ -188,6 +188,19 @@ dataout = 0;
 
    assign hz60_clk_fired = hz60_counter == hz60_clk_div[19:0];
 
+   always @(posedge clk)
+     if (reset)
+       begin
+	  iob_key_scan <= 0;
+	  mouse_rawx <= 0;
+	  mouse_rawy <= 0;
+	  mouse_x <= 0;
+	  mouse_y <= 0;
+	  mouse_tail <= 0;
+	  mouse_middle <= 0;
+	  mouse_head <= 0;
+       end
+
    // 60hz clock
    always @(posedge clk)
      if (reset)
@@ -227,5 +240,7 @@ dataout = 0;
 	 us_counter <= us_counter + 8'd1;
 
 
+   assign vector = 8'b0;
+   
 endmodule // xbus_io
 

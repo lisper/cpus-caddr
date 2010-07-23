@@ -84,7 +84,7 @@
  */
 
 module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
-	       spyin, spyout, dbread, dbwrite, eadr,
+	       spy_in, spy_out, dbread, dbwrite, eadr,
 	       ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da );
 
    input clk;
@@ -93,8 +93,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    input ext_boot;
    input ext_halt;
 
-   input [15:0] spyin;
-   output [15:0] spyout;
+   input [15:0] spy_in;
+   output [15:0] spy_out;
    input 	dbread;
    input 	dbwrite;
    input [3:0] 	eadr;
@@ -778,25 +778,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page AMEM0-1
 
-//`define async_amem
-`ifdef async_amem
-   part_1kx32ram_async_a i_AMEM (
-			       .A(aadr),
-			       .DO(amem),
-			       .DI(l),
-			       .WE_N(~awp),
-			       .CE_N(1'b0)
-			       );
-`else
-   part_1kx32ram_sync_a i_AMEM (
-			       .CLK(clk),
-			       .A(aadr),
-			       .DO(amem),
-			       .DI(l),
-			       .WE_N(~awp),
-			       .CE_N(1'b0)
-			       );
-`endif
+//xxx was sync
+   part_1kx32ram_a i_AMEM(
+			  .clk_a(clk),
+			  .reset(reset),
+			  .address_a(aadr),
+			  .q_a(amem),
+			  .data_a(l),
+			  .wren_a(awp),
+			  .rden_a(1'b1)
+			  );
+
    
    // page CONTRL
 
@@ -930,13 +922,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    
    assign dwe = dispwr & state_write;
 
-   part_2kx17ram  i_DRAM (
-			  .A(dadr),
-			  .DO({dr,dp,dn,dpc}),
-			  .DI(a[16:0]),
-			  .WE_N(~dwe),
-			  .CE_N(1'b0)
-			  );
+//xxx was async
+   part_2kx17ram i_DRAM(
+			.clk_a(clk),
+			.reset(reset),
+			.address_a(dadr),
+			.q_a({dr,dp,dn,dpc}),
+			.data_a(a[16:0]),
+			.wren_a(dwe),
+			.rden_a(1'b1)
+			);
 
    // page DSPCTL
 
@@ -953,11 +948,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire   nc_dmask;
    
-   part_32x8prom  i_DMASK (
-			   .A( {1'b0, 1'b0, ir[7], ir[6], ir[5]} ),
-			   .O( {nc_dmask, dmask[6:0]} ),
-			   .CE_N(1'b0)
-			   );
+   part_32x8prom i_DMASK(
+			 .clk(~clk),
+			 .addr( {1'b0, 1'b0, ir[7], ir[6], ir[5]} ),
+			 .q( {nc_dmask, dmask[6:0]} )
+			 );
 
    // page FLAG
 
@@ -1299,25 +1294,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page MMEM
 
-//`define async_mmem
-`ifdef async_mmem
-   part_32x32ram_async i_MMEM (
-			       .A(madr),
-			       .DI(l),
-			       .DO(mmem),
-			       .WE_N(~mwp),
-			       .CE_N(1'b0)
-			       );
-`else   
-   part_32x32ram_sync  i_MMEM (
-			       .CLK(clk),
-			       .A(madr),
-			       .DI(l),
-			       .DO(mmem),
-			       .WE_N(~mwp),
-			       .CE_N(1'b0)
-			       );
-`endif
+//xxx was sync
+   part_32x32ram i_MMEM(
+			.clk_a(clk),
+			.reset(reset),
+			.address_a(madr),
+			.data_a(l),
+			.q_a(mmem),
+			.wren_a(mwp),
+			.rden_a(1'b1)
+			);
 
    // page MO
 
@@ -1347,17 +1333,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page MSKG4
 
-   part_32x32prom_maskleft i_MSKR (
-				   .O(msk_left_out),
-				   .A(mskl),
-				   .CE_N(1'b0)
-				   );
+   part_32x32prom_maskleft i_MSKR(
+				  .clk(~clk),
+				  .q(msk_left_out),
+				  .addr(mskl)
+				  );
 
-   part_32x32prom_maskright i_MSKL (
-				    .O(msk_right_out),
-				    .A(mskr),
-				    .CE_N(1'b0)
-				    );
+   part_32x32prom_maskright i_MSKL(
+				   .clk(~clk),
+				   .q(msk_right_out),
+				   .addr(mskr)
+				   );
 
    assign msk = msk_right_out & msk_left_out;
 
@@ -1423,25 +1409,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page PDL
 
-//`define async_pdl
-`ifdef async_pdl
-   part_1kx32ram_async i_PDL (
-			     .A(pdla),
-			     .DO(pdl),
-			     .DI(l),
-			     .WE_N(~pwp),
-			     .CE_N(1'b0)
-			     );
-`else
-   part_1kx32ram_sync_p i_PDL (
-			     .CLK(clk),
-			     .A(pdla),
-			     .DO(pdl),
-			     .DI(l),
-			     .WE_N(~pwp),
-			     .CE_N(1'b0)
-			     );
-`endif
+//xxx was sync
+   part_1kx32ram_p i_PDL(
+			 .clk_a(clk),
+			 .reset(reset),
+			 .address_a(pdla),
+			 .q_a(pdl),
+			 .data_a(l),
+			 .wren_a(pwp),
+			 .rden_a(1'b1)
+			 );
    
    // page PDLCTL
 
@@ -1728,25 +1705,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
     // page SPC
 
-//`define async_spc
-`ifdef async_spc
-   part_32x19ram_async  i_SPC (
-			      .A(spcptr),
-			      .DI(spcw),
-			      .DO(spco),
-			      .WE_N(~swp),
-			      .CE_N(1'b0)
-			      );
-`else
-   part_32x19ram_sync  i_SPC (
-			      .CLK(clk),
-			      .A(spcptr),
-			      .DI(spcw),
-			      .DO(spco),
-			      .WE_N(~swp),
-			      .CE_N(1'b0)
-			      );
-`endif
+//xxx was sync
+   part_32x19ram i_SPC(
+		       .clk_a(clk),
+		       .reset(reset),
+		       .address_a(spcptr),
+		       .data_a(spcw),
+		       .q_a(spco),
+		       .wren_a(swp),
+		       .rden_a(1'b0)
+		       );
    
    always @(posedge clk)
      if (reset)
@@ -1800,7 +1768,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire[15:0] spy_mux;
 
-   assign spyout = dbread ? spy_mux : 16'b1111111111111111;
+   assign spy_out = dbread ? spy_mux : 16'b1111111111111111;
 
    assign spy_mux =
 	spy_irh ? ir[47:32] :
@@ -1994,25 +1962,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page VMEM0 - virtual memory map stage 0
 
-`define async_vmem0
-`ifdef async_vmem0
-   part_2kx5ram_async i_VMEM0 (
-			       .A(mapi[23:13]),
-			       .DO(vmap),
-			       .DI(vma[31:27]),
-			       .WE_N(~vm0wp),
-			       .CE_N(1'b0)
-			       );
-`else
-   part_2kx5ram_sync i_VMEM0 (
-			      .CLK(clk),
-			      .A(mapi[23:13]),
-			      .DO(vmap),
-			      .DI(vma[31:27]),
-			      .WE_N(~vm0wp),
-			      .CE_N(1'b0)
-			      );
-`endif
+//xxx was async
+   part_2kx5ram i_VMEM0(
+			.clk_a(clk),
+			.reset(reset),
+			.address_a(mapi[23:13]),
+			.q_a(vmap),
+			.data_a(vma[31:27]),
+			.wren_a(vm0wp),
+			.rden_a(1'b1)
+			);
 
 `ifdef debug
    always @(vm0wp or mapwr0d or state_write)
@@ -2034,25 +1993,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign vmem1_we = vm1wp & ~clk;
    
-`define async_vmem1
-`ifdef async_vmem1
-   part_1kx24ram_async  i_VMEM1 (
-				 .A(vmem1_adr),
-				 .DO(vmo),
-				 .DI(vma[23:0]),
-				 .WE_N(~vmem1_we),
-				 .CE_N(1'b0)
-				 );
-`else
-   part_1kx24ram_sync  i_VMEM1 (
-				.CLK(clk),
-				.A(vmem1_adr),
-				.DO(vmo),
-				.DI(vma[23:0]),
-				.WE_N(~vmem1_we),
-				.CE_N(1'b0)
-				);
-`endif
+//xxx was async
+   part_1kx24ram i_VMEM1(
+			 .clk_a(clk),
+			 .reset(reset),
+			 .address_a(vmem1_adr),
+			 .q_a(vmo),
+			 .data_a(vma[23:0]),
+			 .wren_a(vmem1_we),
+			 .rden_a(1'b1)
+			 );
 
    // page VMEMDR - map output drive
 
@@ -2103,19 +2053,19 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        spy_ir[47:32] <= 16'b0;
      else
-       spy_ir[47:32] <= spyin;
+       spy_ir[47:32] <= spy_in;
 
    always @(posedge lddbirm or posedge reset)
      if (reset)
        spy_ir[31:16] <= 16'b0;
      else
-       spy_ir[31:16] <= spyin;
+       spy_ir[31:16] <= spy_in;
 
    always @(posedge lddbirl or posedge reset)
      if (reset)
        spy_ir[15:0] <= 16'b0;
      else
-       spy_ir[15:0] <= spyin;
+       spy_ir[15:0] <= spy_in;
 
    // put latched value on I bus when idebug asserted
    assign i =
@@ -2146,12 +2096,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (ldmode)
 	 begin
-	    promdisable <= spyin[5];
-	    trapenb <= spyin[4];
-	    stathenb <= spyin[3];
-	    errstop <= spyin[2];
-	    //speed1 <= spyin[1];
-	    //speed0 <= spyin[0];
+	    promdisable <= spy_in[5];
+	    trapenb <= spy_in[4];
+	    stathenb <= spy_in[3];
+	    errstop <= spy_in[2];
+	    //speed1 <= spy_in[1];
+	    //speed0 <= spy_in[0];
 	 end
        else
 	 if (set_promdisable)
@@ -2167,9 +2117,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (ldopc)
 	 begin
-	    opcinh <= spyin[2];
-	    opcclk <= spyin[1];
-	    lpc_hold <= spyin[0];
+	    opcinh <= spy_in[2];
+	    opcclk <= spy_in[1];
+	    lpc_hold <= spy_in[0];
 	 end
 
    always @(posedge clk)
@@ -2183,10 +2133,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (ldclk)
 	 begin
-	    ldstat <= spyin[4];
-	    idebug <= spyin[3];
-	    nop11 <= spyin[2];
-	    step <= spyin[1];
+	    ldstat <= spy_in[4];
+	    idebug <= spy_in[3];
+	    nop11 <= spy_in[2];
+	    step <= spy_in[1];
 	 end
 
    always @(posedge clk)
@@ -2197,7 +2147,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	 run <= 1'b1;
        else
 	 if (ldclk)
-	   run <= spyin[0];
+	   run <= spy_in[0];
 
    always @(posedge clk)
      if (reset)
@@ -2269,7 +2219,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign lowerhighok = 1'b1;
    assign highok = 1'b1;
 
-   assign prog_reset = ldmode & spyin[6];
+   assign prog_reset = ldmode & spy_in[6];
 
    assign reset = ext_reset | prog_reset;
 
@@ -2286,7 +2236,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // external
 
-   assign prog_boot = ldmode & spyin[7];
+   assign prog_boot = ldmode & spy_in[7];
 
    assign boot  = ext_boot | prog_boot;
 
@@ -2331,22 +2281,25 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page PROM0
 
-   part_512x49prom  i_PROM (
-			    .A(~prompc[8:0]),
-			    .D(iprom),
-			    .CE_N(~promce)
-			    );
+   part_512x49prom i_PROM(
+			  .clk(~clk),
+			  .addr(~prompc[8:0]),
+			  .q(iprom)
+			  );
 
 
    // page IRAM
 
-   part_16kx49ram  i_IRAM (
-			   .A(pc),
-			   .DO(iram),
-			   .DI(iwr),
-			   .WE_N(~iwe),
-			   .CE_N(1'b0/*ice*/)
-			   );
+//xxx was async
+   part_16kx49ram i_IRAM(
+			 .clk_a(clk),
+			 .reset(reset),
+			 .address_a(pc),
+			 .q_a(iram),
+			 .data_a(iwr),
+			 .wren_a(iwe),
+			 .rden_a(1'b1/*ice*/)
+			 );
 
 
    // page SPY0
@@ -2412,7 +2365,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .addr({pma,vma[7:0]}),
 		 .busin(md),
 		 .busout(busint_bus),
-		 .spyin(spyin),
+		 .spyin(spy_in),
 		 .spyout(busint_spyout),
 
 		 .req(memrq),

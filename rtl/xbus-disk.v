@@ -580,18 +580,18 @@ module xbus_disk (
 			     disk_cyl <= 0;
 			  end
 			else
-			  disk_cyl <= disk_cyl + 1;
+			  disk_cyl <= disk_cyl + 12'd1;
 		     end
 		   else
-		     disk_head <= disk_head + 1;
+		     disk_head <= disk_head + 5'd1;
 		end
 	      else
-		disk_block <= disk_block + 1;
+		disk_block <= disk_block + 5'd1;
 	      
 	      end
 
 	    if (inc_clp)
-	      disk_clp <= disk_clp + 1;
+	      disk_clp <= disk_clp + 22'd1;
 	    
 	 end
        end // else: !if(reset)
@@ -783,13 +783,13 @@ module xbus_disk (
 		     state_next = s_busy;
 		   DISK_CMD_CLEAR:
 		     state_next = s_busy;
-`ifdef debug
 		   default:
 		     begin
+`ifdef debug
 			$display("disk: unhandled command %o", disk_cmd);
 			$finish;
-		     end
 `endif
+		     end
 		 endcase
 `ifdef debug
 		 $display("disk: go! disk_cmd %o", disk_cmd);

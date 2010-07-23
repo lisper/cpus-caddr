@@ -38,6 +38,8 @@ module top(rs232_txd, rs232_rxd,
    output 	 sram2_lb_n;
    
    inout [15:0]  ide_data_bus;
+   wire [15:0] 	 ide_data_in;
+   wire [15:0] 	 ide_data_out;
    output 	 ide_dior;
    output 	 ide_diow;
    output [1:0]  ide_cs;
@@ -50,10 +52,12 @@ module top(rs232_txd, rs232_rxd,
    wire 	 interrupt;
    wire		 boot;
 
-   wire [15:0] 	 spy;
+   wire [15:0] 	 spy_in;
+   wire [15:0] 	 spy_out;
    wire 	 dbread, dbwrite;
    wire [3:0] 	 eadr;
-
+   wire 	 halt;
+   
    support support(.sysclk(sysclk),
 		   .clk(clk),
 		   .reset(reset),
@@ -66,15 +70,20 @@ module top(rs232_txd, rs232_rxd,
 	      .ext_reset(reset),
 	      .ext_boot(boot),
 	      .ext_halt(halt),
-	      .spy(spy),
+	      .spy_in(spy_in),
+	      .spy_out(spy_out),
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
-	      .ide_data_bus(ide_data_bus),
+	      .ide_data_in(ide_data_in),
+	      .ide_data_out(ide_data_out),
 	      .ide_dior(ide_dior),
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
+
+   assign ide_data_bus = ide_diow ? ide_data_out : 16'bz;
+   assign ide_data_in = ide_data_bus;
    
    assign      eadr = 4'b0;
    assign      dbread = 0;

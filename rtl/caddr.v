@@ -84,7 +84,17 @@
  */
 
 module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
+
 	       spy_in, spy_out, dbread, dbwrite, eadr,
+
+	       pre_fetch_out, fetch_out,
+	       mcr_addr, mcr_data_out, mcr_data_in,
+	       mcr_ready, mcr_write, mcr_done,
+	       sdram_addr, sdram_data_in, sdram_data_out,
+	       sdram_req, sdram_ready, sdram_write, sdram_done,
+	       vram_addr, vram_data_in, vram_data_out,
+	       vram_req, vram_ready, vram_write, vram_done,
+
 	       ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da );
 
    input clk;
@@ -99,6 +109,31 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    input 	dbwrite;
    input [3:0] 	eadr;
 
+   output 	 prefetch_out;
+   output 	 fetch_out;
+   output [13:0] mcr_addr;
+   output [48:0] mcr_data_out;
+   input [48:0]  mcr_data_in;
+   input 	 mcr_ready;
+   output 	 mcr_write;
+   input 	 mcr_done;
+
+   output [21:0]  sdram_addr;
+   output [31:0] sdram_data_out;
+   input [31:0]  sdram_data_in;
+   output 	 sdram_ready;
+   output 	 sdram_req;
+   output 	 sdram_write;
+   input 	 sdram_done;
+
+   output [14:0] vram_addr;
+   output [31:0] vram_data_out;
+   input [31:0]  vram_data_in;
+   output 	 vram_req;
+   input 	 vram_ready;
+   output 	 vram_write;
+   input 	 vram_done;
+   
    input [15:0]  ide_data_in;
    output [15:0] ide_data_out;
    output 	 ide_dior;
@@ -487,9 +522,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	       STATE_S4 = 5'b01000,
 	       STATE_S5 = 5'b10000;
 
-/* verilator lint_off UNOPTFLAT */
    reg [4:0] state;
-/* verilator lint_on UNOPTFLAT */
 
    wire [4:0] next_state;
    wire       state_decode, state_execute, state_write, state_fetch;
@@ -1225,10 +1258,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	 begin
 `ifdef debug
 	    if (state_fetch && destmdr)
-	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o",
-		       mds, mdsel, osel, alu, mo);
+	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o; lpc %o",
+		       mds, mdsel, osel, alu, mo, lpc);
 	    else
-	      $display("load md <- %o; L", mds);
+	      $display("load md <- %o; L lpc %o", mds, lpc);
 `endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
@@ -1274,7 +1307,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (phase0)
 	 mmem_latched = mmem;
 
-`ifdef debug
+`ifdef debug_with_usim
    // tell disk controller when each fetch passes to force sync with usim
    always @(posedge clk)
 	if (state_fetch)
@@ -1366,7 +1399,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign ipc = pc + 14'd1;
 
-`ifdef debug
+`ifdef debug_dispatch
    always @(posedge clk)
      if (state_fetch && irdisp/*({pcs1,pcs0} == 2'b10)*/)
        begin
@@ -1713,7 +1746,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		       .data_a(spcw),
 		       .q_a(spco),
 		       .wren_a(swp),
-		       .rden_a(1'b0)
+		       .rden_a(1'b1)
 		       );
    
    always @(posedge clk)
@@ -1875,7 +1908,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign memrq = mbusy | (memstart & (pfr | pfw));
 
-`ifdef debug
+`ifdef debug_xbus
    always @(posedge clk)
      begin
 	if (memstart & ~vmaok)
@@ -2163,6 +2196,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  sstep <= step;
 	  ssdone <= sstep;
 	  promdisabled <= promdisable;
+`ifdef debug
+	  if (promdisable == 1 && promdisabled == 0)
+	    $display("prom: disabled");
+`endif
        end
 
    assign machrun = (sstep & ~ssdone) |
@@ -2289,8 +2326,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 
    // page IRAM
-
-//xxx was async
+`ifdef use_ucode_ram
    part_16kx49ram i_IRAM(
 			 .clk_a(clk),
 			 .reset(reset),
@@ -2300,6 +2336,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			 .wren_a(iwe),
 			 .rden_a(1'b1/*ice*/)
 			 );
+`else
+   // use top level ram controller
+   assign mcr_addr = pc;
+   assign iram = mcr_data_in;
+   assign mcr_data_out = iwr;
+   assign mcr_write = iwe;
+`endif
+
+   // for externals
+   assign fetch_out = state_fetch;
+   assign pre_fetch_out = state_write;
 
 
    // page SPY0
@@ -2374,6 +2421,22 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .load(loadmd),
 		 
 		 .interrupt(bus_int),
+
+		 .sdram_addr(sdram_addr),
+		 .sdram_data_in(sdram_data_in),
+		 .sdram_data_out(sdram_data_out),
+		 .sdram_req(sdram_req),
+		 .sdram_ready(sdram_ready),
+		 .sdram_write(sdram_write),
+		 .sdram_done(sdram_done),
+      
+		 .vram_addr(vram_addr),
+		 .vram_data_in(vram_data_in),
+		 .vram_data_out(vram_data_out),
+		 .vram_req(vram_req),
+		 .vram_ready(vram_ready),
+		 .vram_write(vram_write),
+		 .vram_done(vram_done),
 		 
 		 .ide_data_in(ide_data_in),
 		 .ide_data_out(ide_data_out),

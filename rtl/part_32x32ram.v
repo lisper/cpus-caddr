@@ -1,86 +1,69 @@
 /* 32x32 synchronous static ram */
 
-module part_32x32ram_sync(CLK, A, DI, DO, CE_N, WE_N);
+/* 32x32 synchronous static ram */
 
-   input[4:0] A;
-   input [31:0] DI;
-   input CLK, WE_N, CE_N;
-   output reg [31:0] DO;
+module part_32x32ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
-   reg [31:0] ram [0:31];
+   input clk_a;
+   input reset;
+   input [4:0] address_a;
+   input [31:0] data_a;
+   input 	wren_a, rden_a;
+   output [31:0] q_a;
 
+`ifdef QUARTUS
+   altsyncram ram
+     (
+      .address_a(address_a),
+      .address_b(address_a),
+      .clock0(clk_a),
+      .data_a(data_a),
+      .q_b(q_a),
+      .rden_b(rden_a),
+      .wren_a(wren_a)
+      );
+
+  defparam ram.address_reg_b = "CLOCK0",
+           ram.maximum_depth = 0,
+           ram.numwords_a = 32,
+           ram.numwords_b = 32,
+           ram.operation_mode = "DUAL_PORT",
+           ram.outdata_reg_b = "UNREGISTERED",
+           ram.ram_block_type = "AUTO",
+           ram.rdcontrol_reg_b = "CLOCK0",
+           ram.read_during_write_mode_mixed_ports = "OLD_DATA",
+           ram.width_a = 32,
+           ram.width_b = 32,
+           ram.widthad_a = 5,
+           ram.widthad_b = 5;
+`endif // QUARTUS
+
+`ifdef ISE_OR_SIMULATION
+   reg [31:0] 	 ram [0:31];
+   reg [31:0] 	 out_a;
+
+   assign q_a = out_a;
+   
 `ifdef debug
-   integer index, debug;
+   integer 	 i, debug;
 
    initial
      begin
 	debug = 0;
-	for (index = 0; index < 32; index=index+1)
-          ram[index] = 32'b0;
-    end
-`endif
-   
-   always @(posedge CLK)
-    if (~CE_N && ~WE_N)
-     begin
-	ram[ A ] = DI;
-`ifdef debug
-	if (A != 0 && debug != 0)
-	  $display("mmem: W addr %o val %0o; %t", A, DI, $time);
-`endif
+	for (i = 0; i < 32; i=i+1)
+          ram[i] = 32'b0;
      end
-
-   always @(A or CE_N or WE_N or CLK)
-     begin
-	DO = ram[ A ];
-`ifdef debug
-	if (A != 0 && debug != 0)
-	  $display("mmem: R addr %o val %0o; %t", A, ram[ A ], $time);
 `endif
-     end
-   
-endmodule
 
-module part_32x32ram_async(A, DI, DO, WE_N, CE_N);
+   always @(posedge clk_a)
+     if (wren_a)
+       ram[ address_a ] = data_a;
 
-   input[4:0] A;
-   input [31:0] DI;
-   input WE_N, CE_N;
-   output [31:0] DO;
+   always @(posedge clk_a)
+     if (rden_a)
+       out_a = ram[ address_a ];
 
-   reg [31:0] ram [0:31];
+`endif // SIMULATION
 
-`ifdef debug
-   integer    index, debug;
-
-   initial
-    begin
-      for (index = 0; index < 32; index=index+1)
-        ram[index] = 32'b0;
-    end
-`endif
-   
-   always @(negedge WE_N)
-     begin
-	if (CE_N == 0)
-	  begin
-	     ram[ A ] = DI;
-`ifdef debug
-	     if (debug == 1)
-	       $display("mmem: W addr %o val %o; %t", A, DI, $time);
-`endif
-	  end
-     end
-
-   assign DO = ram[ A ];
-
-   always @(A or CE_N or WE_N)
-     begin
-`ifdef debug
-	if (CE_N == 0 && WE_N && debug == 1)
-	  $display("mmem: R addr %o val %o; %t", A, ram[ A ], $time);
-`endif
-     end
-   
 endmodule
 

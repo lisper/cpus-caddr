@@ -489,7 +489,7 @@ module xbus_disk (
 		3'o4:
 		  begin
 		     reg_dataout = disk_status;
-`ifdef debug
+`ifdef debug_state
 		     $display("disk: read status %o", disk_status);
 `endif
 		  end
@@ -664,7 +664,7 @@ module xbus_disk (
      else
        begin
 	  state <= state_next;
-`ifdef debug
+`ifdef debug_state
 	  if (state_next != 0 && state != state_next)
 	    $display("disk: state %d", state_next);
 `endif
@@ -676,7 +676,7 @@ module xbus_disk (
      else
 	  if (assert_int)
 	    begin
-`ifdef debug
+`ifdef debug_state
 	       $display("disk: assert interrupt\n");
 `endif
 	       disk_interrupt <= 1;
@@ -685,7 +685,7 @@ module xbus_disk (
 	    if (deassert_int)
 	      begin
 		 disk_interrupt <= 0;
-`ifdef debug
+`ifdef debug_state
 		 $display("disk: deassert interrupt\n");
 `endif
 	      end
@@ -740,7 +740,7 @@ module xbus_disk (
 	    lba or disk_start or wc or more_ccws or
             ata_done or ata_out or ata_hold or
 	    grantin or dma_data_hold
-`ifdef debug
+`ifdef debug_with_usim_delay
 	    or done_waiting or busy_cycles
 `endif
 	    )
@@ -797,7 +797,7 @@ module xbus_disk (
 	      end
 
 	  s_busy:
-`ifdef debug
+`ifdef debug_with_usim_delay
 	    if (busy_cycles >= 2)
 `endif
 	    state_next = s_idle;
@@ -996,7 +996,7 @@ module xbus_disk (
 	       
 	       writeout = 1;
 	       
-`ifdef debug
+`ifdef debug_disk
 	       if (grantin) $display("s_read2: ata_out %o, dma_addr %o",
 			       ata_out, { 10'b0, disk_ccw, wc });
 `endif
@@ -1081,14 +1081,14 @@ module xbus_disk (
 		    state_next = s_read_ccw;
 		 end
 	       else
-`ifdef debug
+`ifdef debug_with_usim_delay
 		 state_next = s_debug_wait;
 `else
 		 state_next = s_done0;
 `endif
 	    end
 	
-`ifdef debug
+`ifdef debug_with_usim_delay
 	  s_debug_wait:
 	    begin
 	       if (0) $display("xxx: s_debug_wait; done_waiting %d busy_cycles %d",
@@ -1126,7 +1126,7 @@ module xbus_disk (
 	endcase
      end
 
-`ifdef debug
+`ifdef debug_with_usim_delay
    integer busy_cycles;
    integer blocks_io;
    integer fetch;

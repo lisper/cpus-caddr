@@ -39,16 +39,12 @@
  */
 
 module xbus_tv(
-	       clk,
-	       reset,
-	       addr,
-	       datain,
-	       dataout,
-	       req,
-	       ack,
-	       write,
-	       decode,
-	       interrupt
+	       clk, reset, addr,
+	       datain, dataout,
+	       req, ack, write, decode, interrupt,
+
+	       vram_addr, vram_data_in, vram_data_out,
+	       vram_req, vram_ready, vram_write, vram_done
 	       );
 
    input clk;
@@ -59,51 +55,68 @@ module xbus_tv(
    input 	write;		/* request read#/write */
    
    output [31:0] dataout;
-reg [31:0] dataout;
+   reg [31:0] 	 dataout;
    
    output 	 ack;		/* request done */
    output 	 decode;	/* request addr ok */
    output 	 interrupt;
 
+   output [14:0] vram_addr;
+   output [31:0] vram_data_out;
+   input [31:0]  vram_data_in;
+   output 	 vram_req;
+   input 	 vram_ready;
+   output 	 vram_write;
+   input 	 vram_done;
+   
+
    // ----------------------------------------------------------------------
 
-`ifdef debug
-   reg [31:0] 	 fb[0:21503];
-   integer 	 i;
+   reg [2:0] 	 fb_state;
+   wire [2:0] 	 fb_state_next;
 
-   initial
-     for (i = 0; i < 21504; i = i + 1)
-       fb[i] = 0;
-`endif
-   
-   reg [1:0]	 ack_delayed;
-   
+   parameter 	 FB_IDLE = 0,
+		   FB_WRITE1 = 1,
+		   FB_WRITE2 = 2,
+		   FB_READ = 3,
+		   FB_DONE = 4;
+
    wire 	 in_fb;
    wire 	 in_reg;
    wire 	 in_color;
    wire [14:0] 	 offset;
    
-   assign in_fb    =  {addr[21:15], 15'b0} == 22'o17000000;
-   assign in_reg   = {addr[21:3],   3'b0} == 22'o17377760;
+   assign in_fb    = {addr[21:15], 15'b0} == 22'o17000000;
    assign in_color = {addr[21:15], 15'b0} == 22'o17200000;
+   assign in_reg   = {addr[21:3],   3'b0} == 22'o17377760;
 
    assign offset = addr[14:0];
 
    // we need to respond to "color probe" even if we're b&w
-   assign 	 decode = req & (in_reg || in_fb /*|| in_color*/);
+   assign 	 decode = in_reg || in_fb /*|| in_color*/;
 
    //A-TV-REGS-BASE (77377760)       ;XBUS ADDRESS 17377760
    //;IN REGISTER 0, BIT 3 IS INTERRUPT ENABLE, BIT 4 IS INTERRUPT FLAG
    
-   reg [1:0]	 busy;
-   
-   assign 	 ack = busy[1];
-
    reg 		 clear_tv_int;
    reg 		 set_tv_int;
    
    reg		 tv_int;
    reg 		 tv_int_en;
+
+   wire 	 fb_write_req;
+   wire 	 fb_read_req;
+   
+   wire 	 start_fb_write;
+   wire 	 start_fb_read;
+
+   /* while cpu is requesting... */
+   assign fb_write_req = req && decode && write;
+   assign fb_read_req = req && decode && ~write;
+
+   /* read/write pulse to memory controller */
+   assign start_fb_write = fb_write_req && in_fb;
+   assign start_fb_read = fb_read_req && in_fb;
    
 `ifdef debug
    integer 	 h, v;
@@ -112,61 +125,93 @@ reg [31:0] dataout;
    always @(posedge clk)
      if (reset)
        begin
-	  busy <= 2'b00;
 	  tv_int_en <= 1'b0;
        end
      else
        begin
-	  busy[0] <= decode;
-	  busy[1] <= busy[0];
-
 	  clear_tv_int = 0;
-	  
-	  if (decode)
-	    if (write)
-	      begin
-`ifdef debug
-		 `DBG_DLY $display("tv: write @%o <- %o", addr, datain);
-`endif
-		 if (in_fb)
-		   begin
-`ifdef debug
-		      h = { 17'b0, offset } / 768;
-		      v = { 17'b0, offset } % 768;
-		      $display("tv: (%0d, %0d) <- %o", h, v, datain);
 
-		      fb[offset] <= datain;
-`endif
-		   end
+	  if (fb_write_req && in_reg)
+	    begin
+	       tv_int_en <= datain[3];
+	       if (datain[4])
+		 clear_tv_int = 1;
+	    end
+	  else
 
-		 if (in_reg)
-		   begin
-		      tv_int_en <= datain[3];
-		      if (datain[4])
-			clear_tv_int = 1;
-		   end
-	      end
+	    if (fb_read_req && in_reg)
+	      dataout <= { 27'b0, tv_int, tv_int_en, 3'b0 };
 	    else
-	      begin
+	      if (in_color)
+		dataout <= 32'h0;
+	      else
+		if (vram_ready)
+		  begin
+		     dataout <= vram_data_in;
 `ifdef debug
-		 `DBG_DLY $display("tv: read @%o -> %o", addr, fb[offset]);
+		     $display("tv: read @%o out -> %o; %t",
+			      addr, vram_data_in, $time);
 `endif
-		 if (in_fb)
-		   begin
+		  end
+
 `ifdef debug
-		      dataout <= fb[offset];
+	  if (vram_done)
+	    $display("tv: write @%o done <- %o; state %b %t",
+		     addr, datain, fb_state, $time);
+	  if (vram_ready)
+	    $display("tv: read @%o done -> %o; state %b %t",
+		     addr, vram_data_in, fb_state, $time);
 `endif
-		   end
-		 else
-		   if (in_reg)
-		     dataout <= { 27'b0, tv_int, tv_int_en, 3'b0 };
-		   else
-		     if (in_color)
-		       dataout <= 32'h0;
-	      end
+	  
        end
    
 
+   assign vram_addr = offset;
+   assign vram_data_out = datain;
+   assign vram_write = fb_state == FB_WRITE2;
+   assign vram_req = fb_state == FB_READ;
+
+   /* simple state machine to wait for memory controller */
+   always @(posedge clk)
+     if (reset)
+       fb_state <= FB_IDLE;
+     else
+       begin
+	  fb_state <= fb_state_next;
+
+`ifdef debug
+	  if (fb_state == FB_WRITE1)
+	    $display("tv: write1 @%o <- %o; %t", addr, datain, $time);
+	  if (fb_state == FB_WRITE2)
+	    $display("tv: write2 @%o <- %o; %t", addr, datain, $time);
+
+	  if (fb_state == FB_WRITE2 && fb_state_next == FB_DONE)
+	    begin
+	       h = { 17'b0, offset } / 768;
+	       v = { 17'b0, offset } % 768;
+	       $display("tv: write @%o <- %o; %t", addr, datain, $time);
+	       $display("tv: (%0d, %0d) <- %o", h, v, datain);
+	    end
+
+	  if (fb_state == FB_READ)
+	       $display("tv: read @%o -> %o (vram_ready %b); %t",
+	  		addr, vram_data_in, vram_ready, $time);
+`endif
+       end
+
+   assign fb_state_next =
+			 (fb_state == FB_IDLE && start_fb_write) ? FB_WRITE2 :
+			 (fb_state == FB_IDLE && start_fb_read) ? FB_READ :
+//			 fb_state == FB_WRITE1 ? FB_WRITE2 :
+			 fb_state == FB_WRITE2 ? FB_DONE :
+			 fb_state == FB_READ ? FB_DONE :
+			 (fb_state == FB_DONE && ~req) ? FB_IDLE :
+			 fb_state;
+
+   assign ack = fb_state == FB_DONE;
+   
+   //----------------------------------------------------------------------
+   
    parameter SYS_CLK = 26'd50000000,
 	       HZ60_CLK_RATE = 26'd60,
 	       HZ60_CLK_DIV = SYS_CLK / HZ60_CLK_RATE;

@@ -3,8 +3,8 @@
  */
 
 //`define QUARTUS
-`define ISE
-//`define SIMULATION
+//`define ISE
+`define SIMULATION
 
 `ifdef ISE
  `define ISE_OR_SIMULATION
@@ -135,7 +135,7 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
        begin
           ram[ address_a ] = data_a;
 `ifdef debug
-	  if (address_a != 0/* && debug != 0*/)
+	  if (address_a != 0 && debug != 0)
 	    $display("amem: W addr %o val %o; %t", address_a, data_a, $time);
 `endif
        end
@@ -212,7 +212,8 @@ module part_1kx32ram_p(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
        begin
           ram[ address_a ] = data_a;
 `ifdef debug
-	  $display("pdl: W addr %o val %o; %t", address_a, data_a, $time);
+	  if (debug != 0)
+	    $display("pdl: W addr %o val %o; %t", address_a, data_a, $time);
 `endif
        end
 
@@ -272,7 +273,7 @@ module part_2kx17ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    reg [16:0] 	 ram [0:2047];
    reg [16:0] 	 out_a;
 
-//   assign q_a = out_a;
+   assign q_a = out_a;
 
 `ifdef debug
    integer 	 i, debug;
@@ -289,11 +290,14 @@ module part_2kx17ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
      if (wren_a)
        ram[ address_a ] = data_a;
 
-//   always @(posedge clk_a)
-//     if (rden_a)
-//       out_a = ram[ address_a ];
+   always @(posedge clk_a)
+     if (rden_a)
+       out_a = ram[ address_a ];
 
-   assign q_a = ram[ address_a ];
+//  always @(negedge wren_a)
+//      ram[ address_a ] = data_a;
+//
+//   assign q_a = ram[ address_a ];
    
 `endif // SIMULATION
    
@@ -361,7 +365,7 @@ module part_32x32ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    always @(posedge clk_a)
      if (rden_a)
        out_a = ram[ address_a ];
-   
+
 `endif // SIMULATION
 
 endmodule
@@ -489,7 +493,7 @@ module part_32x19ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
        begin
 	  ram[ address_a ] = data_a;
 `ifdef debug
-	  if (address_a != 0)
+	  if (address_a != 0 && debug != 0)
 	    $display("spc: W addr %o val %o; %t", address_a, data_a, $time);
 `endif
        end
@@ -542,7 +546,7 @@ module part_2kx5ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    reg [4:0] 	ram [0:2047];
    reg [4:0] 	out_a;
 
-   assign q_a = out_a;
+//   assign q_a = out_a;
 
 `ifdef debug
    integer 	 i, debug;
@@ -555,19 +559,21 @@ module part_2kx5ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
      end
 `endif
 
-   always @(posedge clk_a)
+   always @(posedge wren_a/*clk_a*/)
      if (wren_a)
        begin
 	  ram[ address_a ] = data_a;
 `ifdef debug
-	   $display("vmem0: W addr %o <- val %o; %t", A, DI, $time);
+	  if (debug != 0)
+	    $display("vmem0: W addr %o <- val %o; %t",
+		     address_a, data_a, $time);
 `endif
        end
 
-   always @(posedge clk_a)
-     if (rden_a)
-       out_a = ram[ address_a ];
-//   assign q_a = ram[ address_a ];
+//   always @(posedge clk_a)
+//     if (rden_a)
+//       out_a = ram[ address_a ];
+assign q_a = ram[ address_a ];
 
 `endif // SIMULATION
 
@@ -613,7 +619,7 @@ module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    reg [23:0] 	 ram [0:1023];
    reg [23:0] 	 out_a;
 
-   assign q_a = out_a;
+//   assign q_a = out_a;
 
 `ifdef debug
    integer 	 i, debug;
@@ -626,26 +632,28 @@ module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
      end
 `endif
 
-   always @(posedge clk_a)
+   always @(posedge wren_a/*clk_a*/)
      if (wren_a)
        begin
 	  ram[ address_a ] = data_a;
 `ifdef debug
-	  $display("vmem1: W addr %o <- val %o; %t", address_a, data_a, $time);
+	  if (debug != 0)
+	    $display("vmem1: W addr %o <- val %o; %t",
+		     address_a, data_a, $time);
 `endif
        end
 
-   always @(posedge clk_a)
-     if (rden_a)
-       begin
-	  out_a = ram[ address_a ];
-`ifdef debug
-	  if (debug != 0)
-	    $display("vmem1: R addr %o -> val %o; %t",
-		     address_a, ram[ address_a ], $time);
-`endif
-       end
-//   assign q_a = ram[ address_a ];
+//   always @(posedge clk_a)
+//     if (rden_a)
+//       begin
+//	  out_a = ram[ address_a ];
+//`ifdef debug
+//	  if (debug != 0)
+//	    $display("vmem1: R addr %o -> val %o; %t",
+//		     address_a, ram[ address_a ], $time);
+//`endif
+//       end
+assign q_a = ram[ address_a ];
    
 `endif // SIMULATION
 
@@ -660,9 +668,12 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    input 	wren_a, rden_a;
    output [48:0] q_a;
 
-//   parameter IRAM_SIZE = 16384;
-      parameter IRAM_SIZE = 4;
-
+`ifdef debug
+   parameter IRAM_SIZE = 16384;
+`else
+   parameter IRAM_SIZE = 4;
+`endif
+   
 `ifdef QUARTUS
    altsyncram ram
      (
@@ -712,7 +723,8 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
        begin
 	  ram[ address_a ] = data_a;
 `ifdef debug
-	  $display("iram: W addr %o val %o; %t", address_a, data_a, $time);
+	  if (debug != 0)
+	    $display("iram: W addr %o val %o; %t", address_a, data_a, $time);
 `endif
        end
 
@@ -722,7 +734,7 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 	  out_a = ram[ address_a ];
 `ifdef debug
 	  if (debug != 0)
-	    $display("iram: R addr %o val 0x%x; %t",
+	    $display("iram: R addr %o val %o; %t",
 		     address_a, ram[ address_a ], $time);
 `endif
        end

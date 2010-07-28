@@ -1,57 +1,86 @@
 /* 16k49 sram */
 
-module part_16kx49ram(A, DI, DO, CE_N, WE_N);
+module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
-  input[13:0] A;
-  input[48:0] DI;
-  input CE_N, WE_N;
-  output[48:0] DO;
+   input clk_a;
+   input reset;
+   input [13:0] address_a;
+   input [48:0] data_a;
+   input 	wren_a, rden_a;
+   output [48:0] q_a;
 
-//`define no_iram
-
-`ifdef no_iram
-   parameter IRAM_SIZE = 2;
-`else
+`ifdef debug
    parameter IRAM_SIZE = 16384;
+`else
+   parameter IRAM_SIZE = 4;
 `endif
+   
+`ifdef QUARTUS
+   altsyncram ram
+     (
+      .address_a(address_a),
+      .address_b(address_a),
+      .clock0(clk_a),
+      .data_a(data_a),
+      .q_b(q_a),
+      .rden_b(rden_a),
+      .wren_a(wren_a)
+      );
 
-  reg[48:0] ram [0:IRAM_SIZE-1];
+  defparam ram.address_reg_b = "CLOCK0",
+           ram.maximum_depth = 0,
+           ram.numwords_a = 16384,
+           ram.numwords_b = 16384,
+           ram.operation_mode = "DUAL_PORT",
+           ram.outdata_reg_b = "UNREGISTERED",
+           ram.ram_block_type = "AUTO",
+           ram.rdcontrol_reg_b = "CLOCK0",
+           ram.read_during_write_mode_mixed_ports = "OLD_DATA",
+           ram.width_a = 49,
+           ram.width_b = 49,
+           ram.widthad_a = 14,
+           ram.widthad_b = 14;
+`endif // QUARTUS
+
+`ifdef ISE_OR_SIMULATION
+   reg [48:0] 	 ram [0:IRAM_SIZE-1];
+   reg [48:0] 	 out_a;
+
+   assign q_a = out_a;
 
 `ifdef debug
-  integer i;
-  initial
-    begin
-      for (i = 0; i < 16384; i=i+1)
-        ram[i] = 49'b0;
-    end
-`endif
-  
-  always @(posedge WE_N)
-    begin
-      if (CE_N == 0)
-	begin
-`ifdef debug
-	   // patch out disk-copy (which takes 12 hours to sim)
-	   if (A == 14'o24045)
-	     ram[ A ] = 49'h000000001000;
-	   else
-`endif
-           ram[ A ] = DI;
-`ifdef debug
-	   $display("iram: W addr %o val %o; %t", A, DI, $time);
-`endif
-	end
-    end
+   integer 	 i, debug;
 
-  assign DO = ram[ A ];
-
-`ifdef debug_iram
-   always @(A)
+   initial
      begin
-	$display("iram: %t addr %o val 0x%x, CE_N %d",
-		 $time, A, ram[ A ], CE_N);
+	debug = 0;
+	for (i = 0; i < IRAM_SIZE; i=i+1)
+          ram[i] = 49'b0;
      end
 `endif
 
+   always @(posedge clk_a)
+     if (wren_a)
+       begin
+	  ram[ address_a ] = data_a;
+`ifdef debug
+	  if (debug != 0)
+	    $display("iram: W addr %o val %o; %t", address_a, data_a, $time);
+`endif
+       end
+
+   always @(posedge clk_a)
+     if (rden_a)
+       begin
+	  out_a = ram[ address_a ];
+`ifdef debug
+	  if (debug != 0)
+	    $display("iram: R addr %o val %o; %t",
+		     address_a, ram[ address_a ], $time);
+`endif
+       end
+   
+`endif // SIMULATION
+   
 endmodule
 

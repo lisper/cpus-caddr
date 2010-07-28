@@ -3,14 +3,14 @@
  */
 
 module xbus_io(
-	       reset, clk,
+	       clk, reset,
 	       addr, datain, dataout,
-	       req, ack, write, decode,
+	       req, write, ack, decode,
 	       interrupt, vector
 	       );
 
-   input reset;
    input clk;
+   input reset;
    input [21:0] addr;		/* request address */
    input [31:0] datain;		/* request data */
    input 	req;		/* request */

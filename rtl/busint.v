@@ -64,7 +64,15 @@ module busint(mclk, reset,
 	      addr, busin, busout, spyin, spyout,
 	      req, ack, write, load,
 	      interrupt,
+
+	      sdram_addr, sdram_data_in, sdram_data_out,
+	      sdram_req, sdram_ready, sdram_write, sdram_done,
+
+	      vram_addr, vram_data_in, vram_data_out,
+	      vram_req, vram_ready, vram_write, vram_done,
+
 	      ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
+
 	      promdisable);
 
    input mclk;
@@ -88,6 +96,22 @@ module busint(mclk, reset,
    output [2:0]  ide_da;
 
    output 	 promdisable;
+   
+   output [21:0]  sdram_addr;
+   output [31:0] sdram_data_out;
+   input [31:0]  sdram_data_in;
+   output 	 sdram_req;
+   input 	 sdram_ready;
+   output 	 sdram_write;
+   input 	 sdram_done;
+
+   output [14:0] vram_addr;
+   output [31:0] vram_data_out;
+   input [31:0]  vram_data_in;
+   output 	 vram_req;
+   input 	 vram_ready;
+   output 	 vram_write;
+   input 	 vram_done;
    
    //
    parameter 	 BUS_IDLE  = 4'b0000,
@@ -130,17 +154,27 @@ module busint(mclk, reset,
    wire 	device_ack;
 
    wire 	timed_out;
-   
+
+   wire [7:0] 	vector;
+
    xbus_ram dram (
-		  .reset(reset),
 		  .clk(mclk),
+		  .reset(reset),
 		  .addr(dram_addr),
 		  .datain(dram_datain),
 		  .dataout(dataout_dram),
 		  .req(dram_reqin),
 		  .write(dram_writein),
 		  .ack(ack_dram),
-		  .decode(decode_dram)
+		  .decode(decode_dram),
+
+		  .sdram_addr(sdram_addr),
+		  .sdram_data_in(sdram_data_in),
+		  .sdram_data_out(sdram_data_out),
+		  .sdram_req(sdram_req),
+		  .sdram_ready(sdram_ready),
+		  .sdram_write(sdram_write),
+		  .sdram_done(sdram_done)
 		  );
 
    wire 	writeout_disk;
@@ -165,6 +199,7 @@ module busint(mclk, reset,
 		   .decodein(decodein_disk),
 		   .decodeout(decode_disk),
 		   .interrupt(interrupt_disk),
+
 		   .ide_data_in(ide_data_in),
 		   .ide_data_out(ide_data_out),
 		   .ide_dior(ide_dior),
@@ -183,12 +218,20 @@ module busint(mclk, reset,
 	       .write(write),
 	       .ack(ack_tv),
 	       .decode(decode_tv),
-	       .interrupt(interrupt_tv)
+	       .interrupt(interrupt_tv),
+
+	       .vram_addr(vram_addr),
+	       .vram_data_in(vram_data_in),
+	       .vram_data_out(vram_data_out),
+	       .vram_req(vram_req),
+	       .vram_ready(vram_ready),
+	       .vram_write(vram_write),
+	       .vram_done(vram_done)
 	       );
 
    xbus_io io (
-	       .reset(reset),
 	       .clk(mclk),
+	       .reset(reset),
 	       .addr(addr),
 	       .datain(busin),
 	       .dataout(dataout_io),
@@ -196,7 +239,8 @@ module busint(mclk, reset,
 	       .write(write),
 	       .ack(ack_io),
 	       .decode(decode_io),
-	       .interrupt(interrupt_io)
+	       .interrupt(interrupt_io),
+	       .vector(vector)
 	       );
 
    xbus_unibus unibus (
@@ -257,7 +301,7 @@ module busint(mclk, reset,
     end
 `endif
 
-   //
+   // bus control state machine
    always @ (posedge mclk)
      if (reset)
        begin
@@ -267,17 +311,36 @@ module busint(mclk, reset,
        begin
 	  state <= next_state;
 
-`ifdef debug_detail
+//`ifdef debug_detail
 	  if (next_state != state)
 	    begin
 	       case (next_state)
-		 BUS_REQ:   $display("%t BUS_REQ   addr %o", $time, dram_addr);
-		 BUS_WAIT:  $display("%t BUS_WAIT  addr %o", $time, dram_addr);
-		 BUS_SLAVE: $display("%t BUS_SLAVE addr %o", $time, dram_addr);
-		 BUS_IDLE:  $display("%t BUS_IDLE  addr %o", $time, dram_addr);
+		 BUS_REQ:   $display("busint: BUS_REQ   addr %o; %t",
+				     dram_addr, $time);
+		 BUS_WAIT:  $display("busint: BUS_WAIT  addr %o; %t",
+				     dram_addr, $time);
+		 BUS_SLAVE: $display("busint: BUS_SLAVE addr %o; %t",
+				     dram_addr, $time);
+		 BUS_IDLE:  $display("busint: BUS_IDLE  addr %o; %t",
+				     dram_addr, $time);
+		 default:   $display("busint: ??");
 	       endcase
 	    end
-`endif
+
+	  if (next_state == BUS_WAIT)
+	    $display("busint: wait req %b ack %b; acks %b %b %b %b %b",
+		     req, device_ack, 
+		     ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
+
+	  if (next_state == BUS_SLAVE)
+	    begin
+	       $display("busint: BUS_SLAVE addr %o; %t", dram_addr, $time);
+
+	       $display("busint: slave req %b ack %b; ack_dram %b",
+			req, device_ack, ack_dram);
+	    end
+//`endif
+
        end
 
    // basic bus arbiter
@@ -297,8 +360,8 @@ module busint(mclk, reset,
 
    // allow disk to drive dram
    assign dram_addr = state == BUS_SLAVE ? addrout_disk : addr;
-   assign dram_reqin = state == BUS_SLAVE ? reqout_disk : req;
-   assign dram_writein = state == BUS_SLAVE ? writeout_disk : write;
+   assign dram_reqin = state == BUS_SLAVE ? reqout_disk : (req && state == BUS_REQ);
+   assign dram_writein = state == BUS_SLAVE ? writeout_disk : (write && state == BUS_REQ);
    assign dram_datain = state == BUS_SLAVE ? dataout_disk : busin;
 
    assign disk_datain = state == BUS_SLAVE ? dataout_dram : busin;
@@ -320,7 +383,7 @@ module busint(mclk, reset,
 `ifdef debug
    always @(posedge mclk)
      if (timed_out)
-       $display("busint: timeout; addr %o", addr);
+       $display("busint: timeout; addr %o; %t", addr, $time);
 `endif
 
    assign spyout = 16'b0;

@@ -220,7 +220,7 @@ void dpi_ide(int data_in, int* data_out, int dior, int diow, int cs, int da)
         case ATA_DATA:
             s->fifo[s->fifo_wr] = data_in;
 
-            if (1) printf("dpi_ide: write data [%d/%d] %o\n",
+            if (0) printf("dpi_ide: write data [%d/%d] %o\n",
                               s->fifo_wr, s->fifo_depth, data_in);
 
             if (s->fifo_wr < s->fifo_depth)
@@ -253,7 +253,7 @@ void dpi_ide(int data_in, int* data_out, int dior, int diow, int cs, int da)
         switch (cs << 3 | da) {
         case ATA_DATA:
             *data_out = last_read = s->fifo[s->fifo_rd];
-            if (1) printf("dpi_ide: read data [%d/%d] %o\n",
+            if (0) printf("dpi_ide: read data [%d/%d] %o\n",
                               s->fifo_rd, s->fifo_depth, *data_out);
             if (s->fifo_rd < s->fifo_depth)
                 s->fifo_rd++;

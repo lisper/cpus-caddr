@@ -62,6 +62,7 @@ int main(int argc, char** argv)
         if (top->v__DOT__clk &&
 	    top->v__DOT__cpu__DOT__state == 4)
 	{
+		if (top->v__DOT__cpu__DOT__lpc < 0100)
 		VL_PRINTF("%o %017llo A=%08x M=%08x N%d R=%08x LC=%08x\n",
 			  top->v__DOT__cpu__DOT__lpc,
 			  (QData)top->v__DOT__cpu__DOT__ir,
@@ -71,6 +72,7 @@ int main(int argc, char** argv)
 			  top->v__DOT__cpu__DOT__r,
 			  top->v__DOT__cpu__DOT__lc);
 
+		if (0)
 		VL_PRINTF("vma: vma %o ob %o alu %llo\n",
 			  top->v__DOT__cpu__DOT__vma,
 			  top->v__DOT__cpu__DOT__ob,

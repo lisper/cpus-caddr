@@ -1,10 +1,14 @@
 /*
  */
 
-`define patch_rw_test // test rw
+//`define patch_rw_test // test rw
 `define debug_vcd
 `define debug
-`define DBG_DLY #1
+//`define DBG_DLY #1
+`define DBG_DLY #0
+
+`define debug_xbus
+//`define debug_vmem
 
 `include "rtl.v"
 
@@ -31,22 +35,115 @@ module test;
    wire [1:0] 	ide_cs;
    wire [2:0] 	ide_da;
 
+   wire [13:0] 	 mcr_addr;
+   wire [48:0] 	 mcr_data_out;
+   wire [48:0] 	 mcr_data_in;
+   wire 	 mcr_ready;
+   wire 	 mcr_write;
+   wire 	 mcr_done;
+
+   wire [21:0] 	 sdram_addr;
+   wire [31:0] 	 sdram_data_out;
+   wire [31:0] 	 sdram_data_in;
+   wire 	 sdram_ready;
+   wire 	 sdram_req;
+   wire 	 sdram_write;
+   wire 	 sdram_done;
+
+   wire [14:0] 	 vram_addr;
+   wire [31:0] 	 vram_data_out;
+   wire [31:0] 	 vram_data_in;
+   wire 	 vram_req;
+   wire 	 vram_ready;
+   wire 	 vram_write;
+   wire 	 vram_done;
+
+   wire 	 fetch;
+   
    caddr cpu (.clk(clk),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
 	      .ext_halt(halt),
-	      .spyin(spyin),
-	      .spyout(spyout),
+	      .spy_in(spyin),
+	      .spy_out(spyout),
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
+
+	      .fetch_out(fetch),
+	      .mcr_addr(mcr_addr),
+	      .mcr_data_out(mcr_data_out),
+	      .mcr_data_in(mcr_data_in),
+	      .mcr_ready(mcr_ready),
+	      .mcr_write(mcr_write),
+	      .mcr_done(mcr_done),
+
+	      .sdram_addr(sdram_addr),
+	      .sdram_data_in(sdram_data_in),
+	      .sdram_data_out(sdram_data_out),
+	      .sdram_req(sdram_req),
+	      .sdram_ready(sdram_ready),
+	      .sdram_write(sdram_write),
+	      .sdram_done(sdram_done),
+      
+	      .vram_addr(vram_addr),
+	      .vram_data_in(vram_data_in),
+	      .vram_data_out(vram_data_out),
+	      .vram_req(vram_req),
+	      .vram_ready(vram_ready),
+	      .vram_write(vram_write),
+	      .vram_done(vram_done),
+
 	      .ide_data_in(ide_data_in),
 	      .ide_data_out(ide_data_out),
 	      .ide_dior(ide_dior),
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
+
+   assign 	 mcr_write = 0;
+
+   debug_ram_controller rc
+		     (.clk(clk),
+		      .reset(reset),
+		      .fetch(fetch),
+		      
+		      .mcr_addr(mcr_addr),
+		      .mcr_data_out(mcr_data_in),
+		      .mcr_data_in(mcr_data_out),
+		      .mcr_ready(mcr_ready),
+		      .mcr_write(mcr_write),
+		      .mcr_done(mcr_done),
+
+		      .sdram_addr(sdram_addr),
+		      .sdram_data_in(sdram_data_out),
+		      .sdram_data_out(sdram_data_in),
+		      .sdram_req(sdram_req),
+		      .sdram_ready(sdram_ready),
+		      .sdram_write(sdram_write),
+		      .sdram_done(sdram_done),
+      
+		      .vram_addr(vram_addr),
+		      .vram_data_in(vram_data_out),
+		      .vram_data_out(vram_data_in),
+		      .vram_req(vram_req),
+		      .vram_ready(vram_ready),
+		      .vram_write(vram_write),
+		      .vram_done(vram_done),
+      
+		      .sram_a(sram_a),
+		      .sram_oe_n(sram_oe_n),
+		      .sram_we_n(sram_we_n),
+		      .sram1_io(sram1_io),
+		      .sram1_ce_n(sram1_ce_n),
+		      .sram1_ub_n(sram1_ub_n),
+		      .sram1_lb_n(sram1_lb_n),
+		      .sram2_io(sram2_io),
+		      .sram2_ce_n(sram2_ce_n),
+		      .sram2_ub_n(sram2_ub_n),
+		      .sram2_lb_n(sram2_lb_n)
+		      );
    
    integer     addr;
    integer     debug_level;
@@ -114,6 +211,18 @@ module test;
 
         end
 
+`define patch_vram_test
+`ifdef patch_vram_test
+	cpu.i_AMEM.ram[10'o65] = 32'o77051763;
+	cpu.i_AMEM.ram[10'o66] = 32'o77051764;
+
+	cpu.i_MMEM.ram[10'o02] = 32'o01234567;
+	cpu.i_MMEM.ram[10'o03] = 32'hffffffff;
+
+	cpu.i_VMEM0.ram[11'o3742] = 5'o00;
+	cpu.i_VMEM1.ram[10'o0023] = 24'o60036123;
+`endif
+	
 `ifdef patch_rw_test
 	cpu.i_AMEM.ram[10'o436] = 32'o403447;
 	cpu.i_VMEM0.ram[11'o20] = 5'o31;
@@ -147,6 +256,15 @@ module test;
      begin
 	if (cpu.state == 5'b00001)
 	  cycles = cycles + 1;
+
+	case (cpu.state)
+  5'b00000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b00001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b00010: $display("%0o %o exec   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b00100: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b01000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  5'b10000: $display("%0o %o wait   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	endcase
 
 `ifdef xxx
 	if (cycles > 25 && (cpu.lpc > 7 && cpu.lpc < 14'o50) &&
@@ -405,9 +523,9 @@ module test;
 
    assign ide_data_in = ide_data_bus;
      
-   always @(posedge clk)
-     begin
-	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
-     end
+//   always @(posedge clk)
+//     begin
+//	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
+//     end
    
 endmodule

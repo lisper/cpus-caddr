@@ -73,12 +73,15 @@ main(int argc, char *argv[])
 	char line[1024];
 	unsigned int i, h, v, bits, aoffset, offset, addr, show;
 	unsigned char *ps;
-	int do_window, do_set, do_full, do_show;
+	int do_window, do_set, do_full, do_show, do_vram, do_tv, do_extract;
 
 	do_window = 1;
 	do_set = 1;
 	do_full = 1;
 	do_show = 0;
+	do_vram = 0;
+	do_tv = 1;
+	do_extract = 0;
 
 	for (i = 1; i < argc; i++) {
 		if (argv[i][0] == '-')
@@ -86,7 +89,9 @@ main(int argc, char *argv[])
 			case 'n': do_window = 0; break;
 			case 'f': do_full = 0; break;
 			case 's': do_show = 1; break;
+			case 'v': do_vram = 1; do_tv = 0; break;
 			case 'x': do_set = 0; break;
+			case 'e': do_extract = 1; do_tv = 0; break;
 			}
 	}
 
@@ -97,17 +102,37 @@ main(int argc, char *argv[])
 
 	while (fgets(line, sizeof(line), stdin)) {
 		
-		if (line[0] == 't' && line[1] == 'v')
-			;
-		else
-			continue;
+		if (do_vram) {
+			if (line[0] == 'v' && line[1] == 'r' && line[2] == 'a')
+				;
+			else
+				continue;
 
-		if (line[4] == 'w') {
-			sscanf(line, "tv: write @%o\n", &addr);
-			continue;
-		} else {
-			sscanf(line, "tv: (%d, %d) <- %o\n",
-			       &h, &v, &bits);
+			if (line[6] == 'W') {
+				sscanf(line, "vram: W addr %o <- %o;",
+				       &addr, &bits);
+			} else
+				continue;
+		}
+
+		if (do_tv) {
+			if (line[0] == 't' && line[1] == 'v')
+				;
+			else
+				continue;
+
+			if (line[4] == 'w') {
+				sscanf(line, "tv: write @%o <- %o\n",
+				       &addr, &bits);
+				continue;
+			} else {
+				sscanf(line, "tv: (%d, %d) <- %o\n",
+				       &h, &v, &bits);
+			}
+		}
+
+		if (do_extract) {
+			sscanf(line, "%o %o", &addr, &bits);
 		}
 
 		aoffset = addr & 077777;
@@ -139,8 +164,9 @@ main(int argc, char *argv[])
 
 		for (i = 0; i < 32; i++) {
 			if (do_set)
-//				ps[offset + i] = (bits & 1) ? 0xff : 0;
-				ps[offset + i] ^= (bits & 1) ? 0x0 : 0xff;
+				ps[offset + i] = (bits & 1) ? 0xff : 0;
+//				ps[offset + i] = (bits & 1) ? 0x0 : 0xff;
+//				ps[offset + i] ^= (bits & 1) ? 0x0 : 0xff;
 			else
 				ps[offset + i] += (bits & 1) ? 1 : 2;
 

@@ -1,10 +1,9 @@
 
-module support(sysclk, button, clk, reset, interrupt, boot, halt);
+module support(sysclk, button, reset, interrupt, boot, halt);
 
    input sysclk;
    input button;
 
-   output clk;
    output reset;
    output interrupt;
    output boot;
@@ -16,7 +15,6 @@ module support(sysclk, button, clk, reset, interrupt, boot, halt);
    reg [9:0]  hold;
    wire       pressed;
    
-   assign clk = sysclk;
    assign reset = (count > 10 && ~onetime) || pressed;
    assign boot = count >= 240 && count < 250 && ~onetime;
    assign interrupt = 1'b0;
@@ -31,7 +29,7 @@ module support(sysclk, button, clk, reset, interrupt, boot, halt);
 	hold = 0;
      end
    
-   always @(posedge clk)
+   always @(posedge sysclk)
      begin
 	count <= count + 1;
 	if (count == 255)
@@ -42,7 +40,7 @@ module support(sysclk, button, clk, reset, interrupt, boot, halt);
    
    always @(posedge slowclk)
      begin
-	hold <= { hold[8:0], in };
+	hold <= { hold[8:0], button };
 	onetime <= pressed ? 0 : 1;
      end
    

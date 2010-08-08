@@ -1,5 +1,7 @@
 /* 1kx32 synchronous static ram */
 
+`include "defines.vh"
+
 module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    input clk_a;
@@ -99,7 +101,8 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    // synopsys translate_on
 `endif //  ISE
 
-`ifdef SIMULATION
+//`ifdef SIMULATION
+`ifdef ISE_OR_SIMULATION
    reg [31:0] ram [0:1023];
    reg [31:0] out_a;
 

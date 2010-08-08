@@ -234,13 +234,13 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch,
    //	{15'b0[48]}, [47:32] [31:16] [15:0]
    //
 
-`ifdef debug
+//`ifdef debug
    wire [48:0] mcr_data_in_x;
 
    // patch out disk-copy (which takes hours to sim)
    assign mcr_data_in_x = mcr_addr == 14'o24045 ? 49'h000000001000 :mcr_data_in;
 // assign mcr_data_in_x = mcr_data_in;
-`endif
+//`endif
    
    assign sram1_io =
 		    (state == S1 && mcr_write) ? {15'b0, mcr_data_in_x[48]} :
@@ -389,6 +389,8 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch,
        end
 
 `else
+
+   reg sdram_rdy;
    
    // sdram
    always @(posedge clk)
@@ -432,7 +434,6 @@ sdram_data_out <= sdram_addr[21:17] == 0 ? {sram1_io, sram2_io} : 32'hffffffff;
    reg [10:0] sdram_rdy_delay;
 
    assign     sdram_ready = sdram_rdy_delay[1];
-   reg sdram_rdy;
    
    always @(posedge clk)
      if (reset)

@@ -1,5 +1,7 @@
 /* 2kx17 synchronous static ram */
 
+`include "defines.vh"
+
 module part_2kx17ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    input clk_a;

@@ -1,5 +1,7 @@
 /* 32x19 synchronous static ram */
 
+`include "defines.vh"
+
 module part_32x19ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    input clk_a;
@@ -99,7 +101,8 @@ module part_32x19ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    // synopsys translate_on
 `endif //  ISE
 
-`ifdef SIMULATION
+//`ifdef SIMULATION
+`ifdef ISE_OR_SIMULATION
    reg [18:0] 	 ram [0:31];
    reg [18:0] 	 out_a;
 

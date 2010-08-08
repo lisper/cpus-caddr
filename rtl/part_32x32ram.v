@@ -1,6 +1,6 @@
 /* 32x32 synchronous static ram */
 
-/* 32x32 synchronous static ram */
+`include "defines.vh"
 
 module part_32x32ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 

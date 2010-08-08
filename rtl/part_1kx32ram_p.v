@@ -1,5 +1,7 @@
 /* 1kx32 synchronous static ram */
 
+`include "defines.vh"
+
 module part_1kx32ram_p(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    input clk_a;

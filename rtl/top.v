@@ -5,6 +5,7 @@ module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
 	   sevenseg, sevenseg_an,
 	   slideswitch,
+	   vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync,
 	   sram_a, sram_oe_n, sram_we_n,
 	   sram1_io, sram1_ce_n, sram1_ub_n, sram1_lb_n,
 	   sram2_io, sram2_ce_n, sram2_ub_n, sram2_lb_n,
@@ -22,6 +23,12 @@ module top(rs232_txd, rs232_rxd,
    output [3:0] sevenseg_an;
 
    input [7:0] 	slideswitch;
+
+   output 	vga_red;
+   output 	vga_blu;
+   output 	vga_grn;
+   output 	vga_hsync;
+   output 	vga_vsync;
 
    output [17:0] sram_a;
    output 	 sram_oe_n;
@@ -60,8 +67,8 @@ module top(rs232_txd, rs232_rxd,
    wire 	 halt;
    
    wire [11:0] 	 mcr_addr;
-   wire [51:0] 	 mcr_data_out;
-   wire [51:0] 	 mcr_data_in;
+   wire [48:0] 	 mcr_data_out;
+   wire [48:0] 	 mcr_data_in;
    wire 	 mcr_ready;
    wire 	 mcr_write;
    wire 	 mcr_done;
@@ -90,10 +97,9 @@ module top(rs232_txd, rs232_rxd,
    wire 	 prefetch;
    wire 	 fetch;
    
-   support support(.sysclk(sysclk),
-		   .clk(clk),
-		   .reset(reset),
+   support support(.sysclk(sysclk_buf),
 		   .button(button[3]),
+		   .reset(reset),
 		   .interrupt(interrupt),
 		   .boot(boot),
 		   .halt(halt));
@@ -135,13 +141,13 @@ module top(rs232_txd, rs232_rxd,
 	      .sdram_write(sdram_write),
 	      .sdram_done(sdram_done),
       
-	      .vram_addr(vram_addr),
-	      .vram_data_in(vram_data_in),
-	      .vram_data_out(vram_data_out),
-	      .vram_req(vram_req),
-	      .vram_ready(vram_ready),
-	      .vram_write(vram_write),
-	      .vram_done(vram_done),
+	      .vram_addr(vram_cpu_addr),
+	      .vram_data_in(vram_cpu_data_in),
+	      .vram_data_out(vram_cpu_data_out),
+	      .vram_req(vram_cpu_req),
+	      .vram_ready(vram_cpu_ready),
+	      .vram_write(vram_cpu_write),
+	      .vram_done(vram_cpu_done),
 
 	      .ide_data_in(ide_data_in),
 	      .ide_data_out(ide_data_out),
@@ -164,15 +170,15 @@ module top(rs232_txd, rs232_rxd,
 		      .fetch(fetch),
 
 		      .mcr_addr(mcr_addr),
-		      .mcr_data_out(mcr_data_out),
-		      .mcr_data_in(mcr_data_in),
+		      .mcr_data_out(mcr_data_in),
+		      .mcr_data_in(mcr_data_out),
 		      .mcr_ready(mcr_ready),
 		      .mcr_write(mcr_write),
 		      .mcr_done(mcr_done),
 
 		      .sdram_addr(sdram_addr),
-		      .sdram_data_in(sdram_data_in),
-		      .sdram_data_out(sdram_data_out),
+		      .sdram_data_in(sdram_data_out),
+		      .sdram_data_out(sdram_data_in),
 		      .sdram_req(sdram_req),
 		      .sdram_ready(sdram_ready),
 		      .sdram_write(sdram_write),
@@ -208,10 +214,10 @@ module top(rs232_txd, rs232_rxd,
 		    .pixclk(clk100),
 		    .reset(reset),
 
-		    .vram_addr(vram_addr),
-		    .vram_data(vram_data_out),
-		    .vram_req(vram_req),
-		    .vram_ready(vram_ready),
+		    .vram_addr(vram_vga_addr),
+		    .vram_data(vram_vga_data_out),
+		    .vram_req(vram_vga_req),
+		    .vram_ready(vram_vga_ready),
       
 		    .vga_red(vga_red),
 		    .vga_blu(vga_blu),
@@ -220,5 +226,9 @@ module top(rs232_txd, rs232_rxd,
 		    .vga_vsync(vga_vsync)
 		    );
 
+   assign sevenseg = 8'b0;
+   assign sevenseg_an = 4'b0;
+   assign led = 8'b0;
+   assign rs232_txd = 1'b0;
    
 endmodule

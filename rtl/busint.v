@@ -117,7 +117,8 @@ module busint(mclk, reset,
    parameter 	 BUS_IDLE  = 4'b0000,
  		   BUS_REQ   = 4'b0001,
  		   BUS_WAIT  = 4'b0010,
- 		   BUS_SLAVE = 4'b0100;
+ 		   BUS_SLAVE = 4'b0100,
+    		   BUS_SWAIT = 4'b1000;
 
    reg [3:0] 	state;
    wire [3:0] 	next_state;
@@ -134,7 +135,9 @@ module busint(mclk, reset,
    wire 	interrupt;
    wire 	interrupt_disk, interrupt_tv, interrupt_io, interrupt_unibus;
    
-   wire 	grantin_disk;
+   wire 	busreqout_disk;
+   wire 	busgrantin_disk;
+
    wire 	dram_reqin;
    wire 	dram_writein;
 
@@ -177,28 +180,32 @@ module busint(mclk, reset,
 		  .sdram_done(sdram_done)
 		  );
 
+
+   wire 	ackin_disk;
    wire 	writeout_disk;
-/* verilator lint_off UNOPTFLAT */
    wire 	reqout_disk;
-/* verilator lint_on UNOPTFLAT */
    wire 	decodein_disk;
    
    xbus_disk disk (
 		   .reset(reset),
 		   .clk(mclk),
+
 		   .addrin(addr),
-		   .addrout(addrout_disk),
 		   .datain(disk_datain),
 		   .dataout(dataout_disk),
 		   .reqin(req),
-		   .reqout(reqout_disk),
-		   .grantin(grantin_disk),
-		   .ackout(ack_disk),
 		   .writein(write),
-		   .writeout(writeout_disk),
-		   .decodein(decodein_disk),
+		   .ackout(ack_disk),
 		   .decodeout(decode_disk),
 		   .interrupt(interrupt_disk),
+
+	   .busreqout(busreqout_disk),
+	   .busgrantin(busgrantin_disk),
+		   .addrout(addrout_disk),
+		   .reqout(reqout_disk),
+	   .ackin(ackin_disk),
+		   .writeout(writeout_disk),
+		   .decodein(decodein_disk),
 
 		   .ide_data_in(ide_data_in),
 		   .ide_data_out(ide_data_out),
@@ -311,7 +318,7 @@ module busint(mclk, reset,
        begin
 	  state <= next_state;
 
-//`ifdef debug_detail
+`ifdef debug_detail
 	  if (next_state != state)
 	    begin
 	       case (next_state)
@@ -327,8 +334,21 @@ module busint(mclk, reset,
 	       endcase
 	    end
 
+	  if (next_state == BUS_REQ)
+	    $display("busint: REQ req %b write %b decode_dram %b",
+		     req, write, decode_dram);
+
+	  if (next_state == BUS_REQ)
+	    $display("busint: REQ req %b dram_reqin %b dram_writein %b",
+		     req, dram_reqin, dram_writein);
+
+	  if (next_state == BUS_REQ)
+	    $display("busint: REQ req %b ack %b; acks %b %b %b %b %b",
+		     req, device_ack, 
+		     ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
+
 	  if (next_state == BUS_WAIT)
-	    $display("busint: wait req %b ack %b; acks %b %b %b %b %b",
+	    $display("busint: WAIT req %b ack %b; acks %b %b %b %b %b",
 		     req, device_ack, 
 		     ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
 
@@ -339,23 +359,26 @@ module busint(mclk, reset,
 	       $display("busint: slave req %b ack %b; ack_dram %b",
 			req, device_ack, ack_dram);
 	    end
-//`endif
+`endif
 
        end
 
    // basic bus arbiter
    assign next_state =
 		      (state == BUS_IDLE && req) ? BUS_REQ :
-		      (state == BUS_IDLE && reqout_disk) ? BUS_SLAVE :
+		      (state == BUS_IDLE && busreqout_disk) ? BUS_SLAVE :
 		      (state == BUS_REQ && device_ack) ? BUS_WAIT :
 		      (state == BUS_REQ && ~device_ack) ? BUS_REQ :
 		      (state == BUS_WAIT && ~req) ? BUS_IDLE :
 		      (state == BUS_WAIT && req) ? BUS_WAIT :
-		      (state == BUS_SLAVE && ack_dram) ? BUS_IDLE :
+//		      (state == BUS_SLAVE && ack_dram) ? BUS_IDLE :
+      		      (state == BUS_SLAVE && ack_dram) ? BUS_SWAIT :
 		      (state == BUS_SLAVE && ~ack_dram) ? BUS_SLAVE :
+      		      (state == BUS_SWAIT && busreqout_disk) ? BUS_SWAIT :
+		      (state == BUS_SWAIT && ~busreqout_disk) ? BUS_IDLE :
 		      BUS_IDLE;
 		      
-   assign grantin_disk = state == BUS_SLAVE && next_state == BUS_IDLE;
+   assign busgrantin_disk = state == BUS_SLAVE;
    assign load = req & ~write & (state == BUS_WAIT);
 
    // allow disk to drive dram
@@ -365,7 +388,9 @@ module busint(mclk, reset,
    assign dram_datain = state == BUS_SLAVE ? dataout_disk : busin;
 
    assign disk_datain = state == BUS_SLAVE ? dataout_dram : busin;
-   assign decodein_disk = grantin_disk & decode_dram;
+   assign decodein_disk = busgrantin_disk & decode_dram;
+   assign ackin_disk = busgrantin_disk & ack_dram;
+   
 
    // bus timeout
    always @(posedge mclk)

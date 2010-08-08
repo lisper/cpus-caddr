@@ -87,11 +87,14 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 	       spy_in, spy_out, dbread, dbwrite, eadr,
 
-	       pre_fetch_out, fetch_out,
+	       prefetch_out, fetch_out,
+
 	       mcr_addr, mcr_data_out, mcr_data_in,
 	       mcr_ready, mcr_write, mcr_done,
+
 	       sdram_addr, sdram_data_in, sdram_data_out,
 	       sdram_req, sdram_ready, sdram_write, sdram_done,
+
 	       vram_addr, vram_data_in, vram_data_out,
 	       vram_req, vram_ready, vram_write, vram_done,
 
@@ -121,8 +124,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    output [21:0]  sdram_addr;
    output [31:0] sdram_data_out;
    input [31:0]  sdram_data_in;
-   output 	 sdram_ready;
    output 	 sdram_req;
+   input 	 sdram_ready;
    output 	 sdram_write;
    input 	 sdram_done;
 
@@ -1061,6 +1064,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	 begin
 	    ir[47:26] <= ~destimod1 ? i[47:26] : iob[47:26]; 
 	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0];
+`ifdef debug_iram
+	    if (~destimod0 && ~destimod0 && ~promenable)
+	      $display("iram: [%o] -> %o; %t", pc, iram, $time);
+`endif
 `ifdef debug_detail
 	    if (destimod1)
 	      $display("destimod1: lpc %o ob %o ir %o",
@@ -1255,19 +1262,29 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 //really this is loadmd during decode or write; destmdr during phase 1
 //       if ((state_write && mdclk) || (state_decode && loadmd))
        if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
+//       if (loadmd || (state_fetch && destmdr))
 	 begin
 `ifdef debug
 	    if (state_fetch && destmdr)
 	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o; lpc %o",
 		       mds, mdsel, osel, alu, mo, lpc);
 	    else
-	      $display("load md <- %o; L lpc %o", mds, lpc);
+	      $display("load md <- %o; L lpc %o; %t", mds, lpc, $time);
 `endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
 	    mdpar <= mempar_in;
 	 end
 
+`ifdef debug
+   always @(posedge clk) 
+     if (loadmd && (state_fetch && destmdr))
+       begin
+	  $display("XXXX loadmd and destmdr conflict, lpc %o; %t", lpc, $time);
+	  $finish;
+       end
+`endif
+   
    assign mddrive = srcmd & phase1;
 
    assign mdgetspar = ~destmdr & ~ignpar;
@@ -2346,7 +2363,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // for externals
    assign fetch_out = state_fetch;
-   assign pre_fetch_out = state_write;
+   assign prefetch_out = state_write;
 
 
    // page SPY0

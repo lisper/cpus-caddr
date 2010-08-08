@@ -126,6 +126,7 @@ module xbus_tv(
      if (reset)
        begin
 	  tv_int_en <= 1'b0;
+	  dataout <= 0;
        end
      else
        begin
@@ -194,8 +195,10 @@ module xbus_tv(
 	    end
 
 	  if (fb_state == FB_READ)
-	       $display("tv: read @%o -> %o (vram_ready %b); %t",
-	  		addr, vram_data_in, vram_ready, $time);
+	    $display("tv: read @%o -> %o (vram_ready %b); %t",
+	  	     addr, vram_data_in, vram_ready, $time);
+	  if (fb_state == FB_DONE)
+	    $display("tv: ack");
 `endif
        end
 

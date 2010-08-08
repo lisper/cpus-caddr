@@ -243,7 +243,8 @@ module xbus_disk (
 		  addrin, addrout,
 		  datain, dataout,
 		  reqin, reqout,
-		  grantin, ackout,
+		  ackin, ackout,
+		  busgrantin, busreqout,
 		  writein, writeout,
 		  decodein, decodeout,
 		  interrupt,
@@ -255,22 +256,25 @@ module xbus_disk (
    input clk;
    input [21:0] addrin;		/* request address */
    input [31:0] datain;		/* request data */
-   input 	reqin;		/* request */
-   input 	grantin;	/* grant from bus arbiter */
+   input 	reqin;		/* request read */
+   input 	ackin;		/* ack */
+   input 	busgrantin;	/* grant from bus arbiter */
    input 	writein;	/* request read#/write */
    input 	decodein;	/* decode ok from bus arbiter */
    
    output [21:0] addrout;
    output [31:0] dataout;
-   output 	 reqout;
+   output 	 reqout;	/* request read */
    output 	 ackout;	/* request done */
-   output 	 writeout;
+   output 	 busreqout;	/* reques bus */
+   output 	 writeout;	/* reques write */
    output 	 decodeout;	/* request addr ok */
    output 	 interrupt;
 
    reg [21:0] 	 addrout;
    reg 		 reqout;
    reg 		 writeout;
+   reg 		 busreqout;
    
    input [15:0]  ide_data_in;
    output [15:0] ide_data_out;
@@ -429,7 +433,9 @@ module xbus_disk (
    assign decodeout = decode;
    assign ackout = ack_delayed[1];
 
-   assign dataout = state == s_read2 ? dma_dataout : reg_dataout;
+//   assign dataout = state == s_read2 ? dma_dataout : reg_dataout;
+   assign dataout = (state == s_read2 && busgrantin) ?
+		    dma_dataout : reg_dataout;
    
 		   
    // disk registers
@@ -698,7 +704,7 @@ module xbus_disk (
      if (reset)
        dma_data_hold <= 0;
      else
-     if (state == s_write0 && grantin)
+     if (state == s_write0 && busgrantin && ackin)
        dma_data_hold <= datain;
 
    // grab the ide data, later used by dma
@@ -717,7 +723,7 @@ module xbus_disk (
 	  more_ccws <= 0;
        end
      else
-       if (state == s_read_ccw && grantin)
+       if (state == s_read_ccw && busgrantin && ackin)
 	 begin
 `ifdef debug
 	    $display("disk: grab ccw %o, %t", datain, $time);
@@ -739,7 +745,7 @@ module xbus_disk (
    always @(state or disk_cmd or disk_da or disk_ccw or disk_clp or
 	    lba or disk_start or wc or more_ccws or
             ata_done or ata_out or ata_hold or
-	    grantin or dma_data_hold
+	    busgrantin or ackin or dma_data_hold
 `ifdef debug_with_usim_delay
 	    or done_waiting or busy_cycles
 `endif
@@ -762,7 +768,8 @@ module xbus_disk (
 	ata_wr = 0;
 	ata_addr = 0;
 	ata_in = 0;
-	
+
+	busreqout = 0;
 	reqout = 0;
 	writeout = 0;
 	addrout = 0;
@@ -804,6 +811,7 @@ module xbus_disk (
 
 	  s_read_ccw:
 	    begin
+	       busreqout = 1;
 	       reqout = 1;
 	       addrout = { disk_clp };
 
@@ -811,7 +819,7 @@ module xbus_disk (
 	       $display("disk: dma clp @ %o", disk_clp);
 `endif
 
-	       if (grantin)
+	       if (busgrantin && ackin)
 		 state_next = s_read_ccw_done;
 	    end
 
@@ -989,6 +997,7 @@ module xbus_disk (
 	  s_read2:
 	    begin
 	       // mem write
+	       busreqout = 1;
 	       reqout = 1;
 	       addrout = { disk_ccw, wc };
 
@@ -997,11 +1006,11 @@ module xbus_disk (
 	       writeout = 1;
 	       
 `ifdef debug_disk
-	       if (grantin) $display("s_read2: ata_out %o, dma_addr %o",
+	       if (busgrantin) $display("s_read2: ata_out %o, dma_addr %o",
 			       ata_out, { 10'b0, disk_ccw, wc });
 `endif
 			    
-	       if (grantin)
+	       if (busgrantin && ackin)
 		 begin
 		    inc_wc = 1;
 		    
@@ -1015,10 +1024,11 @@ module xbus_disk (
 	  s_write0:
 	    begin
 	       //mem read
+	       busreqout = 1;
 	       reqout = 1;
 	       addrout = { disk_ccw, wc };
 	       
-	       if (grantin)
+	       if (busgrantin && ackin)
 		 state_next = s_write1;
 	    end
 

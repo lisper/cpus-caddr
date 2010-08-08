@@ -104,6 +104,7 @@ reg [31:0] 	 dataout;
 	clear_bus_ints = 0;
 	set_unibus_int_en = 0;
 	clear_unibus_int_en = 0;
+	dataout = 0;
 	
 	if (decode_unibus)
 	  if (write)
@@ -141,7 +142,6 @@ reg [31:0] 	 dataout;
 `ifdef debug
                `DBG_DLY $display("unibus: read @%o", addr);
 `endif
-	       dataout = 0;
 
 	       /* verilator lint_off CASEINCOMPLETE */
 	       case (offset)

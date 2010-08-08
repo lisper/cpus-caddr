@@ -1,0 +1,35 @@
+# patch_rw_test vram
+
+.amem 065 077051763
+.amem 066 077051764
+
+.mmem 02 01234567
+.mmem 03 0xffffffff
+
+.vmem0 03742 0
+.vmem1 00023 060036123
+
+.org 0
+
+    alu setz a=0
+    alu seta a=65 aluout ->vma+write
+    noop
+    alu seta a=65 aluout ->vma+read
+    noop
+    noop
+    alu seta a=65 aluout ->vma+read
+    noop
+    noop
+    alu seta a=65 aluout ->vma+read
+    noop
+    noop
+    alu seta a=65 aluout ->vma+read
+    noop
+    noop
+    alu seta a=65 aluout ->vma+read
+    noop
+    noop
+    noop
+    noop
+    noop
+    noop

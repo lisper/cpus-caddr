@@ -1,0 +1,74 @@
+# patch_rw_test dram
+
+.org 0
+
+    byte a=21 m=21 ->md
+    alu seta a=436 m=0 aluout ->vma+write
+    noop
+    noop	
+    alu seta a=436 m=0 aluout ->vma+read
+    noop
+    noop
+    byte a=20 m=21 ->md
+#    alu seta a=2 aluout ->vma+write
+#    noop
+#    noop
+#    noop
+#    alu seta a=4 aluout ->vma+write
+#    noop
+#    noop
+#    noop
+#    alu seta a=6 aluout ->vma+write
+#    noop
+#    noop
+#    noop
+    alu seta a=10 aluout ->vma+write
+    noop
+    noop
+    alu seta a=10 aluout ->vma+read
+    noop
+    noop
+    alu seta a=436 aluout ->vma+read
+    noop
+    noop
+    alu seta a=10 aluout ->vma+read
+    noop
+    noop
+    alu seta a=436 aluout ->vma+read
+    noop
+    noop
+    alu seta a=10 aluout ->vma+read
+    noop
+    noop
+#    alu seta a=436 aluout ->vma+write
+#    noop
+#    noop
+#    noop
+#    alu m+a a=2 aluout ->vma+read
+#    noop
+#    noop
+#    noop
+#    alu m+a a=4 aluout ->vma+read
+#    noop
+#    noop
+#    noop
+#    alu m+a a=6 aluout ->vma+read
+#    noop
+#    noop
+#    noop
+#    alu m+a a=10 aluout ->vma+read
+#    noop
+#    noop
+#    noop
+#    alu m+a a=436 aluout ->vma+read
+#    noop	
+#    noop	
+#    alu seta a=436 aluout ->vma+write
+#    noop
+#    alu m+a a=40 m=50 aluout ->vma+read
+    noop
+    noop
+    noop
+    noop
+    noop
+

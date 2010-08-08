@@ -74,14 +74,22 @@ module top(rs232_txd, rs232_rxd,
    wire 	 sdram_write;
    wire 	 sdram_done;
 
-   wire [14:0] 	 vram_addr;
-   wire [31:0] 	 vram_data_out;
-   wire [31:0] 	 vram_data_in;
-   wire 	 vram_req;
-   wire 	 vram_ready;
-   wire 	 vram_write;
-   wire 	 vram_done;
+   wire [14:0] 	 vram_cpu_addr;
+   wire [31:0] 	 vram_cpu_data_out;
+   wire [31:0] 	 vram_cpu_data_in;
+   wire 	 vram_cpu_req;
+   wire 	 vram_cpu_ready;
+   wire 	 vram_cpu_write;
+   wire 	 vram_cpu_done;
 
+   wire [14:0] 	 vram_vga_addr;
+   wire [31:0] 	 vram_vga_data_out;
+   wire 	 vram_vga_req;
+   wire 	 vram_vga_ready;
+
+   wire 	 prefetch;
+   wire 	 fetch;
+   
    support support(.sysclk(sysclk),
 		   .clk(clk),
 		   .reset(reset),
@@ -103,12 +111,15 @@ module top(rs232_txd, rs232_rxd,
 	      .ext_reset(reset),
 	      .ext_boot(boot),
 	      .ext_halt(halt),
+
 	      .spy_in(spy_in),
 	      .spy_out(spy_out),
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
 
+	      .prefetch_out(prefetch),
+	      .fetch_out(fetch),
 	      .mcr_addr(mcr_addr),
 	      .mcr_data_out(mcr_data_out),
 	      .mcr_data_in(mcr_data_in),
@@ -147,7 +158,10 @@ module top(rs232_txd, rs232_rxd,
    assign      dbwrite = 0;
 
    ram_controller rc (.clk(clk),
+		      .clk2x(clk100),
 		      .reset(reset),
+		      .prefetch(prefetch),
+		      .fetch(fetch),
 
 		      .mcr_addr(mcr_addr),
 		      .mcr_data_out(mcr_data_out),
@@ -164,13 +178,18 @@ module top(rs232_txd, rs232_rxd,
 		      .sdram_write(sdram_write),
 		      .sdram_done(sdram_done),
       
-		      .vram_addr(vram_addr),
-		      .vram_data_in(vram_data_in),
-		      .vram_data_out(vram_data_out),
-		      .vram_req(vram_req),
-		      .vram_ready(vram_ready),
-		      .vram_write(vram_write),
-		      .vram_done(vram_done),
+		      .vram_cpu_addr(vram_cpu_addr),
+		      .vram_cpu_data_in(vram_cpu_data_out),
+		      .vram_cpu_data_out(vram_cpu_data_in),
+		      .vram_cpu_req(vram_cpu_req),
+		      .vram_cpu_ready(vram_cpu_ready),
+		      .vram_cpu_write(vram_cpu_write),
+		      .vram_cpu_done(vram_cpu_done),
+      
+		      .vram_vga_addr(vram_vga_addr),
+		      .vram_vga_data_out(vram_vga_data_out),
+		      .vram_vga_req(vram_vga_req),
+		      .vram_vga_ready(vram_vga_ready),
       
 		      .sram_a(sram_a),
 		      .sram_oe_n(sram_oe_n),

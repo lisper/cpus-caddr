@@ -99,13 +99,18 @@ module test;
    wire 	 sdram_write;
    wire 	 sdram_done;
 
-   wire [14:0] 	 vram_addr;
-   wire [31:0] 	 vram_data_out;
-   wire [31:0] 	 vram_data_in;
-   wire 	 vram_req;
-   wire 	 vram_ready;
-   wire 	 vram_write;
-   wire 	 vram_done;
+   wire [14:0] 	 vram_cpu_addr;
+   wire [31:0] 	 vram_cpu_data_out;
+   wire [31:0] 	 vram_cpu_data_in;
+   wire 	 vram_cpu_req;
+   wire 	 vram_cpu_ready;
+   wire 	 vram_cpu_write;
+   wire 	 vram_cpu_done;
+
+   wire [14:0] 	 vram_vga_addr;
+   wire [31:0] 	 vram_vga_data_out;
+   wire 	 vram_vga_req;
+   wire 	 vram_vga_ready;
 
    wire 	 prefetch;
    wire 	 fetch;
@@ -148,13 +153,13 @@ module test;
 	      .sdram_write(sdram_write),
 	      .sdram_done(sdram_done),
       
-	      .vram_addr(vram_addr),
-	      .vram_data_in(vram_data_in),
-	      .vram_data_out(vram_data_out),
-	      .vram_req(vram_req),
-	      .vram_ready(vram_ready),
-	      .vram_write(vram_write),
-	      .vram_done(vram_done),
+	      .vram_addr(vram_cpu_addr),
+	      .vram_data_in(vram_cpu_data_in),
+	      .vram_data_out(vram_cpu_data_out),
+	      .vram_req(vram_cpu_req),
+	      .vram_ready(vram_cpu_ready),
+	      .vram_write(vram_cpu_write),
+	      .vram_done(vram_cpu_done),
 
 	      .ide_data_in(ide_data_in),
 	      .ide_data_out(ide_data_out),
@@ -163,13 +168,15 @@ module test;
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
 
-`ifdef xx
+`define real_rc
+`ifdef real_rc
    ram_controller
 `else
    debug_ram_controller
 `endif
 		  rc
 		     (.clk(clk),
+		      .clk2x(clk100),
 		      .reset(reset),
 		      .prefetch(prefetch),
 		      .fetch(fetch),
@@ -189,13 +196,18 @@ module test;
 		      .sdram_write(sdram_write),
 		      .sdram_done(sdram_done),
       
-		      .vram_addr(vram_addr),
-		      .vram_data_in(vram_data_out),
-		      .vram_data_out(vram_data_in),
-		      .vram_req(vram_req),
-		      .vram_ready(vram_ready),
-		      .vram_write(vram_write),
-		      .vram_done(vram_done),
+		      .vram_cpu_addr(vram_cpu_addr),
+		      .vram_cpu_data_in(vram_cpu_data_out),
+		      .vram_cpu_data_out(vram_cpu_data_in),
+		      .vram_cpu_req(vram_cpu_req),
+		      .vram_cpu_ready(vram_cpu_ready),
+		      .vram_cpu_write(vram_cpu_write),
+		      .vram_cpu_done(vram_cpu_done),
+      
+		      .vram_vga_addr(vram_vga_addr),
+		      .vram_vga_data_out(vram_vga_data_out),
+		      .vram_vga_req(vram_vga_req),
+		      .vram_vga_ready(vram_vga_ready),
       
 		      .sram_a(sram_a),
 		      .sram_oe_n(sram_oe_n),
@@ -216,10 +228,10 @@ module test;
 		    .pixclk(clk100),
 		    .reset(reset),
 
-		    .vram_addr(vram_addr),
-		    .vram_data(vram_data_out),
-		    .vram_req(vram_req),
-		    .vram_ready(vram_ready),
+		    .vram_addr(vram_vga_addr),
+		    .vram_data(vram_vga_data_out),
+		    .vram_req(vram_vga_req),
+		    .vram_ready(vram_vga_ready),
       
 		    .vga_red(vga_red),
 		    .vga_blu(vga_blu),
@@ -228,6 +240,31 @@ module test;
 		    .vga_vsync(vga_vsync)
 		    );
 
+`ifdef show_vga
+   import "DPI-C" function void dpi_vga_init(input integer h,
+					     input integer v);
+
+   import "DPI-C" function void dpi_vga_display(input integer vsync,
+						input integer hsync,
+    						input integer pixel);
+
+   wire [31:0] 	 pxd;
+   
+   initial
+     begin 
+	dpi_vga_init(1280, 1024);
+     end
+   
+   assign pxd = { 24'b0,
+		  vga_red, vga_red, vga_red,
+		  vga_blu, vga_blu,
+		  vga_grn, vga_grn, vga_grn };
+   
+   always @(posedge clk100)
+     dpi_vga_display({31'b0, vga_vsync}, {31'b0, vga_hsync}, pxd);
+
+`endif
+   
    //---------------------------------------------------------------
    
    assign 	halt = 0;

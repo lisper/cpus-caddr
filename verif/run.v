@@ -12,10 +12,13 @@
 
 `include "rtl.v"
 
+`include "ram_s3board.v"
+  
 `timescale 1ns / 1ns
 
 module test;
    reg clk;
+   reg clk2x;
    reg reset;
    reg interrupt;
 
@@ -50,16 +53,31 @@ module test;
    wire 	 sdram_write;
    wire 	 sdram_done;
 
-   wire [14:0] 	 vram_addr;
-   wire [31:0] 	 vram_data_out;
-   wire [31:0] 	 vram_data_in;
-   wire 	 vram_req;
-   wire 	 vram_ready;
-   wire 	 vram_write;
-   wire 	 vram_done;
+   wire [14:0] 	 vram_cpu_addr;
+   wire [31:0] 	 vram_cpu_data_out;
+   wire [31:0] 	 vram_cpu_data_in;
+   wire 	 vram_cpu_req;
+   wire 	 vram_cpu_ready;
+   wire 	 vram_cpu_write;
+   wire 	 vram_cpu_done;
 
+   wire [14:0] 	 vram_vga_addr;
+   wire [31:0] 	 vram_vga_data_out;
+   wire 	 vram_vga_req;
+   wire 	 vram_vga_ready;
+
+   wire 	 prefetch;
    wire 	 fetch;
    
+   wire [17:0] 	 sram_a;
+   wire 	 sram_oe_n, sram_we_n;
+   /* verilator lint_off UNOPTFLAT */
+   wire [15:0] 	 sram1_io;
+   wire [15:0] 	 sram2_io;
+   /* verilator lint_on UNOPTFLAT */
+   wire 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
+   wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
+
    caddr cpu (.clk(clk),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
@@ -71,6 +89,7 @@ module test;
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
 
+	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
 	      .mcr_addr(mcr_addr),
 	      .mcr_data_out(mcr_data_out),
@@ -87,13 +106,13 @@ module test;
 	      .sdram_write(sdram_write),
 	      .sdram_done(sdram_done),
       
-	      .vram_addr(vram_addr),
-	      .vram_data_in(vram_data_in),
-	      .vram_data_out(vram_data_out),
-	      .vram_req(vram_req),
-	      .vram_ready(vram_ready),
-	      .vram_write(vram_write),
-	      .vram_done(vram_done),
+	      .vram_addr(vram_cpu_addr),
+	      .vram_data_in(vram_cpu_data_in),
+	      .vram_data_out(vram_cpu_data_out),
+	      .vram_req(vram_cpu_req),
+	      .vram_ready(vram_cpu_ready),
+	      .vram_write(vram_cpu_write),
+	      .vram_done(vram_cpu_done),
 
 	      .ide_data_in(ide_data_in),
 	      .ide_data_out(ide_data_out),
@@ -102,11 +121,11 @@ module test;
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
 
-   assign 	 mcr_write = 0;
-
-   debug_ram_controller rc
+   /*debug_*/ram_controller rc
 		     (.clk(clk),
+		      .clk2x(clk2x),
 		      .reset(reset),
+		      .prefetch(prefetch),
 		      .fetch(fetch),
 		      
 		      .mcr_addr(mcr_addr),
@@ -124,13 +143,18 @@ module test;
 		      .sdram_write(sdram_write),
 		      .sdram_done(sdram_done),
       
-		      .vram_addr(vram_addr),
-		      .vram_data_in(vram_data_out),
-		      .vram_data_out(vram_data_in),
-		      .vram_req(vram_req),
-		      .vram_ready(vram_ready),
-		      .vram_write(vram_write),
-		      .vram_done(vram_done),
+		      .vram_cpu_addr(vram_cpu_addr),
+		      .vram_cpu_data_in(vram_cpu_data_out),
+		      .vram_cpu_data_out(vram_cpu_data_in),
+		      .vram_cpu_req(vram_cpu_req),
+		      .vram_cpu_ready(vram_cpu_ready),
+		      .vram_cpu_write(vram_cpu_write),
+		      .vram_cpu_done(vram_cpu_done),
+      
+		      .vram_vga_addr(vram_vga_addr),
+		      .vram_vga_data_out(vram_vga_data_in),
+		      .vram_vga_req(vram_vga_req),
+		      .vram_vga_ready(vram_vga_ready),
       
 		      .sram_a(sram_a),
 		      .sram_oe_n(sram_oe_n),
@@ -144,7 +168,21 @@ module test;
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
 		      );
+
+   assign vram_vga_addr = 0;
    
+   ram_s3board ram(.ram_a(sram_a),
+		   .ram_oe_n(sram_oe_n),
+		   .ram_we_n(sram_we_n),
+		   .ram1_io(sram1_io),
+		   .ram1_ce_n(sram1_ce_n),
+		   .ram1_ub_n(sram1_ub_n),
+		   .ram1_lb_n(sram1_lb_n),
+		   .ram2_io(sram2_io),
+		   .ram2_ce_n(sram2_ce_n),
+		   .ram2_ub_n(sram2_ub_n),
+		   .ram2_lb_n(sram2_lb_n));
+		   
    integer     addr;
    integer     debug_level;
    integer     dumping;
@@ -176,7 +214,7 @@ module test;
 
 `ifdef debug_vcd
 	$dumpfile("caddr.vcd");
-	$dumpvars(0, test.cpu);
+	$dumpvars(0, test);
 	dumping = 1;
 `endif
 
@@ -201,6 +239,7 @@ module test;
    initial
      begin
 	clk = 0;
+	clk2x = 0;
 	interrupt = 0;
 	reset = 0;
 	spyin = 0;
@@ -211,7 +250,7 @@ module test;
 
         end
 
-`define patch_vram_test
+//`define patch_vram_test
 `ifdef patch_vram_test
 	cpu.i_AMEM.ram[10'o65] = 32'o77051763;
 	cpu.i_AMEM.ram[10'o66] = 32'o77051764;
@@ -222,22 +261,42 @@ module test;
 	cpu.i_VMEM0.ram[11'o3742] = 5'o00;
 	cpu.i_VMEM1.ram[10'o0023] = 24'o60036123;
 `endif
-	
+
+`define patch_rw_test	
 `ifdef patch_rw_test
-	cpu.i_AMEM.ram[10'o436] = 32'o403447;
-	cpu.i_VMEM0.ram[11'o20] = 5'o31;
-	cpu.i_VMEM1.ram[10'o1447] = 24'o63200254;
 
 	cpu.i_AMEM.ram[10'o2] = 32'o400000;
 	cpu.i_AMEM.ram[10'o4] = 32'o401000;
 	cpu.i_AMEM.ram[10'o6] = 32'o402000;
 	cpu.i_AMEM.ram[10'o10] = 32'o403000;
+	cpu.i_AMEM.ram[10'o436] = 32'o403447;
+
+	cpu.i_MMEM.ram[10'o2] = 32'o400000;
+	cpu.i_MMEM.ram[10'o4] = 32'o401000;
+	cpu.i_MMEM.ram[10'o6] = 32'o402000;
+	cpu.i_MMEM.ram[10'o10] = 32'o403000;
+	cpu.i_MMEM.ram[10'o436] = 32'o403447;
+
+	cpu.i_AMEM.ram[10'o20] = 32'o00000001;
+	cpu.i_MMEM.ram[10'o20] = 32'o00000001;
+	
+	cpu.i_AMEM.ram[10'o21] = 32'o01234567;
+	cpu.i_MMEM.ram[10'o21] = 32'o01234567;
+	
+	cpu.i_AMEM.ram[10'o22] = 32'hffffffff;
+	cpu.i_MMEM.ram[10'o22] = 32'hffffffff;
+
+	cpu.i_VMEM0.ram[11'o20] = 5'o31;
+	cpu.i_VMEM1.ram[10'o1447] = 24'o63200254;
 
 	cpu.i_VMEM1.ram[10'o1440] = 24'o03200254;
 	cpu.i_VMEM1.ram[10'o1442] = 24'o23200254;
 	cpu.i_VMEM1.ram[10'o1444] = 24'o43200254;
 	cpu.i_VMEM1.ram[10'o1446] = 24'o63200254;
 `endif
+
+	ram.ram1.ram_h[0] = 0;
+	ram.ram2.ram_l[0] = 0;
 		
 	#240 boot = 1;
 
@@ -245,7 +304,16 @@ module test;
 	#10 boot = 0;
      end
 
+   // 100mhz clock
+   always
+     begin
+	#5 clk2x = 0;
+	#5 clk2x = 1;
+     end
+
    // 50mhz clock
+//   always @(posedge clk2x)
+//     clk <= ~clk;
    always
      begin
 	#10 clk = 0;
@@ -523,9 +591,9 @@ module test;
 
    assign ide_data_in = ide_data_bus;
      
-//   always @(posedge clk)
-//     begin
-//	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
-//     end
+   always @(posedge clk)
+     begin
+	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
+     end
    
 endmodule

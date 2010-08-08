@@ -1,6 +1,6 @@
 // debug_ram_controller.v
 
-module debug_ram_controller(clk, reset, prefetch, fetch,
+module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
 
 			    mcr_addr, mcr_data_out, mcr_data_in,
 			    mcr_ready, mcr_write, mcr_done,
@@ -8,14 +8,19 @@ module debug_ram_controller(clk, reset, prefetch, fetch,
 			    sdram_addr, sdram_data_in, sdram_data_out,
 			    sdram_req, sdram_ready, sdram_write, sdram_done,
 
-			    vram_addr, vram_data_in, vram_data_out,
-			    vram_req, vram_ready, vram_write, vram_done,
+			    vram_cpu_addr, vram_cpu_data_in, vram_cpu_data_out,
+			    vram_cpu_req, vram_cpu_ready,
+			    vram_cpu_write, vram_cpu_done,
+
+			    vram_vga_addr, vram_vga_data_out,
+			    vram_vga_req, vram_vga_ready,
 
 			    sram_a, sram_oe_n, sram_we_n,
 			    sram1_io, sram1_ce_n, sram1_ub_n, sram1_lb_n,
 			    sram2_io, sram2_ce_n, sram2_ub_n, sram2_lb_n);
 
    input clk;
+   input clk2x;
    input reset;
    input prefetch;
    input fetch;
@@ -35,19 +40,25 @@ module debug_ram_controller(clk, reset, prefetch, fetch,
    input 	 sdram_write;
    output 	 sdram_done;
 
-   reg 		 sdram_ready;
-   reg 		 sdram_done;
+//   reg 		 sdram_ready;
+//   reg 		 sdram_done;
    
-   input [14:0]  vram_addr;
-   output [31:0] vram_data_out;
-   input [31:0]  vram_data_in;
-   output 	 vram_ready;
-   input 	 vram_req;
-   input 	 vram_write;
-   output 	 vram_done;
+   input [14:0]  vram_cpu_addr;
+   output [31:0] vram_cpu_data_out;
+   input [31:0]  vram_cpu_data_in;
+   output 	 vram_cpu_ready;
+   input 	 vram_cpu_req;
+   input 	 vram_cpu_write;
+   output 	 vram_cpu_done;
 
-//   reg 		 vram_ready;
-   reg 		 vram_done;
+//   reg 		 vram_cpu_ready;
+   reg 		 vram_cpu_done;
+
+   input [14:0]  vram_vga_addr;
+   output [31:0] vram_vga_data_out;
+   input 	 vram_vga_req;
+   output 	 vram_vga_ready;
+   
    
    output [17:0] sram_a;
    output 	 sram_oe_n;
@@ -87,6 +98,12 @@ module debug_ram_controller(clk, reset, prefetch, fetch,
    always @(posedge clk)
      if (mcr_write)
        begin
+`ifdef debug
+          // patch out disk-copy (which takes 12 hours to sim)
+          if (mcr_addr == 14'o24045)
+	    mcr_ram[ mcr_addr ] = 49'h000000001000;
+          else
+`endif
 	  mcr_ram[ mcr_addr ] = mcr_data_in;
 `ifdef debug
 	  if (debug != 0)
@@ -113,10 +130,10 @@ module debug_ram_controller(clk, reset, prefetch, fetch,
 
    // -------------------------------------------
 
-   parameter 	 DRAM_SIZE = 2097152/*131072*/;
+   parameter 	 DRAM_SIZE = /*2097152*/131072;
 
    reg [31:0] 	 dram[DRAM_SIZE-1:0];
-   wire [20:0] 	 sdram_addr20;
+   wire [16:0] 	 sdram_addr20;
    reg [10:0] 	 ack_delayed;
    reg 		 sdram_was_write;
    reg 		 sdram_was_read;
@@ -129,7 +146,7 @@ module debug_ram_controller(clk, reset, prefetch, fetch,
      for (i = 0; i < DRAM_SIZE; i = i + 1)
        dram[i] = 0;
 
-   assign sdram_addr20 = sdram_addr[20:0];
+   assign sdram_addr20 = sdram_addr[16:0];
 
    assign sdram_data_out = sdram_addr < DRAM_SIZE ?
 			   dram[sdram_addr20] : 32'hffffffff;
@@ -160,9 +177,10 @@ assign sdram_start = ack_delayed == 0;
 
    always @(posedge clk)
      begin
-	sdram_done = 0;
-	sdram_ready = 0;
+//	sdram_done = 0;
+//	sdram_ready = 0;
 
+`ifdef debug_ddr
 	if (sdram_done)
 	  begin
 	     $display("ddr: write done @%o <- %o; %t",
@@ -176,12 +194,14 @@ assign sdram_start = ack_delayed == 0;
 		      dram[sdram_addr20], dram[sdram_addr20],
 		      $time);
 	  end
+`endif
 	  
 	if (sdram_start_write)
 	  begin
+`ifdef debug_ddr
 	     $display("ddr: write start @%o <- %o; %t",
 		      sdram_addr20, sdram_data_in, $time);
-
+`endif
 	     if (sdram_addr < DRAM_SIZE)
 	       dram[sdram_addr20] = sdram_data_in;
  	     sdram_was_write = 1;
@@ -190,10 +210,12 @@ assign sdram_start = ack_delayed == 0;
 
 	if (sdram_start_read)
 	  begin
+`ifdef debug_ddr
 	     $display("ddr: read start @%o -> %o (0x%x), %t",
 		      sdram_addr20,
 		      dram[sdram_addr20], dram[sdram_addr20],
 		      $time);
+`endif
  	     sdram_was_write = 0;
  	     sdram_was_read = 1;
 	  end
@@ -212,8 +234,10 @@ assign sdram_start = ack_delayed == 0;
      for (i = 0; i < 21504; i = i + 1)
        vram[i] = 0;
 
-   assign vram_data_out = vram[vram_addr];
+   assign vram_cpu_data_out = vram[vram_cpu_addr];
 
+   assign vram_vga_data_out = vram[vram_vga_addr];
+   assign vram_vga_ready = 1;
    
    always @(posedge clk)
      if (reset)
@@ -226,45 +250,44 @@ assign sdram_start = ack_delayed == 0;
        end
      else
        begin
-	  if (vram_write)
+	  if (vram_cpu_write)
 	    begin
-	       pending_vram_addr <= vram_addr;
-	       pending_vram_data <= vram_data_in;
+	       pending_vram_addr <= vram_cpu_addr;
+	       pending_vram_data <= vram_cpu_data_in;
 	       pending_vram_write <= 1;
 	    end
 	  else
-	    if (vram_done)
+	    if (vram_cpu_done)
 	       pending_vram_write <= 0;
 	  
-	  if (vram_req)
+	  if (vram_cpu_req)
 	    begin
 $display("vram: R addr %o -> %o; %t",
-	 vram_addr, vram[vram_addr], $time);
-	       pending_vram_addr <= vram_addr;
+	 vram_cpu_addr, vram[vram_cpu_addr], $time);
+	       pending_vram_addr <= vram_cpu_addr;
 	       pending_vram_read <= 1;
 	    end
 	  else
-//	    if (vram_ready)
+//	    if (vram_cpu_ready)
 	      pending_vram_read <= 0;
        end
    
-   
-   assign vram_ready = pending_vram_read;
+   assign vram_cpu_ready = pending_vram_read;
 
    always @(posedge clk)
      begin
-	vram_done = 0;
-//	vram_ready = 0;
+	vram_cpu_done = 0;
+//	vram_cpu_ready = 0;
 
 	//$display("drc: %b %b %b; %b %b",
-	//  fetch, mcr_state, pending_vram_write, vram_done, vram_ready);
+	//  fetch, mcr_state, pending_vram_write, vram_cpu_done, vram_cpu_ready);
 
 	if (~fetch && ~mcr_state)
 	  begin
 	     if (pending_vram_write)
 	       begin
 		  vram[pending_vram_addr] = pending_vram_data;
-		  vram_done = 1;
+		  vram_cpu_done = 1;
 		  
 		  $display("vram: W addr %o <- %o; %t",
 			   pending_vram_addr, pending_vram_data, $time);

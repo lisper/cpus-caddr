@@ -24,10 +24,10 @@
 `include "../rtl/74182.v"
 //`include "../rtl/memory.v"
 `include "../rtl/prom.v"
-//`include "../rtl/rom.v"
-`include "debug_rom.v"
+`include "../rtl/rom.v"
+//`include "debug_rom.v"
 
-//`include "../rtl/ram_controller.v"
+`include "../rtl/ram_controller.v"
 `include "../verif/debug_ram_controller.v"
 `include "../rtl/vga_display.v"
 

@@ -156,7 +156,7 @@ module ram_controller(clk, reset,
    assign sdram_data_out = (state == S_SDRAM_RD) ? { sram1_io, sram2_io } :
 			   32'b0;
 
-`define debug   
+//`define debug   
 `ifdef debug
    wire [4:0] voffset;
    assign     voffset = (vram_addr / 24) % 32;

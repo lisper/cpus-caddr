@@ -168,7 +168,6 @@ module top(rs232_txd, rs232_rxd,
 
    assign sevenseg = 0;
    assign sevenseg_an = 0;
-
    assign led = 0;
 
    assign rs232_txd = 1;

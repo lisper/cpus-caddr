@@ -87,6 +87,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 	       spy_in, spy_out, dbread, dbwrite, eadr,
 
+	       pc_out, state_out, machrun_out,
 	       prefetch_out, fetch_out,
 
 	       mcr_addr, mcr_data_out, mcr_data_in,
@@ -112,8 +113,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    input 	dbwrite;
    input [3:0] 	eadr;
 
+   output [13:0] pc_out;
+   output [4:0]  state_out;
+   output 	 machrun_out;
    output 	 prefetch_out;
    output 	 fetch_out;
+
    output [13:0] mcr_addr;
    output [48:0] mcr_data_out;
    input [48:0]  mcr_data_in;
@@ -2364,8 +2369,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // for externals
    assign fetch_out = state_fetch;
    assign prefetch_out = state_write;
-
-
+   assign pc_out = pc;
+   assign state_out = state;
+   assign machrun_out = machrun;
+   
    // page SPY0
 
    /* read registers */

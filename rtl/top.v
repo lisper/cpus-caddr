@@ -3,9 +3,10 @@
 
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
+	   ps2_clk, ps2_data,
+	   vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync,
 	   sevenseg, sevenseg_an,
 	   slideswitch,
-	   vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync,
 	   sram_a, sram_oe_n, sram_we_n,
 	   sram1_io, sram1_ce_n, sram1_ub_n, sram1_lb_n,
 	   sram2_io, sram2_ce_n, sram2_ub_n, sram2_lb_n,
@@ -19,16 +20,19 @@ module top(rs232_txd, rs232_rxd,
    output [7:0] led;
    input 	sysclk;
 
-   output [7:0] sevenseg;
-   output [3:0] sevenseg_an;
-
-   input [7:0] 	slideswitch;
-
+   input	ps2_clk;
+   input 	ps2_data;
+   
    output 	vga_red;
    output 	vga_blu;
    output 	vga_grn;
    output 	vga_hsync;
    output 	vga_vsync;
+
+   output [7:0] sevenseg;
+   output [3:0] sevenseg_an;
+
+   input [7:0] 	slideswitch;
 
    output [17:0] sram_a;
    output 	 sram_oe_n;
@@ -54,8 +58,9 @@ module top(rs232_txd, rs232_rxd,
 
    // -----------------------------------------------------------------
 
-   wire 	 clk;
+   wire 	 clk50;
    wire 	 clk100;
+
    wire 	 reset;
    wire 	 interrupt;
    wire		 boot;
@@ -66,14 +71,14 @@ module top(rs232_txd, rs232_rxd,
    wire [3:0] 	 eadr;
    wire 	 halt;
    
-   wire [11:0] 	 mcr_addr;
+   wire [13:0] 	 mcr_addr;
    wire [48:0] 	 mcr_data_out;
    wire [48:0] 	 mcr_data_in;
    wire 	 mcr_ready;
    wire 	 mcr_write;
    wire 	 mcr_done;
 
-   wire [17:0] 	 sdram_addr;
+   wire [21:0] 	 sdram_addr;
    wire [31:0] 	 sdram_data_out;
    wire [31:0] 	 sdram_data_in;
    wire 	 sdram_ready;
@@ -94,11 +99,19 @@ module top(rs232_txd, rs232_rxd,
    wire 	 vram_vga_req;
    wire 	 vram_vga_ready;
 
+   wire [13:0] 	 pc;
+   wire [4:0] 	 state;
+   wire 	 machrun;
    wire 	 prefetch;
    wire 	 fetch;
    
+   reg  clk25a, clk25b;
+   wire clk1, clk2;
+
    support support(.sysclk(sysclk_buf),
-		   .button(button[3]),
+		   .cpuclk(clk1),
+		   .button_r(button[3]),
+		   .button_b(button[2]),
 		   .reset(reset),
 		   .interrupt(interrupt),
 		   .boot(boot),
@@ -108,11 +121,38 @@ module top(rs232_txd, rs232_rxd,
 		   .RST_IN(reset), 
 		   .CLKFX_OUT(clk100), 
 		   .CLKIN_IBUFG_OUT(sysclk_buf), 
-		   .CLK0_OUT(clk),
+		   .CLK0_OUT(clk50),
 		   .CLK2X_OUT(), 
 		   .LOCKED_OUT());
+
+   always @(posedge clk50)
+     if (reset)
+       begin
+	  clk25a <= 0;
+	  clk25b <= 0;
+       end
+     else
+       begin
+	  clk25a <= ~clk25a;
+	  clk25b <= ~clk25b;
+       end
+
+//
+   reg [22:0] slow;
+   wire      slow_clk;
+   always @(posedge clk50)
+     if (reset)
+       slow <= 0;
+     else
+       slow <= slow + 1;
+   assign slow_clk = slow[22];
+//    
+
+   assign clk1 = slow_clk/*clk25a*/;
+   assign clk2 = clk25b;
    
-   caddr cpu (.clk(clk),
+   caddr cpu (
+	      .clk(clk1),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
@@ -124,6 +164,9 @@ module top(rs232_txd, rs232_rxd,
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
 
+	      .pc_out(pc),
+	      .state_out(state),
+	      .machrun_out(machrun),
 	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
 	      .mcr_addr(mcr_addr),
@@ -155,7 +198,7 @@ module top(rs232_txd, rs232_rxd,
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
-
+   
    assign ide_data_bus = ide_diow ? ide_data_out : 16'bz;
    assign ide_data_in = ide_data_bus;
    
@@ -163,7 +206,7 @@ module top(rs232_txd, rs232_rxd,
    assign      dbread = 0;
    assign      dbwrite = 0;
 
-   ram_controller rc (.clk(clk),
+   ram_controller rc (.clk(clk2),
 		      .clk2x(clk100),
 		      .reset(reset),
 		      .prefetch(prefetch),
@@ -210,7 +253,7 @@ module top(rs232_txd, rs232_rxd,
 		      .sram2_lb_n(sram2_lb_n)
 		      );
 
-   vga_display vga (.clk(clk),
+   vga_display vga (.clk(clk2),
 		    .pixclk(clk100),
 		    .reset(reset),
 
@@ -226,9 +269,21 @@ module top(rs232_txd, rs232_rxd,
 		    .vga_vsync(vga_vsync)
 		    );
 
-   assign sevenseg = 8'b0;
-   assign sevenseg_an = 4'b0;
-   assign led = 8'b0;
-   assign rs232_txd = 1'b0;
+   display show_pc(.clk(clk2), .reset(reset),
+		   .pc(pc), .dots(4'b0),
+		   .sevenseg(sevenseg), .sevenseg_an(sevenseg_an));
+
+   assign led[7] = state[4];
+   assign led[6] = state[3];
+   assign led[5] = state[2];
+   assign led[4] = state[1];
+   assign led[3] = state[0];
+
+   assign led[2] = machrun;
+
+   assign led[1] = ~ide_diow;
+   assign led[0] = ~ide_dior;
+
+   assign rs232_txd = 1'b1;
    
 endmodule

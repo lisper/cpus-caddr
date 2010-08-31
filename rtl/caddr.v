@@ -2046,7 +2046,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign vmem1_adr = {vmap[4:0], mapi[12:8]};
 
-   assign vmem1_we = vm1wp & ~clk;
+////   assign vmem1_we = vm1wp & ~clk;
+assign vmem1_we = vm1wp;
+
    
 //xxx was async
    part_1kx24ram i_VMEM1(
@@ -2061,20 +2063,35 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page VMEMDR - map output drive
 
+////   // transparent latch
+////   always @(memprepare or memstart or vmo or reset or clk)
+////     if (reset)
+////       begin
+////	  lvmo_23 = 0;
+////	  lvmo_22 = 0;
+////	  pma = 0;
+////       end
+////     else
+////       if (memprepare && memstart)
+////	 begin
+////	    lvmo_23 = vmo[23];
+////	    lvmo_22 = vmo[22];
+////	    pma = vmo[13:0];
+////	 end
    // transparent latch
-   always @(memprepare or memstart or vmo or reset or clk)
+always @(negedge clk)
      if (reset)
        begin
-	  lvmo_23 = 0;
-	  lvmo_22 = 0;
-	  pma = 0;
+	  lvmo_23 <= 0;
+	  lvmo_22 <= 0;
+	  pma <= 0;
        end
      else
        if (memprepare && memstart)
 	 begin
-	    lvmo_23 = vmo[23];
-	    lvmo_22 = vmo[22];
-	    pma = vmo[13:0];
+	    lvmo_23 <= vmo[23];
+	    lvmo_22 <= vmo[22];
+	    pma <= vmo[13:0];
 	 end
 
    assign mapdrive = srcmap & phase1;

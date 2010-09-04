@@ -130,10 +130,20 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
 
    // -------------------------------------------
 
-   parameter 	 DRAM_SIZE = /*2097152*/131072;
+//   parameter 	 DRAM_SIZE = 2097152;
+//   parameter 	 DRAM_BITS = 21;
+
+//   parameter 	 DRAM_SIZE = 1048576;
+//   parameter 	 DRAM_SIZE = 524288;
+
+   parameter 	 DRAM_SIZE = 262144;
+   parameter 	 DRAM_BITS = 18;
+
+//   parameter 	 DRAM_SIZE = 131072;
+//   parameter 	 DRAM_BITS = 17;
 
    reg [31:0] 	 dram[DRAM_SIZE-1:0];
-   wire [16:0] 	 sdram_addr20;
+   wire [DRAM_BITS-1:0] sdram_addr20;
    reg [10:0] 	 ack_delayed;
    reg 		 sdram_was_write;
    reg 		 sdram_was_read;
@@ -146,7 +156,7 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
      for (i = 0; i < DRAM_SIZE; i = i + 1)
        dram[i] = 0;
 
-   assign sdram_addr20 = sdram_addr[16:0];
+   assign sdram_addr20 = sdram_addr[DRAM_BITS-1:0];
 
    assign sdram_data_out = sdram_addr < DRAM_SIZE ?
 			   dram[sdram_addr20] : 32'hffffffff;
@@ -156,8 +166,10 @@ assign sdram_start = ack_delayed == 0;
    assign sdram_start_write = sdram_start && sdram_write;
    assign sdram_start_read = sdram_start && sdram_req;
 
-   assign sdram_done = ack_delayed[7] && sdram_was_write;
-   assign sdram_ready = ack_delayed[7] && sdram_was_read;
+//   assign sdram_done = ack_delayed[7] && sdram_was_write;
+//   assign sdram_ready = ack_delayed[7] && sdram_was_read;
+assign sdram_done = ack_delayed[4] && sdram_was_write;
+assign sdram_ready = ack_delayed[4] && sdram_was_read;
    
    always @(posedge clk)
      if (reset)
@@ -170,9 +182,9 @@ assign sdram_start = ack_delayed == 0;
           ack_delayed[3] <= ack_delayed[2];
           ack_delayed[4] <= ack_delayed[3];
           ack_delayed[5] <= ack_delayed[4];
-          ack_delayed[6] <= ack_delayed[5];
-	  ack_delayed[7] <= ack_delayed[6];
-	  ack_delayed[8] <= ack_delayed[7];
+//	  ack_delayed[6] <= ack_delayed[5];
+//	  ack_delayed[7] <= ack_delayed[6];
+//	  ack_delayed[8] <= ack_delayed[7];
        end
 
    always @(posedge clk)

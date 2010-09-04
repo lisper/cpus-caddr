@@ -89,7 +89,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 	       pc_out, state_out, machrun_out,
 	       prefetch_out, fetch_out,
-
+	       disk_state_out, bus_state_out,
+	       
 	       mcr_addr, mcr_data_out, mcr_data_in,
 	       mcr_ready, mcr_write, mcr_done,
 
@@ -115,6 +116,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    output [13:0] pc_out;
    output [4:0]  state_out;
+   output [4:0]  disk_state_out;
+   output [3:0]  bus_state_out;
    output 	 machrun_out;
    output 	 prefetch_out;
    output 	 fetch_out;
@@ -2486,7 +2489,9 @@ always @(negedge clk)
 		 .ide_cs(ide_cs),
 		 .ide_da(ide_da),
 
-		 .promdisable(set_promdisable)
+		 .promdisable(set_promdisable),
+		 .disk_state(disk_state_out),
+		 .bus_state(bus_state_out)
 		 );
 
 endmodule

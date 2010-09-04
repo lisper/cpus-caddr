@@ -531,23 +531,23 @@ module part_512x49prom( clk, addr, q );
       9'h1ff: q = 49'h0800000250a7;
     endcase
 
-`ifdef debug
+//`ifdef debug
  `define patch_rom
-`endif
+//`endif
 
 `ifdef patch_rom
     // patches for debugging
     /* verilator lint_off CASEINCOMPLETE */
     case (addr)
-//     ~9'o000 & 9'h1ff: q = 49'o0200000005000247;
-//     ~9'o000 & 9'h1ff: q = 49'o0200000005110247;
-
+`ifdef debug
+     // clear local mems in fpga
      ~9'o175 & 9'h1ff: q = 49'h000000001000;
      ~9'o202 & 9'h1ff: q = 49'h000000001000;
      ~9'o226 & 9'h1ff: q = 49'h000000001000;
      ~9'o232 & 9'h1ff: q = 49'h000000001000;
      ~9'o236 & 9'h1ff: q = 49'h000000001000;
      ~9'o244 & 9'h1ff: q = 49'h000000001000;
+`endif
      ~9'o251 & 9'h1ff: q = 49'h000000001000;
      ~9'o256 & 9'h1ff: q = 49'h000000001000;
      ~9'o263 & 9'h1ff: q = 49'h000000001000;

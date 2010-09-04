@@ -73,7 +73,7 @@ module busint(mclk, reset,
 
 	      ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
 
-	      promdisable);
+	      promdisable, disk_state, bus_state);
 
    input mclk;
    input reset;
@@ -96,7 +96,9 @@ module busint(mclk, reset,
    output [2:0]  ide_da;
 
    output 	 promdisable;
-   
+   output [4:0]  disk_state;
+   output [3:0]  bus_state;
+  
    output [21:0]  sdram_addr;
    output [31:0] sdram_data_out;
    input [31:0]  sdram_data_in;
@@ -131,7 +133,11 @@ module busint(mclk, reset,
 
    wire 	ack;
    wire 	ack_dram, ack_disk, ack_tv, ack_io, ack_unibus;
-
+// synthesis attribute keep dram_reqin true;
+// synthesis attribute keep dram_writein true;
+// synthesis attribute keep ack_dram true;
+// synthesis attribute keep decode_dram true;
+   
    wire 	interrupt;
    wire 	interrupt_disk, interrupt_tv, interrupt_io, interrupt_unibus;
    
@@ -212,7 +218,9 @@ module busint(mclk, reset,
 		   .ide_dior(ide_dior),
 		   .ide_diow(ide_diow),
 		   .ide_cs(ide_cs),
-		   .ide_da(ide_da)
+		   .ide_da(ide_da),
+
+		   .disk_state(disk_state)
 		  );
 
    xbus_tv tv (
@@ -362,6 +370,8 @@ module busint(mclk, reset,
 `endif
 
        end
+
+   assign bus_state = state;
 
    // basic bus arbiter
    assign next_state =

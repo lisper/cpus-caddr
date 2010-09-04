@@ -249,7 +249,8 @@ module xbus_disk (
 		  decodein, decodeout,
 		  interrupt,
 		  ide_data_in, ide_data_out,
-		  ide_dior, ide_diow, ide_cs, ide_da
+		  ide_dior, ide_diow, ide_cs, ide_da,
+		  disk_state
 		);
 
    input reset;
@@ -283,6 +284,7 @@ module xbus_disk (
    output [1:0]  ide_cs;
    output [2:0]  ide_da;
    
+   output [4:0]  disk_state;
    
    // -------------------------------------------------------------------
    
@@ -676,6 +678,8 @@ module xbus_disk (
 `endif
        end
 
+   assign disk_state = state;
+   
    always @(posedge clk)
      if (reset)
        disk_interrupt <= 0;

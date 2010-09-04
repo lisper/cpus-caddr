@@ -61,7 +61,7 @@
  * s8		->s1
 */
 
-module ram_controller(clk, clk2x, reset, prefetch, fetch,
+module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 
 		      mcr_addr, mcr_data_out, mcr_data_in,
 		      mcr_ready, mcr_write, mcr_done,
@@ -85,6 +85,8 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch,
    input reset;
    input prefetch;
    input fetch;
+   input machrun;
+   output [3:0] state_out;
    
    input [13:0]  mcr_addr;
    output [48:0] mcr_data_out;
@@ -157,8 +159,8 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch,
    assign next_state =
 //		      (state == S0 && ~prefetch) ? S0 :
 //		      (state == S0 && prefetch) ? S2 :
-		      (state == S1 && ~prefetch) ? S1 :
-		      (state == S1 && prefetch) ? S2 :
+		      (state == S1 && (machrun && ~prefetch)) ? S1 :
+		      (state == S1 && (~machrun || prefetch)) ? S2 :
 		      (state == S2) ? S3 :
 		      (state == S3) ? S4 :
 		      (state == S4) ? S5 :
@@ -166,6 +168,8 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch,
 		      (state == S6) ? S7 :
 		      (state == S7) ? S8 :
    		      S1;
+
+   assign state_out = state;
    
    assign 	 mcr_ready = state == S2;
    assign 	 mcr_done = mcr_write && state == S2;

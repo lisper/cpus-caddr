@@ -81,10 +81,10 @@ module top(rs232_txd, rs232_rxd,
    wire [21:0] 	 sdram_addr;
    wire [31:0] 	 sdram_data_out;
    wire [31:0] 	 sdram_data_in;
-   wire 	 sdram_ready;
-   wire 	 sdram_req;
-   wire 	 sdram_write;
-   wire 	 sdram_done;
+   wire 	 sdram_ready; // synthesis attribute keep sdram_ready true;
+   wire 	 sdram_req; // synthesis attribute keep sdram_req true;
+   wire 	 sdram_write; // synthesis attribute keep sdram_write true;
+   wire 	 sdram_done; // synthesis attribute keep sdram_done true;
 
    wire [14:0] 	 vram_cpu_addr;
    wire [31:0] 	 vram_cpu_data_out;
@@ -100,16 +100,19 @@ module top(rs232_txd, rs232_rxd,
    wire 	 vram_vga_ready;
 
    wire [13:0] 	 pc;
-   wire [4:0] 	 state;
+   wire [4:0] 	 cpu_state; // synthesis attribute keep cpu_state true;
+   wire [4:0] 	 disk_state; // synthesis attribute keep disk_state true;
+   wire [3:0] 	 bus_state; // synthesis attribute keep bus_state true;
+   wire [3:0] 	 rc_state; // synthesis attribute keep rc_state true;
    wire 	 machrun;
    wire 	 prefetch;
    wire 	 fetch;
    
-   reg  clk25a, clk25b;
-   wire clk1, clk2;
-
+   wire 	 slow_clk, slow_clk_2x;
+   wire [3:0] 	 dots;
+   
    support support(.sysclk(sysclk_buf),
-		   .cpuclk(clk1),
+		   .cpuclk(slow_clk),
 		   .button_r(button[3]),
 		   .button_b(button[2]),
 		   .reset(reset),
@@ -118,41 +121,45 @@ module top(rs232_txd, rs232_rxd,
 		   .halt(halt));
    
    clk_dcm clk_dcm(.CLKIN_IN(sysclk), 
-		   .RST_IN(reset), 
+		   .RST_IN(1'b0/*reset*/), 
 		   .CLKFX_OUT(clk100), 
 		   .CLKIN_IBUFG_OUT(sysclk_buf), 
 		   .CLK0_OUT(clk50),
 		   .CLK2X_OUT(), 
 		   .LOCKED_OUT());
-
-   always @(posedge clk50)
-     if (reset)
-       begin
-	  clk25a <= 0;
-	  clk25b <= 0;
-       end
-     else
-       begin
-	  clk25a <= ~clk25a;
-	  clk25b <= ~clk25b;
-       end
-
+//assign clk50 = sysclk;
+//assign sysclk_buf = sysclk;
+   
 //
    reg [22:0] slow;
-   wire      slow_clk;
+
    always @(posedge clk50)
-     if (reset)
-       slow <= 0;
-     else
        slow <= slow + 1;
-   assign slow_clk = slow[22];
+
+   assign slow_clk =
+		    slideswitch[5] ? slow[22] :
+		    slideswitch[4] ? slow[18] :
+		    slideswitch[3] ? slow[6] :
+		    slideswitch[2] ? slow[4] :
+		    slideswitch[1] ? slow[3] :
+		    slideswitch[0] ? slow[0] :
+		    clk50;
+		     
+   assign slow_clk_2x =
+		       slideswitch[5] ? ~slow[21] :
+		       slideswitch[4] ? ~slow[17] :
+		       slideswitch[3] ? ~slow[ 5] :
+		       slideswitch[2] ? ~slow[ 3] :
+		       slideswitch[1] ? ~slow[ 2] :
+		       slideswitch[0] ? ~clk50 :
+		       ~clk100;
+   
+//   assign slow_clk = slow[18];
+//   assign slow_clk_2x = ~slow[17];
 //    
 
-   assign clk1 = slow_clk/*clk25a*/;
-   assign clk2 = clk25b;
-   
    caddr cpu (
-	      .clk(clk1),
+	      .clk(slow_clk),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
@@ -165,7 +172,9 @@ module top(rs232_txd, rs232_rxd,
 	      .eadr(eadr),
 
 	      .pc_out(pc),
-	      .state_out(state),
+	      .state_out(cpu_state),
+	      .disk_state_out(disk_state),
+	      .bus_state_out(bus_state),
 	      .machrun_out(machrun),
 	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
@@ -199,18 +208,21 @@ module top(rs232_txd, rs232_rxd,
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
    
-   assign ide_data_bus = ide_diow ? ide_data_out : 16'bz;
+   
+   assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
    assign ide_data_in = ide_data_bus;
    
    assign      eadr = 4'b0;
    assign      dbread = 0;
    assign      dbwrite = 0;
 
-   ram_controller rc (.clk(clk2),
-		      .clk2x(clk100),
+   ram_controller rc (.clk(slow_clk),
+		      .clk2x(slow_clk_2x),
 		      .reset(reset),
 		      .prefetch(prefetch),
 		      .fetch(fetch),
+		      .machrun(machrun),
+		      .state_out(rc_state),
 
 		      .mcr_addr(mcr_addr),
 		      .mcr_data_out(mcr_data_in),
@@ -253,8 +265,8 @@ module top(rs232_txd, rs232_rxd,
 		      .sram2_lb_n(sram2_lb_n)
 		      );
 
-   vga_display vga (.clk(clk2),
-		    .pixclk(clk100),
+   vga_display vga (.clk(slow_clk),
+		    .pixclk(~clk100),
 		    .reset(reset),
 
 		    .vram_addr(vram_vga_addr),
@@ -269,21 +281,24 @@ module top(rs232_txd, rs232_rxd,
 		    .vga_vsync(vga_vsync)
 		    );
 
-   display show_pc(.clk(clk2), .reset(reset),
-		   .pc(pc), .dots(4'b0),
+//assign vram_vga_req = 0;
+//assign vga_red = 0;
+//assign vga_blu = 0;
+//assign vga_grn = 0;
+//assign vga_hsync = 0;
+//assign vga_vsync = 0;
+
+   display show_pc(.clk(clk50), .reset(reset),
+		   .pc(pc), .dots(dots),
 		   .sevenseg(sevenseg), .sevenseg_an(sevenseg_an));
 
-   assign led[7] = state[4];
-   assign led[6] = state[3];
-   assign led[5] = state[2];
-   assign led[4] = state[1];
-   assign led[3] = state[0];
-
+   assign led[7:3] = disk_state[4:0];
    assign led[2] = machrun;
-
    assign led[1] = ~ide_diow;
    assign led[0] = ~ide_dior;
 
+   assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
+   
    assign rs232_txd = 1'b1;
    
 endmodule

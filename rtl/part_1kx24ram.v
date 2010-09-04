@@ -79,7 +79,7 @@ module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 //   always @(posedge clk_a)
 //     if (rden_a)
 //       begin
-//	  out_a = ram[ address_a ];
+//	  out_a <= ram[ address_a ];
 //`ifdef debug
 //	  if (debug != 0)
 //	    $display("vmem1: R addr %o -> val %o; %t",
@@ -87,6 +87,11 @@ module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 //`endif
 //       end
 assign q_a = ram[ address_a ];
+
+//always @(posedge clk_a)
+//  if (rden_a)
+//    out_a = ram[ address_a ];
+//assign q_a = out_a;
    
 `endif // SIMULATION
 

@@ -57,30 +57,31 @@
  * reset
  * 
  * ===================================
- * decode
- *	transparent latch a
- *	a = ffff
+ *
+ * decode (phase 0)
+ *	transparent latch a <- amem[addr]
+ *	a = f's
  *	aadr = ir[41:32]
  *
- * execute
- *  	transparent latch a
- *	a = ffff
+ * execute (phase 0)
+ *  	transparent latch a <- amem[addr]
+ *	a = f's
  *	aadr = ir[41:32]
  * 
- * write
+ * write (phase 1)
  *	a = a_latch
  *	aadr = wadr
  *
- * fetch
+ * fetch (phase 1)
  * 	a = a_latch
  *	aadr = ir[41:32]
  *	update pc
  *	latch md <- mds
  * 
- * latch wadr <- ir[]
- * latch destd <- dest
- * latch destmd <- destm
- *	latch ir
+ *	wadr <- ir[]
+ *	destd <- dest
+ *	destmd <- destm
+ *	ir <- i (or i|iob)
  */
 
 module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
@@ -2028,7 +2029,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			.q_a(vmap),
 			.data_a(vma[31:27]),
 			.wren_a(vm0wp),
-			.rden_a(1'b1)
+			.rden_a(state_execute|state_write|state_fetch/*1'b1*/)
 			);
 
 `ifdef debug
@@ -2061,7 +2062,7 @@ assign vmem1_we = vm1wp;
 			 .q_a(vmo),
 			 .data_a(vma[23:0]),
 			 .wren_a(vmem1_we),
-			 .rden_a(1'b1)
+			 .rden_a(phase0/*1'b1*/)
 			 );
 
    // page VMEMDR - map output drive

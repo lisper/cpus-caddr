@@ -61,7 +61,8 @@
  * s8		->s1
 */
 
-module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
+module ram_controller(clk, vga_clk, cpu_clk,
+		      reset, prefetch, fetch, machrun, state_out,
 
 		      mcr_addr, mcr_data_out, mcr_data_in,
 		      mcr_ready, mcr_write, mcr_done,
@@ -77,11 +78,12 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 		      vram_vga_req, vram_vga_ready,
 
 		      sram_a, sram_oe_n, sram_we_n,
-		      sram1_io, sram1_ce_n, sram1_ub_n, sram1_lb_n,
-		      sram2_io, sram2_ce_n, sram2_ub_n, sram2_lb_n);
+		      sram1_in, sram1_out, sram1_ce_n, sram1_ub_n, sram1_lb_n,
+		      sram2_in, sram2_out, sram2_ce_n, sram2_ub_n, sram2_lb_n);
 
    input clk;
-   input clk2x;
+   input vga_clk;
+   input cpu_clk;
    input reset;
    input prefetch;
    input fetch;
@@ -119,8 +121,10 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
    output [17:0] sram_a;
    output 	 sram_oe_n;
    output 	 sram_we_n;
-   inout [15:0]  sram1_io;
-   inout [15:0]  sram2_io;
+   input [15:0]  sram1_in;
+   output [15:0] sram1_out;
+   input [15:0]  sram2_in;
+   output [15:0] sram2_out;
    output 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
    output 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
 
@@ -134,6 +138,9 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
    reg 		 vram_cpu_done;
 //   reg 		 sdram_ready;
    reg 		 sdram_done;
+
+wire clk2x;
+assign clk2x = vga_clk;
    
    // ---------------------------
 
@@ -246,19 +253,19 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 // assign mcr_data_in_x = mcr_data_in;
 //`endif
    
-   assign sram1_io =
+   assign sram1_out =
 		    (state == S1 && mcr_write) ? {15'b0, mcr_data_in_x[48]} :
 		    (state == S2 && mcr_write) ? mcr_data_in_x[31:16] :
 		    (state == S6 && vram_cpu_write) ? vram_cpu_data_in[31:16] :
 		    (state == S6 && sdram_write) ? sdram_data_in[31:16] :
-		    16'bz;
+		    16'b0;
 		    
-   assign sram2_io =
+   assign sram2_out =
 		    (state == S1 && mcr_write) ? mcr_data_in_x[47:32] :
 		    (state == S2 && mcr_write) ? mcr_data_in_x[15:0] :
 		    (state == S6 && vram_cpu_write) ? vram_cpu_data_in[15:0] :
 		    (state == S6 && sdram_write) ? sdram_data_in[15:0] :
-		    16'bz;
+		    16'b0;
 
    // ---------------------------
 
@@ -268,10 +275,10 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
      else
        begin
 	  if (state == S1)
-	    mcr_data_out[48:32] <= { sram1_io[0], sram2_io };
+	    mcr_data_out[48:32] <= { sram1_in[0], sram2_in };
 
 	  if (state == S2)
-	    mcr_data_out[31:0] <= { sram1_io, sram2_io };
+	    mcr_data_out[31:0] <= { sram1_in, sram2_in };
        end
 
    // mcr
@@ -287,10 +294,10 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 	  $display("rc: mcr_write2 %o -> %o", mcr_addr, mcr_data_in);
 
 	if (state == S1)
-	  $display("rc: mcr_read1 %o -> %o", mcr_addr, { sram1_io, sram2_io });
+	  $display("rc: mcr_read1 %o -> %o", mcr_addr, { sram1_in, sram2_in });
 	if (state == S2)
 	  $display("rc: mcr_read2 %o -> %o; %t",
-		   mcr_addr, { mcr_data_out[48:32], { sram1_io, sram2_io } },
+		   mcr_addr, { mcr_data_out[48:32], { sram1_in, sram2_in } },
 		   $time);
      end
 `endif
@@ -306,7 +313,7 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
        begin
 	  if (state == S3 && vram_vga_req)
 	    begin
-	       vram_vga_data_out <= { sram1_io, sram2_io };
+	       vram_vga_data_out <= { sram1_in, sram2_in };
 	       vram_vga_ready <= 1;
 	    end
 
@@ -315,7 +322,7 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
        end
 
    // vram_cpu
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        begin
 	  vram_cpu_data_out <= 0;
@@ -328,7 +335,7 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 	    begin
 	       if (vram_cpu_req)
 		 begin
-		    vram_cpu_data_out <= { sram1_io, sram2_io };
+		    vram_cpu_data_out <= { sram1_in, sram2_in };
 		    vram_cpu_ready <= 1;
 		 end
 	       else
@@ -343,12 +350,12 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
        end
 
 `ifdef debug
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (state == S6 && vram_cpu_write)
        $display("vram: W addr %o <- %o; %t",
 		vram_cpu_addr, vram_cpu_data_in, $time);
 
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (vram_cpu_write)
        $display("vram: W addr %o <- %o; state %d %t",
 		vram_cpu_addr, vram_cpu_data_in, state, $time);
@@ -356,7 +363,7 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
    
 `ifdef old_way
    // sdram
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        begin
 	  sdram_data_out <= 0;
@@ -371,9 +378,9 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 		 begin
 `ifdef debug
 		    $display("rc: sdram_req %o -> %o",
-			     sdram_addr, { sram1_io, sram2_io });
+			     sdram_addr, { sram1_in, sram2_in });
 `endif
-		    sdram_data_out <= { sram1_io, sram2_io };
+		    sdram_data_out <= { sram1_in, sram2_in };
 		    sdram_rdy <= 1;
 		 end
 	       else
@@ -397,7 +404,7 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
    reg sdram_rdy;
    
    // sdram
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        begin
 	  sdram_data_out <= 0;
@@ -412,10 +419,10 @@ module ram_controller(clk, clk2x, reset, prefetch, fetch, machrun, state_out,
 		 begin
 `ifdef debug
 		    $display("rc: sdram_req %o -> %o",
-			     sdram_addr, { sram1_io, sram2_io });
+			     sdram_addr, { sram1_in, sram2_in });
 `endif
-//		    sdram_data_out <= { sram1_io, sram2_io };
-sdram_data_out <= sdram_addr[21:17] == 0 ? {sram1_io, sram2_io} : 32'hffffffff;
+//		    sdram_data_out <= { sram1_in, sram2_in };
+sdram_data_out <= sdram_addr[21:17] == 0 ? {sram1_in, sram2_in} : 32'hffffffff;
 		    sdram_rdy <= 1;
 		 end
 	       else
@@ -439,7 +446,7 @@ sdram_data_out <= sdram_addr[21:17] == 0 ? {sram1_io, sram2_io} : 32'hffffffff;
 
    assign     sdram_ready = sdram_rdy_delay[1];
    
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        sdram_rdy_delay <= 0;
      else

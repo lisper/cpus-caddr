@@ -107,12 +107,12 @@ module top(rs232_txd, rs232_rxd,
    wire 	 machrun;
    wire 	 prefetch;
    wire 	 fetch;
-   
-   wire 	 slow_clk, slow_clk_2x;
+
+   wire 	 clk1x, clk2x;
    wire [3:0] 	 dots;
    
    support support(.sysclk(sysclk_buf),
-		   .cpuclk(slow_clk),
+		   .cpuclk(clk1x),
 		   .button_r(button[3]),
 		   .button_b(button[2]),
 		   .reset(reset),
@@ -136,30 +136,30 @@ module top(rs232_txd, rs232_rxd,
    always @(posedge clk50)
        slow <= slow + 1;
 
-   assign slow_clk =
-		    slideswitch[5] ? slow[22] :
-		    slideswitch[4] ? slow[18] :
-		    slideswitch[3] ? slow[6] :
-		    slideswitch[2] ? slow[4] :
-		    slideswitch[1] ? slow[3] :
-		    slideswitch[0] ? slow[0] :
-		    clk50;
-		     
-   assign slow_clk_2x =
-		       slideswitch[5] ? ~slow[21] :
-		       slideswitch[4] ? ~slow[17] :
-		       slideswitch[3] ? ~slow[ 5] :
-		       slideswitch[2] ? ~slow[ 3] :
-		       slideswitch[1] ? ~slow[ 2] :
-		       slideswitch[0] ? ~clk50 :
-		       ~clk100;
+   assign clk1x =
+		 slideswitch[5] ? slow[22] :
+		 slideswitch[4] ? slow[18] :
+		 slideswitch[3] ? slow[6] :
+		 slideswitch[2] ? slow[4] :
+		 slideswitch[1] ? slow[3] :
+		 slideswitch[0] ? slow[0] :
+		 clk50;
    
-//   assign slow_clk = slow[18];
-//   assign slow_clk_2x = ~slow[17];
+   assign clk2x =
+		 slideswitch[5] ? ~slow[21] :
+		 slideswitch[4] ? ~slow[17] :
+		 slideswitch[3] ? ~slow[ 5] :
+		 slideswitch[2] ? ~slow[ 3] :
+		 slideswitch[1] ? ~slow[ 2] :
+		 slideswitch[0] ? ~clk50 :
+		 clk100;
+   
+//   assign clk1x = slow[18];
+//   assign clk2x = ~slow[17];
 //    
 
    caddr cpu (
-	      .clk(slow_clk),
+	      .clk(clk1x),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
@@ -216,8 +216,10 @@ module top(rs232_txd, rs232_rxd,
    assign      dbread = 0;
    assign      dbwrite = 0;
 
-   ram_controller rc (.clk(slow_clk),
-		      .clk2x(slow_clk_2x),
+   fast_ram_controller rc (
+		      .clk(clk100),
+		      .vga_clk(clk50),
+		      .cpu_clk(clk1x),
 		      .reset(reset),
 		      .prefetch(prefetch),
 		      .fetch(fetch),
@@ -265,8 +267,8 @@ module top(rs232_txd, rs232_rxd,
 		      .sram2_lb_n(sram2_lb_n)
 		      );
 
-   vga_display vga (.clk(slow_clk),
-		    .pixclk(~clk100),
+   vga_display vga (.clk(clk50),
+		    .pixclk(clk100),
 		    .reset(reset),
 
 		    .vram_addr(vram_vga_addr),

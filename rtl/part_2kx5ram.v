@@ -76,12 +76,11 @@ always @(posedge clk_a)
 `endif
        end
 
-//always @(negedge clk_a)
-   always @(posedge clk_a)
-     if (rden_a)
-       out_a <= ram[ address_a ];
-   assign q_a = out_a;
-//assign q_a = ram[ address_a ];
+//   always @(posedge clk_a)
+//     if (rden_a)
+//       out_a <= ram[ address_a ];
+//   assign q_a = out_a;
+assign q_a = ram[ address_a ];
 
 `endif // SIMULATION
 

@@ -76,10 +76,9 @@ module xbus_tv(
    wire [2:0] 	 fb_state_next;
 
    parameter 	 FB_IDLE = 0,
-		   FB_WRITE1 = 1,
-		   FB_WRITE2 = 2,
-		   FB_READ = 3,
-		   FB_DONE = 4;
+		   FB_WRITE = 1,
+		   FB_READ = 2,
+		   FB_DONE = 3;
 
    wire 	 in_fb;
    wire 	 in_reg;
@@ -169,7 +168,7 @@ module xbus_tv(
 
    assign vram_addr = offset;
    assign vram_data_out = datain;
-   assign vram_write = fb_state == FB_WRITE2;
+   assign vram_write = fb_state == FB_WRITE;
    assign vram_req = fb_state == FB_READ;
 
    /* simple state machine to wait for memory controller */
@@ -181,12 +180,10 @@ module xbus_tv(
 	  fb_state <= fb_state_next;
 
 `ifdef debug
-	  if (fb_state == FB_WRITE1)
-	    $display("tv: write1 @%o <- %o; %t", addr, datain, $time);
-	  if (fb_state == FB_WRITE2)
-	    $display("tv: write2 @%o <- %o; %t", addr, datain, $time);
+	  if (fb_state == FB_WRITE)
+	    $display("tv: write @%o <- %o; %t", addr, datain, $time);
 
-	  if (fb_state == FB_WRITE2 && fb_state_next == FB_DONE)
+	  if (fb_state == FB_WRITE && fb_state_next == FB_DONE)
 	    begin
 	       h = { 17'b0, offset } / 768;
 	       v = { 17'b0, offset } % 768;
@@ -203,11 +200,11 @@ module xbus_tv(
        end
 
    assign fb_state_next =
-			 (fb_state == FB_IDLE && start_fb_write) ? FB_WRITE2 :
+			 (fb_state == FB_IDLE && start_fb_write) ? FB_WRITE :
 			 (fb_state == FB_IDLE && start_fb_read) ? FB_READ :
-//			 fb_state == FB_WRITE1 ? FB_WRITE2 :
-			 fb_state == FB_WRITE2 ? FB_DONE :
-			 fb_state == FB_READ ? FB_DONE :
+//			 (fb_state == FB_WRITE && vram_done) ? FB_DONE :
+ (fb_state == FB_WRITE) ? FB_DONE :
+			 (fb_state == FB_READ && vram_ready) ? FB_DONE :
 			 (fb_state == FB_DONE && ~req) ? FB_IDLE :
 			 fb_state;
 

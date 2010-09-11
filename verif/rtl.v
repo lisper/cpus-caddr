@@ -28,6 +28,7 @@
 //`include "debug_rom.v"
 
 `include "../rtl/ram_controller.v"
+`include "../rtl/fast_ram_controller.v"
 `include "../verif/debug_ram_controller.v"
 `include "../rtl/vga_display.v"
 

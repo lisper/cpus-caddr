@@ -62,8 +62,8 @@ module wrap_ide(clk, ide_data_in, ide_data_out,
 endmodule
 
 module test;
-   reg clk;
-   reg clk100;
+   reg ext_osc;
+   reg sysclk;
    reg reset;
    reg interrupt;
 
@@ -112,19 +112,50 @@ module test;
    wire 	 vram_vga_req;
    wire 	 vram_vga_ready;
 
+   wire [13:0] 	 pc;
+   wire [4:0] 	 state;
+   wire 	 machrun;
    wire 	 prefetch;
    wire 	 fetch;
-   
+   wire [4:0] 	 disk_state;
+   wire [3:0] 	 bus_state;
+   wire [3:0] 	 rc_state;
+
    wire [17:0] 	 sram_a;
    wire 	 sram_oe_n, sram_we_n;
-   /* verilator lint_off UNOPTFLAT */
-   wire [15:0] 	 sram1_io;
-   wire [15:0] 	 sram2_io;
-   /* verilator lint_on UNOPTFLAT */
+   wire [15:0] 	 sram1_in;
+   wire [15:0] 	 sram1_out;
+   wire [15:0] 	 sram2_in;
+   wire [15:0] 	 sram2_out;
    wire 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
    wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
 
-   caddr cpu (.clk(clk),
+//
+   reg [4:0] slow;
+   wire      clk1x, clk2x;
+   wire      clk100, clk50;
+
+   initial
+     slow = 0;
+
+`ifdef xxx
+   always @(posedge ext_osc)
+     sysclk <= ~sysclk;
+//   assign sysclk = ext_osc;
+   
+   always @(posedge sysclk)
+       slow <= slow + 1;
+
+//   assign clk1x = slow[3];
+//   assign clk2x = ~slow[1];
+
+   assign clk1x = slow[1];
+   assign clk50 = ~slow[0];
+   assign clk100 = sysclk;
+//    
+`endif //  `ifdef xxx
+   
+   caddr cpu (.clk(clk1x),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
@@ -136,8 +167,14 @@ module test;
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
 
+	      .pc_out(pc),
+	      .state_out(state),
+	      .machrun_out(machrun),
 	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
+	      .disk_state_out(disk_state),
+	      .bus_state_out(bus_state),
+
 	      .mcr_addr(mcr_addr),
 	      .mcr_data_out(mcr_data_out),
 	      .mcr_data_in(mcr_data_in),
@@ -168,18 +205,28 @@ module test;
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
 
-`define real_rc
+//`define real_rc
+//`define debug_rc
+`define fast_rc
+   
 `ifdef real_rc
    ram_controller
-`else
+`endif
+`ifdef debug_rc
    debug_ram_controller
 `endif
+`ifdef fast_rc
+   fast_ram_controller
+`endif
 		  rc
-		     (.clk(clk),
-		      .clk2x(clk100),
+		     (.clk(clk100),
+		      .vga_clk(clk50),
+		      .cpu_clk(clk1x),
 		      .reset(reset),
 		      .prefetch(prefetch),
 		      .fetch(fetch),
+		      .machrun(machrun),
+		      .state_out(rc_state),
 		      
 		      .mcr_addr(mcr_addr),
 		      .mcr_data_out(mcr_data_in),
@@ -212,11 +259,13 @@ module test;
 		      .sram_a(sram_a),
 		      .sram_oe_n(sram_oe_n),
 		      .sram_we_n(sram_we_n),
-		      .sram1_io(sram1_io),
+		      .sram1_in(sram1_in),
+		      .sram1_out(sram1_out),
 		      .sram1_ce_n(sram1_ce_n),
 		      .sram1_ub_n(sram1_ub_n),
 		      .sram1_lb_n(sram1_lb_n),
-		      .sram2_io(sram2_io),
+		      .sram2_in(sram2_in),
+		      .sram2_out(sram2_out),
 		      .sram2_ce_n(sram2_ce_n),
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
@@ -224,7 +273,7 @@ module test;
    
    wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
 
-   vga_display vga (.clk(clk),
+   vga_display vga (.clk(clk50),
 		    .pixclk(clk100),
 		    .reset(reset),
 
@@ -260,7 +309,7 @@ module test;
 		  vga_blu, vga_blu,
 		  vga_grn, vga_grn, vga_grn };
    
-   always @(posedge clk100)
+   always @(posedge clk50)
      dpi_vga_display({31'b0, vga_vsync}, {31'b0, vga_hsync}, pxd);
 
 `endif
@@ -269,18 +318,12 @@ module test;
    
    assign 	halt = 0;
    
-//   integer     addr;
-//   integer     debug_level;
-//   integer     dumping;
-//   integer     cycles;
-//   integer     max_cycles;
-     
    assign      eadr = 4'b0;
    assign      dbread = 0;
    assign      dbwrite = 0;
    assign      spyin = 0;
 
-   wrap_ide wrap_ide(.clk(clk),
+   wrap_ide wrap_ide(.clk(clk1x),
 		     .ide_data_in(ide_data_out),
 		     .ide_data_out(ide_data_in),
 		     .ide_dior(ide_dior),
@@ -291,11 +334,13 @@ module test;
    ram_s3board ram(.ram_a(sram_a),
 		   .ram_oe_n(sram_oe_n),
 		   .ram_we_n(sram_we_n),
-		   .ram1_io(sram1_io),
+		   .ram1_in(sram1_out),
+		   .ram1_out(sram1_in),
 		   .ram1_ce_n(sram1_ce_n),
 		   .ram1_ub_n(sram1_ub_n),
 		   .ram1_lb_n(sram1_lb_n),
-		   .ram2_io(sram2_io),
+		   .ram2_in(sram2_out),
+		   .ram2_out(sram2_in),
 		   .ram2_ce_n(sram2_ce_n),
 		   .ram2_ub_n(sram2_ub_n),
 		   .ram2_lb_n(sram2_lb_n));

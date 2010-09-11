@@ -1,6 +1,7 @@
 // debug_ram_controller.v
 
-module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
+module debug_ram_controller(clk, vga_clk, cpu_clk, reset,
+			    prefetch, fetch, machrun, state_out,
 
 			    mcr_addr, mcr_data_out, mcr_data_in,
 			    mcr_ready, mcr_write, mcr_done,
@@ -16,14 +17,17 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
 			    vram_vga_req, vram_vga_ready,
 
 			    sram_a, sram_oe_n, sram_we_n,
-			    sram1_io, sram1_ce_n, sram1_ub_n, sram1_lb_n,
-			    sram2_io, sram2_ce_n, sram2_ub_n, sram2_lb_n);
+			    sram1_in, sram1_out, sram1_ce_n, sram1_ub_n, sram1_lb_n,
+			    sram2_in, sram2_out, sram2_ce_n, sram2_ub_n, sram2_lb_n);
 
    input clk;
-   input clk2x;
+   input vga_clk;
+   input cpu_clk;
    input reset;
    input prefetch;
    input fetch;
+   input machrun;
+   output [3:0] state_out;
    
    input [13:0]  mcr_addr;
    output [48:0] mcr_data_out;
@@ -63,8 +67,10 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
    output [17:0] sram_a;
    output 	 sram_oe_n;
    output 	 sram_we_n;
-   inout [15:0]  sram1_io;
-   inout [15:0]  sram2_io;
+   input [15:0]  sram1_in;
+   output [15:0]  sram1_out;
+   input [15:0]  sram2_in;
+   output [15:0]  sram2_out;
    output 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
    output 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
 
@@ -87,7 +93,7 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
           mcr_ram[i] = 49'b0;
      end
 
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if(reset)
        mcr_state <= 0;
      else
@@ -95,10 +101,10 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
 
    assign mcr_done = mcr_state;
      
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (mcr_write)
        begin
-`ifdef debug
+`ifdef debug_xxx
           // patch out disk-copy (which takes 12 hours to sim)
           if (mcr_addr == 14'o24045)
 	    mcr_ram[ mcr_addr ] = 49'h000000001000;
@@ -114,7 +120,7 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
 
    assign mcr_ready = 1;
    
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        mcr_out <= 0;
      else
@@ -136,11 +142,11 @@ module debug_ram_controller(clk, clk2x, reset, prefetch, fetch,
 //   parameter 	 DRAM_SIZE = 1048576;
 //   parameter 	 DRAM_SIZE = 524288;
 
-   parameter 	 DRAM_SIZE = 262144;
-   parameter 	 DRAM_BITS = 18;
+//   parameter 	 DRAM_SIZE = 262144;
+//   parameter 	 DRAM_BITS = 18;
 
-//   parameter 	 DRAM_SIZE = 131072;
-//   parameter 	 DRAM_BITS = 17;
+   parameter 	 DRAM_SIZE = 131072;
+   parameter 	 DRAM_BITS = 17;
 
    reg [31:0] 	 dram[DRAM_SIZE-1:0];
    wire [DRAM_BITS-1:0] sdram_addr20;
@@ -171,7 +177,7 @@ assign sdram_start = ack_delayed == 0;
 assign sdram_done = ack_delayed[4] && sdram_was_write;
 assign sdram_ready = ack_delayed[4] && sdram_was_read;
    
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        ack_delayed <= 0;
      else
@@ -182,12 +188,9 @@ assign sdram_ready = ack_delayed[4] && sdram_was_read;
           ack_delayed[3] <= ack_delayed[2];
           ack_delayed[4] <= ack_delayed[3];
           ack_delayed[5] <= ack_delayed[4];
-//	  ack_delayed[6] <= ack_delayed[5];
-//	  ack_delayed[7] <= ack_delayed[6];
-//	  ack_delayed[8] <= ack_delayed[7];
        end
 
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      begin
 //	sdram_done = 0;
 //	sdram_ready = 0;
@@ -251,7 +254,7 @@ assign sdram_ready = ack_delayed[4] && sdram_was_read;
    assign vram_vga_data_out = vram[vram_vga_addr];
    assign vram_vga_ready = 1;
    
-   always @(posedge clk)
+   always @(posedge cpu_clk)
      if (reset)
        begin
 	  pending_vram_addr <= 0;
@@ -284,9 +287,22 @@ $display("vram: R addr %o -> %o; %t",
 	      pending_vram_read <= 0;
        end
    
-   assign vram_cpu_ready = pending_vram_read;
+   reg [2:0] 	 vram_ack_delayed;
 
-   always @(posedge clk)
+   always @(posedge cpu_clk)
+     if (reset)
+       vram_ack_delayed <= 0;
+     else
+       begin
+          vram_ack_delayed[0] <= vram_cpu_req;
+          vram_ack_delayed[1] <= vram_ack_delayed[0];
+          vram_ack_delayed[2] <= vram_ack_delayed[1];
+       end
+
+//   assign vram_cpu_ready = pending_vram_read;
+   assign vram_cpu_ready = vram_ack_delayed[2];
+
+   always @(posedge cpu_clk)
      begin
 	vram_cpu_done = 0;
 //	vram_cpu_ready = 0;
@@ -321,12 +337,12 @@ $display("vram: R addr %o -> %o; %t",
    assign sram_oe_n = 1;
    assign sram_we_n = 1;
 
-   assign sram1_io = 0;
+   assign sram1_out = 0;
    assign sram1_ce_n = 1;
    assign sram1_ub_n = 1;
    assign sram1_lb_n = 1;
 
-   assign sram2_io = 0;
+   assign sram2_out = 0;
    assign sram2_ce_n = 1;
    assign sram2_ub_n = 1;
    assign sram2_lb_n = 1;

@@ -17,8 +17,7 @@
 `timescale 1ns / 1ns
 
 module test;
-   reg clk;
-   reg clk2x;
+   reg sysclk;
    reg reset;
    reg interrupt;
 
@@ -66,31 +65,63 @@ module test;
    wire 	 vram_vga_req;
    wire 	 vram_vga_ready;
 
-   wire 	 prefetch;
-   wire 	 fetch;
-   
    wire [17:0] 	 sram_a;
    wire 	 sram_oe_n, sram_we_n;
-   /* verilator lint_off UNOPTFLAT */
-   wire [15:0] 	 sram1_io;
-   wire [15:0] 	 sram2_io;
-   /* verilator lint_on UNOPTFLAT */
+   wire [15:0] 	 sram1_in;
+   wire [15:0] 	 sram1_out;
+   wire [15:0] 	 sram2_in;
+   wire [15:0] 	 sram2_out;
    wire 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
    wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
 
-   caddr cpu (.clk(clk),
+//
+   reg [4:0] slow;
+   wire      clk1x, clk2x;
+   wire      clk100, clk50;
+
+   initial
+     slow = 0;
+
+   always @(posedge sysclk)
+     slow <= slow + 1;
+
+   assign clk1x = slow[3];
+   assign clk2x = ~slow[1];
+
+   assign clk50 = ~slow[0];
+   assign clk100 = sysclk;
+//    
+
+   wire [13:0]   pc;
+   wire [4:0]    state;
+   wire          machrun;
+   wire 	 prefetch;
+   wire 	 fetch;
+   wire [4:0] 	 disk_state_out;
+   wire [3:0] 	 bus_state_out;
+   wire [3:0] 	 rc_state_out;
+   
+
+   caddr cpu (.clk(clk1x),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
 	      .ext_halt(halt),
+
 	      .spy_in(spyin),
 	      .spy_out(spyout),
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
 
+	      .pc_out(pc),
+	      .state_out(state),
+	      .machrun_out(machrun),
 	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
+	      .disk_state_out(disk_state),
+	      .bus_state_out(bus_state),
+     
 	      .mcr_addr(mcr_addr),
 	      .mcr_data_out(mcr_data_out),
 	      .mcr_data_in(mcr_data_in),
@@ -121,12 +152,28 @@ module test;
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
 
-   /*debug_*/ram_controller rc
-		     (.clk(clk),
-		      .clk2x(clk2x),
+//`define real_rc
+//`define debug_rc
+`define fast_rc
+   
+`ifdef real_rc
+   ram_controller
+`endif
+`ifdef debug_rc
+   debug_ram_controller
+`endif
+`ifdef fast_rc
+   fast_ram_controller
+`endif
+     		   rc
+		     (.clk(clk100),
+		      .vga_clk(clk50),
+		      .cpu_clk(clk1x),
 		      .reset(reset),
 		      .prefetch(prefetch),
 		      .fetch(fetch),
+		      .machrun(machrun),
+		      .state_out(rc_state_out),
 		      
 		      .mcr_addr(mcr_addr),
 		      .mcr_data_out(mcr_data_in),
@@ -159,26 +206,47 @@ module test;
 		      .sram_a(sram_a),
 		      .sram_oe_n(sram_oe_n),
 		      .sram_we_n(sram_we_n),
-		      .sram1_io(sram1_io),
+		      .sram1_in(sram1_in),
+		      .sram1_out(sram1_out),
 		      .sram1_ce_n(sram1_ce_n),
 		      .sram1_ub_n(sram1_ub_n),
 		      .sram1_lb_n(sram1_lb_n),
-		      .sram2_io(sram2_io),
+		      .sram2_in(sram2_in),
+		      .sram2_out(sram2_out),
 		      .sram2_ce_n(sram2_ce_n),
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
 		      );
 
-   assign vram_vga_addr = 0;
+   wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
+
+   vga_display vga (.clk(clk50),
+		    .pixclk(clk100),
+		    .reset(reset),
+
+		    .vram_addr(vram_vga_addr),
+		    .vram_data(vram_vga_data_out),
+		    .vram_req(vram_vga_req),
+		    .vram_ready(vram_vga_ready),
+      
+		    .vga_red(vga_red),
+		    .vga_blu(vga_blu),
+		    .vga_grn(vga_grn),
+		    .vga_hsync(vga_hsync),
+		    .vga_vsync(vga_vsync)
+		    );
+
    
    ram_s3board ram(.ram_a(sram_a),
 		   .ram_oe_n(sram_oe_n),
 		   .ram_we_n(sram_we_n),
-		   .ram1_io(sram1_io),
+		   .ram1_in(sram1_out),
+		   .ram1_out(sram1_in),
 		   .ram1_ce_n(sram1_ce_n),
 		   .ram1_ub_n(sram1_ub_n),
 		   .ram1_lb_n(sram1_lb_n),
-		   .ram2_io(sram2_io),
+		   .ram2_in(sram2_out),
+		   .ram2_out(sram2_in),
 		   .ram2_ce_n(sram2_ce_n),
 		   .ram2_ub_n(sram2_ub_n),
 		   .ram2_lb_n(sram2_lb_n));
@@ -238,8 +306,7 @@ module test;
 
    initial
      begin
-	clk = 0;
-	clk2x = 0;
+	sysclk = 0;
 	interrupt = 0;
 	reset = 0;
 	spyin = 0;
@@ -262,7 +329,7 @@ module test;
 	cpu.i_VMEM1.ram[10'o0023] = 24'o60036123;
 `endif
 
-`define patch_rw_test	
+//`define patch_rw_test	
 `ifdef patch_rw_test
 
 	cpu.i_AMEM.ram[10'o2] = 32'o400000;
@@ -298,26 +365,17 @@ module test;
 	ram.ram1.ram_h[0] = 0;
 	ram.ram2.ram_l[0] = 0;
 		
-	#240 boot = 1;
+	#500 boot = 1;
 
-	#10 reset = 0;
-	#10 boot = 0;
-     end
-
-   // 100mhz clock
-   always
-     begin
-	#5 clk2x = 0;
-	#5 clk2x = 1;
+	#500 reset = 0;
+	#500 boot = 0;
      end
 
    // 50mhz clock
-//   always @(posedge clk2x)
-//     clk <= ~clk;
    always
      begin
-	#10 clk = 0;
-	#10 clk = 1;
+	#10 sysclk = 0;
+	#10 sysclk = 1;
      end
 
    always @(posedge cpu.clk)
@@ -591,7 +649,7 @@ module test;
 
    assign ide_data_in = ide_data_bus;
      
-   always @(posedge clk)
+   always @(posedge clk1x)
      begin
 	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
      end

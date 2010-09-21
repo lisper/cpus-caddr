@@ -819,7 +819,7 @@ module xbus_disk (
 	       reqout = 1;
 	       addrout = { disk_clp };
 
-`ifdef debug
+`ifdef debug_disk
 	       $display("disk: dma clp @ %o", disk_clp);
 `endif
 

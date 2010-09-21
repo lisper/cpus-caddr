@@ -110,7 +110,7 @@ reg [31:0] 	 dataout;
 	  if (write)
 	    begin
 `ifdef debug
-               `DBG_DLY $display("unibus: write @%o <- %o", addr, datain);
+               `DBG_DLY $display("unibus: write @%o <- %o; %t", addr, datain, $time);
 `endif
 	       /* verilator lint_off CASEINCOMPLETE */
 	       case (offset)
@@ -232,7 +232,7 @@ reg [31:0] 	 dataout;
 	 if (clear_bus_status)
 	   begin
 `ifdef debug
-		 $display("unibus: clear timeouts");
+		 $display("unibus: clear timeouts; %t", $time);
 `endif
 	       unibus_nxm <= 1'b0;
 	       xbus_nxm <= 1'b0;

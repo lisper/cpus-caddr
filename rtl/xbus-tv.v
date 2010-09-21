@@ -148,19 +148,19 @@ module xbus_tv(
 		if (vram_ready)
 		  begin
 		     dataout <= vram_data_in;
-`ifdef debug
-		     $display("tv: read @%o out -> %o; %t",
-			      addr, vram_data_in, $time);
-`endif
+//`ifdef debug
+//		     $display("tv: read @%o out -> %o; %t",
+//			      addr, vram_data_in, $time);
+//`endif
 		  end
 
 `ifdef debug
 	  if (vram_done)
 	    $display("tv: write @%o done <- %o; state %b %t",
 		     addr, datain, fb_state, $time);
-	  if (vram_ready)
-	    $display("tv: read @%o done -> %o; state %b %t",
-		     addr, vram_data_in, fb_state, $time);
+//	  if (vram_ready)
+//	    $display("tv: read @%o done -> %o; state %b %t",
+//		     addr, vram_data_in, fb_state, $time);
 `endif
 	  
        end

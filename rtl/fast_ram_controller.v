@@ -450,11 +450,13 @@ module fast_ram_controller(
           vram_ack_delayed[0] <= vram_cpu_req;
           vram_ack_delayed[1] <= vram_ack_delayed[0];
           vram_ack_delayed[2] <= vram_ack_delayed[1];
-          vram_ack_delayed[3] <= vram_ack_delayed[2];
-          vram_ack_delayed[4] <= vram_ack_delayed[3];
-          vram_ack_delayed[5] <= vram_ack_delayed[4];
+//          vram_ack_delayed[3] <= vram_ack_delayed[2];
+//          vram_ack_delayed[4] <= vram_ack_delayed[3];
+//          vram_ack_delayed[5] <= vram_ack_delayed[4];
+//	  vram_ack_delayed[6] <= vram_ack_delayed[5];
        end
 
+//   assign vram_cpu_ready = vram_ack_delayed[6];
    assign vram_cpu_ready = vram_ack_delayed[2];
    
 `ifdef debug
@@ -512,18 +514,20 @@ module fast_ram_controller(
        begin
 	  if (int_sdram_rdy)
 	    begin
-	       sdram_rdy <= 1;
-`ifdef debug
-	       $display("rc: sdram_req %o -> %o", sdram_addr, sdram_out);
+ `ifdef debug
+	       if (~sdram_rdy)
+		 $display("rc: sdram_req %o -> %o", sdram_addr, sdram_out);
 `endif
+	       sdram_rdy <= 1;
 	    end
 	  else
 	    if (int_sdram_done)
 	      begin
-		 sdram_done <= 1;
 `ifdef debug
-		 $display("rc: sdram_write %o", sdram_addr);
+		 if (~sdram_done)
+		   $display("rc: sdram_write %o", sdram_addr);
 `endif
+		 sdram_done <= 1;
 	      end
 	  
 	  if (~sdram_req)
@@ -535,9 +539,11 @@ module fast_ram_controller(
    assign sdram_data_out = sdram_out;
    
    // sdram ack delay
-   reg [5:0] sdram_rdy_delay;
+   reg [6:0] sdram_rdy_delay;
 
-   assign     sdram_ready = sdram_rdy_delay[4];
+//   assign    sdram_ready = sdram_rdy_delay[2];
+//   assign    sdram_ready = sdram_rdy_delay[4];
+   assign     sdram_ready = sdram_rdy_delay[6];
    
    always @(posedge cpu_clk)
      if (reset)
@@ -551,6 +557,7 @@ module fast_ram_controller(
 	  sdram_rdy_delay[3] <= sdram_rdy_delay[2];
 	  sdram_rdy_delay[4] <= sdram_rdy_delay[3];
 	  sdram_rdy_delay[5] <= sdram_rdy_delay[4];
+	  sdram_rdy_delay[6] <= sdram_rdy_delay[5];
        end
 `endif
 
@@ -588,8 +595,10 @@ module fast_ram_controller(
 
 //   assign sdram_done = ack_delayed[2] && sdram_was_write;
 //   assign sdram_ready = ack_delayed[2] && sdram_was_read;
-assign sdram_done = ack_delayed[4] && sdram_was_write;
-assign sdram_ready = ack_delayed[4] && sdram_was_read;
+//assign sdram_done = ack_delayed[4] && sdram_was_write;
+//assign sdram_ready = ack_delayed[4] && sdram_was_read;
+assign sdram_done = ack_delayed[6] && sdram_was_write;
+assign sdram_ready = ack_delayed[6] && sdram_was_read;
    
    always @(posedge cpu_clk)
      if (reset)
@@ -602,6 +611,7 @@ assign sdram_ready = ack_delayed[4] && sdram_was_read;
           ack_delayed[3] <= ack_delayed[2];
           ack_delayed[4] <= ack_delayed[3];
           ack_delayed[5] <= ack_delayed[4];
+          ack_delayed[6] <= ack_delayed[5];
        end
 
    always @(posedge cpu_clk)
@@ -761,7 +771,7 @@ assign sdram_ready = ack_delayed[4] && sdram_was_read;
 	    pending_vram_read <= 0;
        end
 
-   reg [2:0] 	 vram_ack_delayed;
+   reg [6:0] 	 vram_ack_delayed;
 
    always @(posedge cpu_clk)
      if (reset)
@@ -769,12 +779,17 @@ assign sdram_ready = ack_delayed[4] && sdram_was_read;
      else
        begin
           vram_ack_delayed[0] <= vram_cpu_req;
-          vram_ack_delayed[1] <= vram_ack_delayed[0];
-          vram_ack_delayed[2] <= vram_ack_delayed[1];
+//          vram_ack_delayed[1] <= vram_ack_delayed[0];
+//          vram_ack_delayed[2] <= vram_ack_delayed[1];
+//          vram_ack_delayed[3] <= vram_ack_delayed[2];
+//          vram_ack_delayed[4] <= vram_ack_delayed[3];
+//          vram_ack_delayed[5] <= vram_ack_delayed[4];
+//          vram_ack_delayed[6] <= vram_ack_delayed[5];
        end
 
 //   assign vram_cpu_ready = pending_vram_read;
-   assign vram_cpu_ready = vram_ack_delayed[2];
+//   assign vram_cpu_ready = vram_ack_delayed[6];
+   assign vram_cpu_ready = vram_ack_delayed[0];
 
    always @(posedge cpu_clk)
      begin

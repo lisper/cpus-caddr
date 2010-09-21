@@ -105,7 +105,7 @@ module debug_ram_controller(clk, vga_clk, cpu_clk, reset,
      if (mcr_write)
        begin
 `ifdef debug_xxx
-          // patch out disk-copy (which takes 12 hours to sim)
+          // patch out disk-copy (which takes hours to sim)
           if (mcr_addr == 14'o24045)
 	    mcr_ram[ mcr_addr ] = 49'h000000001000;
           else
@@ -124,7 +124,8 @@ module debug_ram_controller(clk, vga_clk, cpu_clk, reset,
      if (reset)
        mcr_out <= 0;
      else
-       if (prefetch)
+//xxx brad
+//       if (prefetch)
 	 begin
 	    mcr_out <= mcr_ram[ mcr_addr ];
 `ifdef debug
@@ -174,8 +175,10 @@ assign sdram_start = ack_delayed == 0;
 
 //   assign sdram_done = ack_delayed[7] && sdram_was_write;
 //   assign sdram_ready = ack_delayed[7] && sdram_was_read;
-assign sdram_done = ack_delayed[4] && sdram_was_write;
-assign sdram_ready = ack_delayed[4] && sdram_was_read;
+//assign sdram_done = ack_delayed[4] && sdram_was_write;
+//assign sdram_ready = ack_delayed[4] && sdram_was_read;
+assign sdram_done = ack_delayed[6] && sdram_was_write;
+assign sdram_ready = ack_delayed[6] && sdram_was_read;
    
    always @(posedge cpu_clk)
      if (reset)
@@ -188,6 +191,7 @@ assign sdram_ready = ack_delayed[4] && sdram_was_read;
           ack_delayed[3] <= ack_delayed[2];
           ack_delayed[4] <= ack_delayed[3];
           ack_delayed[5] <= ack_delayed[4];
+	  ack_delayed[6] <= ack_delayed[5];
        end
 
    always @(posedge cpu_clk)

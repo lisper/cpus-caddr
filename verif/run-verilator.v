@@ -133,27 +133,24 @@ module test;
 //
    reg [4:0] slow;
    wire      clk1x, clk2x;
-   wire      clk100, clk50;
+   wire      clk50/*verilator public_flat*/;
+   wire      clk100;
 
    initial
      slow = 0;
 
-`ifdef xxx
+`ifdef use_verilog_clocks
    always @(posedge ext_osc)
      sysclk <= ~sysclk;
-//   assign sysclk = ext_osc;
    
    always @(posedge sysclk)
        slow <= slow + 1;
-
-//   assign clk1x = slow[3];
-//   assign clk2x = ~slow[1];
 
    assign clk1x = slow[1];
    assign clk50 = ~slow[0];
    assign clk100 = sysclk;
 //    
-`endif //  `ifdef xxx
+`endif
    
    caddr cpu (.clk(clk1x),
 	      .ext_int(interrupt),
@@ -205,9 +202,13 @@ module test;
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
 
+   assign vram_cpu_ready = 1'b1;
+
+`ifdef use_ram_controller   
 //`define real_rc
 //`define debug_rc
 `define fast_rc
+//`define min_rc
    
 `ifdef real_rc
    ram_controller
@@ -217,6 +218,9 @@ module test;
 `endif
 `ifdef fast_rc
    fast_ram_controller
+`endif
+`ifdef min_rc
+   min_ram_controller
 `endif
 		  rc
 		     (.clk(clk100),
@@ -270,9 +274,11 @@ module test;
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
 		      );
+`endif
    
    wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
 
+`ifdef use_vga_controller
    vga_display vga (.clk(clk50),
 		    .pixclk(clk100),
 		    .reset(reset),
@@ -288,7 +294,8 @@ module test;
 		    .vga_hsync(vga_hsync),
 		    .vga_vsync(vga_vsync)
 		    );
-
+`endif
+   
 `ifdef show_vga
    import "DPI-C" function void dpi_vga_init(input integer h,
 					     input integer v);
@@ -331,6 +338,7 @@ module test;
 		     .ide_cs(ide_cs),
 		     .ide_da(ide_da));
 
+`ifdef use_s3board_ram
    ram_s3board ram(.ram_a(sram_a),
 		   .ram_oe_n(sram_oe_n),
 		   .ram_we_n(sram_we_n),
@@ -344,5 +352,6 @@ module test;
 		   .ram2_ce_n(sram2_ce_n),
 		   .ram2_ub_n(sram2_ub_n),
 		   .ram2_lb_n(sram2_lb_n));
-		   
+`endif
+   
 endmodule

@@ -1,67 +1,17 @@
 //
-
-`ifdef xxxx
-
-module support(sysclk, button, reset, interrupt, boot, halt);
-
-   input sysclk;
-   input button;
-
-   output reset;
-   output interrupt;
-   output boot;
-   output halt;
-
-//   reg [14:0] count;
-reg [24:0] count;
-   reg 	     slowclk;
-   reg 	     onetime;
-   reg [9:0]  hold;
-   wire       pressed;
-   
-//   assign reset = (count > 10 && count < 32000 && ~onetime) || pressed;
-//   assign boot = count >= 30000 && ~onetime;
-assign reset = (count > 10 && count < 25'h0ffffff && ~onetime) || pressed;
-assign boot = count >= 25'h07fffff && ~onetime;
-   assign interrupt = 1'b0;
-   assign halt = 1'b0;
-
-   assign pressed = hold == 10'b1111111111;
-
-   initial
-     begin
-	onetime = 0;
-	slowclk = 0;
-	hold = 0;
-     end
-   
-   always @(posedge sysclk)
-     begin
-	count <= count + 1;
-	if (count == 0)
-          slowclk <= ~slowclk;
-	if (pressed)
-	  count <= 0;
-     end
-   
-   always @(posedge slowclk)
-     begin
-	hold <= { hold[8:0], button };
-	onetime <= pressed ? 0 : 1;
-     end
-   
-   
-endmodule
-`else // !`ifdef xxxx
+// fpga support
+// generate dcm_reset, reset & boot signals for cpu
+//
 
 module support(sysclk, cpuclk, button_r, button_b, 
-	       reset, interrupt, boot, halt);
+	       dcm_reset, reset, interrupt, boot, halt);
 
    input sysclk;
    input cpuclk;
    input button_r;
    input button_b;
 
+   output dcm_reset;
    output reset;
    output interrupt;
    output boot;
@@ -74,14 +24,20 @@ module support(sysclk, cpuclk, button_r, button_b,
    reg 	      cpu_slowclk;
    reg 	      onetime;
    reg [9:0]  hold;
+   wire       press;
    wire       pressed;
+   wire       released;
+   reg 	      press_history;
    
-   assign reset = (cpu_count > 10 && cpu_count < 50 && ~onetime) || pressed;
-   assign boot = (cpu_count >= 40 && ~onetime) || button_b;
+   assign dcm_reset = sys_count < 10 && ~onetime;
+
+   assign reset = (cpu_count > 10 && cpu_count < 50) && ~onetime;
+   assign boot = (cpu_count >= 40) && ~onetime;
+
    assign interrupt = 1'b0;
    assign halt = 1'b0;
 
-   assign pressed = hold == 10'b1111111111;
+   assign press = hold == 10'b1111111111;
 
    initial
      begin
@@ -91,38 +47,42 @@ module support(sysclk, cpuclk, button_r, button_b,
 	hold = 0;
 	cpu_count = 0;
 	sys_count = 0;
+	press_history = 0;
      end
-   
-   always @(posedge cpuclk or posedge pressed)
-     if (pressed)
-       cpu_count <= 0;
-     else
-       begin
-	  cpu_count <= cpu_count + 1;
 
-	  if (cpu_count == 0)
-	    cpu_slowclk <= ~cpu_slowclk;
-       end
+   // debounce clock
+   always @(posedge cpuclk)
+     begin
+	cpu_count <= cpu_count + 1;
+	
+	if (cpu_count == 6'b111111)
+	  cpu_slowclk <= ~cpu_slowclk;
+     end
 
+   // re-arm reset trigger
    always @(posedge cpu_slowclk)
-     onetime <= pressed ? 0 : 1;
-   
+     onetime <= /*released*/pressed ? 0 : 1;
+
+   // clock divider
    always @(posedge sysclk)
      begin
-	if (pressed)
-	  sys_count <= 0;
-	else
-	  sys_count <= sys_count + 1;
+	sys_count <= sys_count + 1;
 
 	if (sys_count == 0)
           sys_slowclk <= ~sys_slowclk;
      end
-   
+
+   // sample push button
    always @(posedge sys_slowclk)
      hold <= { hold[8:0], button_r };
+
+   // generate button events
+   always @(posedge cpu_slowclk)
+     press_history <= press;
+
+   assign pressed = (!press_history && press);
+   assign released = (press_history && ~press);
    
    
 endmodule
 
-
-`endif

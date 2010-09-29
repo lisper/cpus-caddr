@@ -61,9 +61,12 @@ module vga_display(clk,
    parameter BOX_WIDTH  = 768;
    parameter BOX_HEIGHT = 896;
    
+//   parameter H_FPORCH   =   16;
+//   parameter H_SYNC     =   144;
+//   parameter H_BPORCH   =   120/*248*/;
    parameter H_FPORCH   =   16;
-   parameter H_SYNC     =   144;
-   parameter H_BPORCH   =   120/*248*/;
+   parameter H_SYNC     =   100;
+   parameter H_BPORCH   =   200;
 
    parameter V_FPORCH   =   1;
    parameter V_SYNC     =   3;
@@ -291,18 +294,20 @@ module vga_display(clk,
    assign vram_addr = v_addr;
 
    assign vram_req = ram_req;
+
+   wire pixel_data;
+
+   assign pixel_data = pixel;
+//   assign pixel_data = h_pos[3] & v_counter[3];
    
 `ifdef debug_load
    assign vga_red = in_box & ram_shift_load;
    assign vga_blu = in_box && ram_data_hold_empty;
    assign vga_grn = in_box & vram_ready;
-//   assign vga_red = in_box & (h_pos[3] & v_counter[3]);
-//   assign vga_blu = in_box & (h_pos[3] & v_counter[3]);
-//   assign vga_grn = in_box & (h_pos[3] & v_counter[3]);
 `else
-   assign vga_red = in_box ? pixel : in_border/*1'b0*/;
-   assign vga_blu = in_box ? pixel : in_border/*1'b0*/;
-   assign vga_grn = in_box ? pixel : in_border;
+   assign vga_red = in_box ? pixel_data : in_border/*1'b0*/;
+   assign vga_blu = in_box ? pixel_data : in_border/*1'b0*/;
+   assign vga_grn = in_box ? pixel_data : in_border;
 `endif
 
    /* verilator lint_on WIDTH */

@@ -3,13 +3,15 @@
 // generate dcm_reset, reset & boot signals for cpu
 //
 
-module support(sysclk, cpuclk, button_r, button_b, 
+module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
 	       dcm_reset, reset, interrupt, boot, halt);
 
    input sysclk;
    input cpuclk;
    input button_r;
    input button_b;
+   input button_h;
+   input button_c;
 
    output dcm_reset;
    output reset;

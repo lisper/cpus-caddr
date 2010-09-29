@@ -34,26 +34,32 @@
  *  fetch	fetch				
  *
  * states
- * S_MCR_WR1 -> S_MCR_WRW
- * 		  wr mcr hi
- * S_MCR_WRW -> S_MCR_WR2
- * 		deassert signals
- * S_MCR_WR2
- * 		wr mcr lo
+ * S_MCR_WR1 -> S_MCR_WR2
+ * 		assert address & data
+ * S_MCR_WR2 -> S_MCR_WR3
+ * 		we, wr mcr hi
+ * S_MCR_WR3 -> S_MCR_WR3
+ * 		assert address & data
+ * S_MCR_WR4
+ * 		we, wr mcr lo
  * S_VGA_RD
  * 		vram-rd; latch vram-vga data
  * S_MCR_RD1 -> S_MCR_RD2
  * 		latch mcr data hi
  * S_MCR_RD2
  * 		latch mcr data lo
- * S_VRAM_WR
- * 		vram-wr
+ * S_VRAM_WR1 -> S_VRAM_WR2
+ * 		assert address & data
+ * S_VRAM_WR2
+ * 		we, vram-wr
  * S_VRAM_RD
  * 		vram-rd; latch vram-cpu data
  * S_SDRAM_RD
  * 		sdram-rd; latch sdram data
- * S_SDRAM_WR
- * 		sdram-wr
+ * S_SDRAM_WR1 -> S_SDRAM_WR2
+ * 		assert address & data
+ * S_SDRAM_WR2
+ * 		we, sdram-wr
 */
 
 module fast_ram_controller(
@@ -74,8 +80,12 @@ module fast_ram_controller(
 			   vram_vga_req, vram_vga_ready,
 
 			   sram_a, sram_oe_n, sram_we_n,
-			   sram1_in, sram1_out, sram1_ce_n, sram1_ub_n, sram1_lb_n,
-			   sram2_in, sram2_out, sram2_ce_n, sram2_ub_n, sram2_lb_n);
+
+			   sram1_in, sram1_out, sram1_ce_n,
+			   sram1_ub_n, sram1_lb_n,
+
+			   sram2_in, sram2_out, sram2_ce_n,
+			   sram2_ub_n, sram2_lb_n);
 
    input clk;
    input vga_clk;
@@ -153,12 +163,15 @@ module fast_ram_controller(
 	       S_MCR_RD1 = 2,
 	       S_MCR_RD2 = 3,
 	       S_MCR_WR1 = 4,
-	       S_MCR_WRW = 5,
-	       S_MCR_WR2 = 6,
-	       S_SDRAM_RD = 7,
-	       S_SDRAM_WR = 8,
-	       S_VRAM_RD = 9,
-	       S_VRAM_WR = 10;
+	       S_MCR_WR2 = 5,
+	       S_MCR_WR3 = 6,
+	       S_MCR_WR4 = 7,
+	       S_SDRAM_RD = 8,
+	       S_SDRAM_WR1 = 9,
+	       S_SDRAM_WR2 = 10,
+	       S_VRAM_RD = 11,
+	       S_VRAM_WR1 = 12,
+	       S_VRAM_WR2 = 13;
    
    reg [3:0] 	 state;
    wire [3:0] 	 next_state;
@@ -169,25 +182,30 @@ module fast_ram_controller(
      else
        state <= next_state;
 
+   wire vram_vga_req_sync;
+
    assign next_state =
-	      (state == S_IDLE && vram_vga_req && ~vram_vga_ready) ? S_VGA_RD :
-	      (state == S_VGA_RD) ? S_IDLE :
-	      (state == S_IDLE && mcr_req && ~mcr_write && ~int_mcr_ready) ? S_MCR_RD1 :
-	      (state == S_MCR_RD1) ? S_MCR_RD2 :
-	      (state == S_MCR_RD2) ? S_IDLE :
-	      (state == S_IDLE && mcr_write) ? S_MCR_WR1 :
-	      (state == S_MCR_WR1) ? S_MCR_WRW :
-	      (state == S_MCR_WRW) ? S_MCR_WR2 :
-	      (state == S_MCR_WR2) ? S_IDLE :
-	      (state == S_IDLE && sdram_req && ~int_sdram_rdy) ? S_SDRAM_RD :
-	      (state == S_SDRAM_RD) ? S_IDLE :
-	      (state == S_IDLE && sdram_write && ~int_sdram_done) ? S_SDRAM_WR :
-	      (state == S_SDRAM_WR) ? S_IDLE :
-	      (state == S_IDLE && vram_cpu_req && ~int_vram_cpu_ready) ? S_VRAM_RD :
-	      (state == S_VRAM_RD) ? S_IDLE :
-	      (state == S_IDLE && vram_cpu_write && ~int_vram_cpu_done) ? S_VRAM_WR :
-	      (state == S_VRAM_WR) ? S_IDLE :
-	      S_IDLE;
+      (state == S_IDLE && mcr_req && ~mcr_write && ~int_mcr_ready) ? S_MCR_RD1 :
+      (state == S_MCR_RD1) ? S_MCR_RD2 :
+      (state == S_MCR_RD2) ? S_IDLE :
+      (state == S_IDLE && mcr_write) ? S_MCR_WR1 :
+      (state == S_MCR_WR1) ? S_MCR_WR2 :
+      (state == S_MCR_WR2) ? S_MCR_WR3 :
+      (state == S_MCR_WR3) ? S_MCR_WR4 :
+      (state == S_MCR_WR4) ? S_IDLE :
+      (state == S_IDLE && vram_vga_req_sync && ~vram_vga_ready) ? S_VGA_RD :
+      (state == S_VGA_RD) ? S_IDLE :
+      (state == S_IDLE && sdram_req && ~int_sdram_rdy) ? S_SDRAM_RD :
+      (state == S_SDRAM_RD) ? S_IDLE :
+      (state == S_IDLE && sdram_write && ~int_sdram_done) ? S_SDRAM_WR1 :
+      (state == S_SDRAM_WR1) ? S_SDRAM_WR2 :
+      (state == S_SDRAM_WR2) ? S_IDLE :
+      (state == S_IDLE && vram_cpu_req && ~int_vram_cpu_ready) ? S_VRAM_RD :
+      (state == S_VRAM_RD) ? S_IDLE :
+      (state == S_IDLE && vram_cpu_write && ~int_vram_cpu_done) ? S_VRAM_WR1 :
+      (state == S_VRAM_WR1) ? S_VRAM_WR2 :
+      (state == S_VRAM_WR2) ? S_IDLE :
+      S_IDLE;
    
    assign state_out = state;
    
@@ -206,14 +224,35 @@ module fast_ram_controller(
    //  01x sdram
    //  10x mcr
    //  11x vram
+
+   wire sram_a_sdram;
+   wire sram_a_mcr_h;
+   wire sram_a_mcr_l;
+   wire sram_a_vga;
+   wire sram_a_vram;
+
+   assign sram_a_sdram =
+	state == S_SDRAM_RD || state == S_SDRAM_WR1 || state == S_SDRAM_WR2;
+
+   assign sram_a_mcr_h =
+	state == S_MCR_RD1 || state == S_MCR_WR1 || state == S_MCR_WR2;
+
+   assign sram_a_mcr_l =
+	state == S_MCR_RD2 || state == S_MCR_WR3 || state == S_MCR_WR4;
+
+   assign sram_a_vga =
+	state == S_VGA_RD;
+
+   assign sram_a_vram = 
+	state == S_VRAM_RD || state == S_VRAM_WR1 || state == S_VRAM_WR2;
    
    assign sram_a =
-	  (state == S_SDRAM_RD || state == S_SDRAM_WR) ? { 1'b0, sdram_addr[16:0] } :
-	  (state == S_MCR_RD1  || state == S_MCR_WR1)  ? { 3'b100, mcr_addr, 1'b0 } :
-	  (state == S_MCR_RD2  || state == S_MCR_WR2)  ? { 3'b100, mcr_addr, 1'b1 } :
-	  (state == S_VGA_RD)                          ? { 3'b110, vram_vga_addr } :
-	  (state == S_VRAM_RD  || state == S_VRAM_WR)  ? { 3'b110, vram_cpu_addr_d } :
-	  0;
+		  sram_a_sdram ? { 1'b0, sdram_addr[16:0] } :
+		  sram_a_mcr_h ? { 3'b100, mcr_addr, 1'b0 } :
+		  sram_a_mcr_l ? { 3'b100, mcr_addr, 1'b1 } :
+		  sram_a_vga   ? { 3'b110, vram_vga_addr } :
+		  sram_a_vram  ? { 3'b110, vram_cpu_addr_d } :
+		  0;
 
    assign sram_oe_n =
 		     ((state == S_VGA_RD) ||
@@ -223,9 +262,9 @@ module fast_ram_controller(
 		     1'b1;
 
    assign sram_we_n =
-		     ((state == S_MCR_WR1 || state == S_MCR_WR2) ||
-		      (state == S_SDRAM_WR) ||
-		      (state == S_VRAM_WR)) ? 1'b0 :
+		     ((state == S_MCR_WR2 || state == S_MCR_WR4) ||
+		      (state == S_SDRAM_WR2) ||
+		      (state == S_VRAM_WR2)) ? 1'b0 :
 		     1'b1;
 
    assign sram1_ce_n = state != S_IDLE ? 1'b0 : 1'b1;
@@ -252,18 +291,18 @@ module fast_ram_controller(
 //`endif
    
    assign sram1_out =
-		      (state == S_MCR_WR1) ? {15'b0, mcr_data_in_x[48]} :
-		      (state == S_MCR_WR2) ? mcr_data_in_x[31:16] :
-		      (state == S_VRAM_WR) ? vram_cpu_data_in_d[31:16] :
-		      (state == S_SDRAM_WR) ? sdram_data_in[31:16] :
-		      16'b0;
+    (state == S_MCR_WR1 || state == S_MCR_WR2) ? {15'b0, mcr_data_in_x[48]} :
+    (state == S_MCR_WR3 || state == S_MCR_WR4) ? mcr_data_in_x[31:16] :
+    (state == S_VRAM_WR1 || state == S_VRAM_WR2)   ? vram_cpu_data_in_d[31:16] :
+    (state == S_SDRAM_WR1 || state == S_SDRAM_WR2) ? sdram_data_in[31:16] :
+    16'b0;
 		    
    assign sram2_out =
-		      (state == S_MCR_WR1) ? mcr_data_in_x[47:32] :
-		      (state == S_MCR_WR2) ? mcr_data_in_x[15:0] :
-		      (state == S_VRAM_WR) ? vram_cpu_data_in_d[15:0] :
-		      (state == S_SDRAM_WR) ? sdram_data_in[15:0] :
-		      16'b0;
+    (state == S_MCR_WR1 || state == S_MCR_WR2) ? mcr_data_in_x[47:32] :
+    (state == S_MCR_WR3 || state == S_MCR_WR4) ? mcr_data_in_x[15:0] :
+    (state == S_VRAM_WR1 || state == S_VRAM_WR2) ? vram_cpu_data_in_d[15:0] :
+    (state == S_SDRAM_WR1 || state == S_SDRAM_WR2) ? sdram_data_in[15:0] :
+    16'b0;
 
    // ---------------------------
 
@@ -348,10 +387,25 @@ module fast_ram_controller(
 
 `endif
 
+   // vram_vga read - vga controller only
+   reg vga_req;
+   reg [1:0] vram_vga_req_syncro;
+   
+   always @(posedge clk)
+     if (reset)
+       vram_vga_req_syncro <= 0;
+     else
+       begin
+	  vram_vga_req_syncro[0] <= vram_vga_req;
+	  vram_vga_req_syncro[1] <= vram_vga_req_syncro[0];
+       end
+
+   assign vram_vga_req_sync = vram_vga_req_syncro[1];
+   
+   //   
    reg [31:0] 	 vram_cpu_data;
    reg [31:0] 	 vram_vga_data;
 
-   // vram_vga read - vga controller only
    always @(posedge clk)
      if (reset)
        begin
@@ -366,7 +420,7 @@ module fast_ram_controller(
 	       vram_vga_ready <= 1;
 	    end
 
-	  if (~vram_vga_req)
+	  if (~vram_vga_req_sync)
 	    vram_vga_ready <= 0;
        end
 
@@ -392,7 +446,7 @@ module fast_ram_controller(
 	       int_vram_cpu_ready <= 1;
 	    end
 	  else
-	    if (state == S_VRAM_WR && ~int_vram_cpu_done)
+	    if (state == S_VRAM_WR2 && ~int_vram_cpu_done)
 	      int_vram_cpu_done <= 1;
 
 	  if (~vram_cpu_req)
@@ -413,9 +467,9 @@ module fast_ram_controller(
        end
      else
        begin
-	  if (next_state == S_VRAM_RD || next_state == S_VRAM_WR)
+	  if (next_state == S_VRAM_RD || next_state == S_VRAM_WR1)
 	    vram_cpu_addr_d <= vram_cpu_addr;
-	  if (next_state == S_VRAM_WR)
+	  if (next_state == S_VRAM_WR1)
 	    vram_cpu_data_in_d <= vram_cpu_data_in;
        end
 
@@ -474,7 +528,7 @@ module fast_ram_controller(
    
 `define original_dram
 `ifdef original_dram
-   reg [31:0] sdram_out;
+   reg [31:0] sdram_out; // synthesis attribute keep sdram_out true;
 
    // sdram - internal
    always @(posedge clk)
@@ -493,7 +547,7 @@ module fast_ram_controller(
 	       int_sdram_rdy <= 1;
 	    end
 	  else
-	    if (state == S_SDRAM_WR && ~int_sdram_done)
+	    if (state == S_SDRAM_WR2 && ~int_sdram_done)
 	      int_sdram_done <= 1;
 
 	  if (~sdram_req)
@@ -656,7 +710,7 @@ assign sdram_ready = ack_delayed[6] && sdram_was_read;
        int_mcr_done <= 0;
      else
        begin
-	  if (state == S_MCR_WR2 && ~int_mcr_done)
+	  if (state == S_MCR_WR4 && ~int_mcr_done)
 	    begin
 	       int_mcr_done <= 1;
 

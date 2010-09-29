@@ -7,7 +7,7 @@
 // \   \   \/     Version : 8.2.03i
 //  \   \         Application : xaw2verilog
 //  /   /         Filename : clk_dcm.v
-// /___/   /\     Timestamp : 06/15/2010 07:00:50
+// /___/   /\     Timestamp : 09/23/2010 07:21:24
 // \   \  /  \ 
 //  \___\/\___\ 
 //
@@ -44,20 +44,20 @@ module clk_dcm(CLKIN_IN,
    wire GND1;
    
    assign GND1 = 0;
-   assign CLKIN_IBUFG_OUT = CLKIN_IBUFG;
+//   assign CLKIN_IBUFG_OUT = CLKIN_IBUFG;
    assign CLK2X_OUT = CLKFB_IN;
    BUFG CLKFX_BUFG_INST (.I(CLKFX_BUF), 
                          .O(CLKFX_OUT));
-   IBUFG CLKIN_IBUFG_INST (.I(CLKIN_IN), 
-                           .O(CLKIN_IBUFG));
-   BUFG CLK0_BUFG_INST (.I(CLK0_BUF), 
-                        .O(CLK0_OUT));
+//   IBUFG CLKIN_IBUFG_INST (.I(CLKIN_IN), 
+//                           .O(CLKIN_IBUFG));
+//   BUFG CLK0_BUFG_INST (.I(CLK0_BUF), 
+//                        .O(CLK0_OUT));
    BUFG CLK2X_BUFG_INST (.I(CLK2X_BUF), 
                          .O(CLKFB_IN));
    // Period Jitter (unit interval) for block DCM_INST = 0.09 UI
    // Period Jitter (Peak-to-Peak) for block DCM_INST = 0.84 ns
    DCM DCM_INST (.CLKFB(CLKFB_IN), 
-                 .CLKIN(CLKIN_IBUFG), 
+                 .CLKIN(CLKIN_IN/*CLKIN_IBUFG*/), 
                  .DSSEN(GND1), 
                  .PSCLK(GND1), 
                  .PSEN(GND1), 

@@ -1,159 +1,37 @@
-add wave -noupdate -format Logic test/cpu/power_reset_n
-add wave -noupdate -format Logic test/cpu/power_reset
-add wave -noupdate -format Logic test/cpu/busint_lm_reset_n
-add wave -noupdate -format Logic test/cpu/reset_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/state
-add wave -noupdate -format Logic test/cpu/next_state
-add wave -noupdate -format Logic test/cpu/state_fetch
-add wave -noupdate -format Logic test/cpu/state_decode
-add wave -noupdate -format Logic test/cpu/state_wp
-add wave -noupdate -format Logic test/cpu/state_wait
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/machrun
-add wave -noupdate -format Logic test/cpu/sstep
-add wave -noupdate -format Logic test/cpu/ssdone_n
-add wave -noupdate -format Logic test/cpu/srun
-add wave -noupdate -format Logic test/cpu/errhalt_n
-add wave -noupdate -format Logic test/cpu/wait_n
-add wave -noupdate -format Logic test/cpu/stathalt_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/boot_n
-add wave -noupdate -format Logic test/cpu/run
-add wave -noupdate -format Logic test/cpu/boot1_n
-add wave -noupdate -format Logic test/cpu/boot2_n
-add wave -noupdate -format Logic test/cpu/prog_boot
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/lcinc
-add wave -noupdate -format Logic test/cpu/needfetch
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/CLK
-add wave -noupdate -format Logic test/cpu/tse
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/reset
-add wave -noupdate -format Logic test/cpu/boot_n
-add wave -noupdate -format Logic test/cpu/prog_reset_n
-add wave -noupdate -format Logic test/cpu/spy
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic test/cpu/machrun
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/reta
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/wpc
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/spcw
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/spco
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/spcptr
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix octal test/cpu/pc
-add wave -noupdate -format Literal -radix octal test/cpu/npc
-add wave -noupdate -format Literal -radix octal test/cpu/ipc
-add wave -noupdate -format Literal -radix octal test/cpu/lpc
-add wave -noupdate -format Literal -radix octal test/cpu/dpc
-add wave -noupdate -format Literal -radix octal test/cpu/spc
-add wave -noupdate -format Literal -radix octal test/cpu/ir
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix octal test/cpu/npc
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/trap
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/pcs1
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/pcs0
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/conds
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/jfalse
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/jcond
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/irjump
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/dispenb
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/trap_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/iwrited
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/dr
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/dp
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/dn
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/nop
-add wave -noupdate -format Logic test/cpu/CLK
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mskl
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/msk_left_out
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mskr
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/msk_right_out
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/msk
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mpass
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mpassm_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/pdldrive_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/spcdrive_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/alumode
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aluf
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aeqm_bits
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aeqm
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aluneg
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/alu
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/m
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/a
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/l
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/q
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/r
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/sa
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/a_latch
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/amemenb_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/apassenb_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/srcq
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/qdrive
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mfdrive_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mf
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mem
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aadr
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/amem
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/l
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/awp_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/destm
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/wadr
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/madr
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mmem
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/l
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mwp_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/alusub
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mulnop_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/a
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/divsubcond
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/divaddcond
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/irjump_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/q
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/mul_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/div_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/divposlasttime_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aluf_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/alusub
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/aluadd
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/ob
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/osel
-add wave -noupdate -format Logic test/cpu/destimod1_n
-add wave -noupdate -format Logic test/cpu/destimod0_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/irbyte_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/irdisp_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/irjump_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/iralu_n
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/popj
-add wave -noupdate -format Literal -radix hexadecimal test/cpu/ignpopj_n
-add wave -noupdate -divider { }
-add wave -noupdate -format Logic -radix hexadecimal test/cpu/ir
-add wave -noupdate -format Logic -radix hexadecimal test/cpu/iob
-add wave -noupdate -format Logic -radix hexadecimal test/cpu/i
-add wave -noupdate -format Logic -radix hexadecimal test/cpu/iprom
-add wave -noupdate -format Logic -radix hexadecimal test/cpu/promce_n
-add wave -noupdate -format Logic test/cpu/idebug_n
-add wave -noupdate -format Logic test/cpu/promce_n
-add wave -noupdate -format Logic test/cpu/promenable_n
-add wave -noupdate -format Logic test/cpu/bottom_1k
-add wave -noupdate -format Logic test/cpu/idebug_n
-add wave -noupdate -format Logic test/cpu/promdisabled_n
-add wave -noupdate -format Logic test/cpu/iwrited_n
+onerror {resume}
+quietly WaveActivateNextPane {} 0
+add wave -noupdate -format Logic /test/clk100
+add wave -noupdate -format Logic /test/clk50
+add wave -noupdate -format Logic /test/clk25
+add wave -noupdate -format Logic /test/clk1x
+add wave -noupdate -format Logic /test/reset
+add wave -noupdate -format Literal -radix decimal /test/cpu_state
+add wave -noupdate -format Logic /test/fetch
+add wave -noupdate -format Logic /test/prefetch
+add wave -noupdate -format Literal -radix decimal /test/rc/state_out
+add wave -noupdate -format Literal -radix hexadecimal /test/vram_vga_addr
+add wave -noupdate -format Logic /test/vram_vga_req
+add wave -noupdate -format Logic /test/vram_vga_ready
+add wave -noupdate -format Logic /test/sdram_ready
+add wave -noupdate -format Logic /test/sdram_req
+add wave -noupdate -format Logic /test/sdram_write
+add wave -noupdate -format Logic /test/sdram_done
+add wave -noupdate -divider sram
+add wave -noupdate -format Literal -radix hexadecimal /test/sram_a
+add wave -noupdate -format Logic /test/sram_oe_n
+add wave -noupdate -format Logic /test/sram_we_n
+add wave -noupdate -format Literal /test/sram1_in
+add wave -noupdate -format Literal -radix hexadecimal /test/sram1_out
+add wave -noupdate -format Literal /test/sram2_in
+add wave -noupdate -format Literal -radix hexadecimal /test/sram2_out
+add wave -noupdate -format Logic /test/sram1_ce_n
+add wave -noupdate -format Logic /test/sram1_ub_n
+add wave -noupdate -format Logic /test/sram1_lb_n
+add wave -noupdate -format Logic /test/sram2_ce_n
+add wave -noupdate -format Logic /test/sram2_ub_n
+add wave -noupdate -format Logic /test/sram2_lb_n
+TreeUpdate [SetDefaultTree]
+WaveRestoreCursors {{Cursor 1} {0 ns} 0}
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
@@ -166,10 +44,5 @@ configure wave -gridoffset 0
 configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
-configure wave -signalnamewidth 1
-
-set waveWinName [view wave -undock]
-set waveTopLevel [winfo toplevel $waveWinName]
-#wm geometry $waveTopLevel [winfo screenwidth .]x330+0-20
-wm geometry $waveTopLevel [winfo screenwidth .]x600+0-20
-
+update
+WaveRestoreZoom {1504 ns} {4131 ns}

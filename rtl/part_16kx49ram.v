@@ -65,19 +65,19 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 	  ram[ address_a ] = data_a;
 `ifdef debug
 	  if (debug != 0)
-	    $display("iram: W addr %o val %o; %t", address_a, data_a, $time);
+	    $display("iram: W %o <- %o; %t", address_a, data_a, $time);
 `endif
        end
 
    always @(posedge clk_a)
      if (rden_a)
        begin
-//	  // patch out disk-copy (which takes hours to sim)
+	  // patch out disk-copy (which takes hours to sim)
 //	  out_a = address_a == 14'o24045 ? 49'h000000001000 : ram[ address_a ];
 	  out_a = ram[ address_a ];
 `ifdef debug
-	  if (debug != 0)
-	    $display("iram: R addr %o val %o; %t",
+	  if (debug > 1)
+	    $display("iram: R %o -> %o; %t",
 		     address_a, ram[ address_a ], $time);
 `endif
        end

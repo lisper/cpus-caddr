@@ -125,7 +125,7 @@ module part_32x19ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 	  ram[ address_a ] = data_a;
 `ifdef debug
 	  if (address_a != 0 && debug != 0)
-	    $display("spc: W addr %o val %o; %t", address_a, data_a, $time);
+	    $display("spc: W %o <- %o; %t", address_a, data_a, $time);
 `endif
        end
 

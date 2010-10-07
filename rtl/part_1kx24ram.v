@@ -55,37 +55,27 @@ module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
      end
 `endif
 
-////   always @(posedge wren_a/*clk_a*/)
-////     if (wren_a)
-////       begin
-////	  ram[ address_a ] = data_a;
-////`ifdef debug
-////	  if (debug != 0)
-////	    $display("vmem1: W addr %o <- val %o; %t",
-////		     address_a, data_a, $time);
-////`endif
-////       end
    always @(posedge clk_a)
      if (wren_a)
        begin
 	  ram[ address_a ] <= data_a;
 `ifdef debug
 	  if (debug != 0)
-	    $display("vmem1: W addr %o <- val %o; %t",
+	    $display("vmem1: W %o <- %o; %t",
 		     address_a, data_a, $time);
 `endif
        end
 
-//   always @(posedge clk_a)
-//     if (rden_a)
-//       begin
-//	  out_a = ram[ address_a ];
-//`ifdef debug
-//	  if (debug != 0)
-//	    $display("vmem1: R addr %o -> val %o; %t",
-//		     address_a, ram[ address_a ], $time);
-//`endif
-//       end
+   always @(posedge clk_a)
+     if (rden_a)
+       begin
+	  out_a <= ram[ address_a ];
+`ifdef debug
+	  if (debug > 1)
+	    $display("vmem1: R %o -> %o; %t",
+		     address_a, ram[ address_a ], $time);
+`endif
+       end
 assign q_a = ram[ address_a ];
 
 `endif // SIMULATION

@@ -57,11 +57,17 @@ module part_32x32ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    always @(posedge clk_a)
      if (wren_a)
-       ram[ address_a ] = data_a;
+       begin
+	  ram[ address_a ] <= data_a;
+	  //$display("mram: %o <- %o", address_a, data_a);
+       end
 
    always @(posedge clk_a)
      if (rden_a)
-       out_a = ram[ address_a ];
+       begin
+	  out_a <= ram[ address_a ];
+	  //$display("mram: %o -> %o", address_a, ram[address_a]);
+       end
 
 `endif // SIMULATION
 

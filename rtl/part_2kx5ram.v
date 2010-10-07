@@ -71,7 +71,7 @@ always @(posedge clk_a)
 	  ram[ address_a ] = data_a;
 `ifdef debug
 	  if (debug != 0)
-	    $display("vmem0: W addr %o <- val %o; %t",
+	    $display("vmem0: W %o <- %o; %t",
 		     address_a, data_a, $time);
 `endif
        end

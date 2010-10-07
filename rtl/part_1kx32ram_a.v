@@ -125,7 +125,7 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
           ram[ address_a ] = data_a;
 `ifdef debug
 	  if (address_a != 0 && debug != 0)
-	    $display("amem: W addr %o val %o; %t", address_a, data_a, $time);
+	    $display("amem: W %o <- %o; %t", address_a, data_a, $time);
 `endif
        end
 
@@ -134,8 +134,8 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
        begin
 	  out_a = ram[ address_a ];
 `ifdef debug
-	  if (address_a != 0 && debug != 0)
-	    $display("amem: R addr %o val %o; %t",
+	  if (address_a != 0 && debug > 1)
+	    $display("amem: R %o -> %o; %t",
 		     address_a, ram[ address_a ], $time);
 `endif
        end

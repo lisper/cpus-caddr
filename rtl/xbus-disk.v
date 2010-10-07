@@ -419,6 +419,13 @@ module xbus_disk (
 
    reg [31:0] reg_dataout;
    reg [31:0] dma_dataout;
+
+`ifdef debug
+   int debug/* verilator public_flat */;
+
+   initial
+     debug = 0;
+`endif
    
    // -----------------------------------------------------------------
    
@@ -508,8 +515,7 @@ module xbus_disk (
 	       else
 		 begin
 `ifdef debug
-		    $display("disk: unknown read %o", addrin);
-		    
+		    if (debug != 0) $display("disk: unknown read %o", addrin);
 `endif
 		    reg_dataout = 0;
 		 end
@@ -526,7 +532,7 @@ module xbus_disk (
 		3'o4:
 		  begin
 `ifdef debug
-		     $display("disk: load cmd %o", datain);
+		     if (debug != 0) $display("disk: load cmd %o", datain);
 `endif
 		     disk_cmd <= datain[9:0];
 
@@ -539,14 +545,14 @@ module xbus_disk (
 		3'o5:
 		  begin
 `ifdef debug
-		     $display("disk: load clp %o", datain);
+		     if (debug != 0) $display("disk: load clp %o", datain);
 `endif
 		     disk_clp <= datain[21:0];
 		  end
 		3'o6:
 		  begin
 `ifdef debug
-		     $display("disk: load da %o", datain);
+		     if (debug != 0) $display("disk: load da %o", datain);
 `endif
 		     disk_unit <= datain[30:28];
 		     disk_cyl <= datain[27:16];
@@ -556,7 +562,7 @@ module xbus_disk (
 		3'o7:
 		  begin
 `ifdef debug
-		     $display("disk: start!");
+		     if (debug != 0) $display("disk: start!");
 `endif
 		     disk_start = 1;
 		  end
@@ -564,6 +570,7 @@ module xbus_disk (
 	       else
 		 begin
 `ifdef debug
+		    if (debug != 0) 
 		    $display("disk: unknown write %o <- %o", addrin, datain);
 		    
 `endif
@@ -730,7 +737,7 @@ module xbus_disk (
        if (state == s_read_ccw && busgrantin && ackin)
 	 begin
 `ifdef debug
-	    $display("disk: grab ccw %o, %t", datain, $time);
+	    if (debug != 0) $display("disk: grab ccw %o, %t", datain, $time);
 `endif
 	    disk_ccw <= datain[21:8];
 	    more_ccws <= datain[0];
@@ -797,12 +804,14 @@ module xbus_disk (
 		   default:
 		     begin
 `ifdef debug
+			if (debug != 0) 
 			$display("disk: unhandled command %o", disk_cmd);
 			$finish;
 `endif
 		     end
 		 endcase
 `ifdef debug
+		 if (debug != 0) 
 		 $display("disk: go! disk_cmd %o", disk_cmd);
 `endif
 	      end
@@ -892,7 +901,8 @@ module xbus_disk (
 	  s_init5:
 	    begin
 `ifdef debug
-	       $display("disk: da %o (unit%d cyl%d head%d block%d) lba 0x%x",
+	       if (debug != 0) 
+	       $display("disk: da %o (unit%d cyl%d head%d block%d) lba %d",
 			disk_da,
 			disk_unit, disk_cyl, disk_head, disk_block,
 			lba);
@@ -1118,7 +1128,7 @@ module xbus_disk (
 	    begin
 	       assert_int = 1;
 `ifdef debug
-	       $display("disk: s_done0, interrupt");
+	       if (debug != 0) $display("disk: s_done0, interrupt");
 `endif
 	       
 	       clear_err = 1;
@@ -1129,7 +1139,7 @@ module xbus_disk (
 	    begin
 	       state_next = s_idle;
 `ifdef debug
-	       $display("disk: s_done1, da=%o, done", disk_da);
+	       if (debug != 0) $display("disk: s_done1, da=%o, done", disk_da);
 `endif
 	    end
 		 

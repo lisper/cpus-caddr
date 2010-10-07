@@ -57,12 +57,16 @@ module part_2kx17ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    always @(posedge clk_a)
      if (wren_a)
-       ram[ address_a ] = data_a;
+       ram[ address_a ] <= data_a;
 
    always @(posedge clk_a)
      if (rden_a)
-       out_a = ram[ address_a ];
-
+       begin
+	  out_a <= ram[ address_a ];
+`ifdef debug_dispatch
+	  $display("dispatch[%o] -> %o", address_a, ram[address_a]);
+`endif	  
+       end
 //  always @(negedge wren_a)
 //      ram[ address_a ] = data_a;
 //

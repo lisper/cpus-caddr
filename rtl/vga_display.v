@@ -295,6 +295,26 @@ module vga_display(clk,
 
    assign vram_req = ram_req;
 
+`ifdef debug_excess_vga_fetches
+   reg 	  rs;
+   wire   rs_next;
+   
+   always @(posedge clk)
+     if (reset)
+       rs <= 0;
+     else
+       rs <= rs_next;
+
+   assign rs_next =
+		   (rs == 0) ? 1 :
+		   (rs == 1 && ~vram_ready) ? 1 :
+		   (rs == 1 &&  vram_ready) ? 2 :
+		   (rs == 2) ? 0 :
+		   0;
+   
+   assign vram_req = rs == 1;
+`endif
+
    wire pixel_data;
 
    assign pixel_data = pixel;

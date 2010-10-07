@@ -379,9 +379,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page VCTRL1
 
-   reg 		memstart, mbusy_sync;
-   wire 	memop, memprepare;
-
+   wire 	memop;
+   reg 		memprepare;
+   reg 		memstart;
+   reg 		memcheck;
+   
    reg 		rdcyc, wmapd, mbusy;
    wire 	memrq;
    reg 		wrcyc;
@@ -397,7 +399,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire 	memack;
 
-   reg 		mfinishd;
    wire 	waiting;
    
    // page VCTRL2
@@ -426,12 +427,14 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire [23:8] 	mapi;
 
    wire [4:0] 	vmap;
+   reg [4:0] 	vmap_reg;
 
    // page VMEM0 - virtual memory map stage 0
 
    wire 	use_map;
 
    wire [23:0] 	vmo;
+   reg [23:0] 	vmo_reg;
 
    wire 	mapdrive;
 
@@ -506,9 +509,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    reg [13:0] 	lpc;
 
-   reg 		lvmo_23;
-   reg 		lvmo_22;
-   reg [21:8] 	pma;
+   wire 	lvmo_23;
+   wire 	lvmo_22;
+   wire [21:8] 	pma;
 
 
    // SPY 0
@@ -522,6 +525,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire   ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl;
    wire   set_promdisable;
    
+`ifdef debug
+   int debug;
+`endif   
 
    // *******************************************************************
 
@@ -823,7 +829,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page AMEM0-1
 
-//xxx was sync
    part_1kx32ram_a i_AMEM(
 			  .clk_a(clk),
 			  .reset(reset),
@@ -834,6 +839,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			  .rden_a(1'b1)
 			  );
 
+`ifdef debug_amem
+   always @(posedge clk)
+     if (awp && aadr != 0)
+       $display("amem: W %o <- %o", aadr, l);
+`endif
    
    // page CONTRL
 
@@ -953,8 +963,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // r     x  x  x  x  6  5  4  3  2  1  x
 
    assign daddr0 = 
-		   (ir[8] & vmo[18]) |
-		   (ir[9] & vmo[19]) |
+		   (ir[8] & vmo_reg[18]) |
+		   (ir[9] & vmo_reg[19]) |
 //note: the hardware shows bit 0 replaced, 
 // 	but usim or's it instead.
 		   (/*~dmapbenb &*/ dmask[0] & r[0]) |
@@ -967,7 +977,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    
    assign dwe = dispwr & state_write;
 
-//xxx was async
    part_2kx17ram i_DRAM(
 			.clk_a(clk),
 			.reset(reset),
@@ -1071,6 +1080,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (state_fetch)
 	 begin
+	    ir[48] <= ~destimod1 ? i[48] : 0;
 	    ir[47:26] <= ~destimod1 ? i[47:26] : iob[47:26]; 
 	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0];
 `ifdef debug_iram
@@ -1117,7 +1127,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    always @(posedge clk)
      if (reset)
        lc <= 0;
-
      else
        if (state_fetch)
 	 begin
@@ -1171,7 +1180,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	      vma :
 	mapdrive ?
 //	      { ~pfw, ~pfr, 1'b1, vmap[4:0], vmo[23:0] } :
-	      { ~last_pfw, ~last_pfr, 1'b0, vmap[4:0], vmo[23:0] } :
+	      { ~last_pfw, ~last_pfr, 1'b0, vmap_reg[4:0], vmo_reg[23:0] } :
 	      32'b0;
 
 
@@ -1206,6 +1215,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	    next_instrd <= next_instr;
 	 end
 
+`ifdef debug_ifetch
+   always @(posedge clk)
+     if (ifetch && state_fetch)
+       $display("(lba) ifetch! lpc %o, lc %o; %t", lpc, lc, $time);
+`endif
+   
    // mustn't depend on nop
 
    assign lc_modifies_mrot  = ir[10] & ir[11];
@@ -1270,10 +1285,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
 //really this is loadmd during decode or write; destmdr during phase 1
 //       if ((state_write && mdclk) || (state_decode && loadmd))
-       if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
+//       if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
 //       if (loadmd || (state_fetch && destmdr))
+       if ((loadmd && memrq) || (state_fetch && destmdr))
 	 begin
 `ifdef debug
+            if (debug != 0)
 	    if (state_fetch && destmdr)
 	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o; lpc %o",
 		       mds, mdsel, osel, alu, mo, lpc);
@@ -1353,7 +1370,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page MMEM
 
-//xxx was sync
    part_32x32ram i_MMEM(
 			.clk_a(clk),
 			.reset(reset),
@@ -1363,6 +1379,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			.wren_a(mwp),
 			.rden_a(1'b1)
 			);
+
+//`define debug_mmem
+`ifdef debug_mmem
+   always @(posedge clk)
+     if (mwp && madr != 0)
+       $display("mmem: %o <- %o; %t", madr, l, $time);
+`endif
 
    // page MO
 
@@ -1425,14 +1448,18 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign ipc = pc + 14'd1;
 
-`ifdef debug_dispatch
+`ifdef debug/*_dispatch*/
    always @(posedge clk)
+     if (debug != 0)
      if (state_fetch && irdisp/*({pcs1,pcs0} == 2'b10)*/)
        begin
-	  $display("dispatch: dadr=%o %b%b%b %o; dmask %o r %o ir %b vmo %b md %o; mapi %o vmap %o vmem1_adr %o vmo %o",
+	  $display("dispatch: dadr=%o %b%b%b %o; dmask %o r %o ir %b vmo %b md %o",
 		   dadr, dr, dp, dn, dpc, dmask, r[11:0],
-		   {ir[8], ir[9]}, {vmo[19],vmo[18]}, md,
+		   {ir[8], ir[9]}, {vmo[19],vmo[18]}, md);
+	  $display("dispatch: mapi %o vmap %o vmem1_adr %o vmo %o",
 		   mapi[23:13], vmap, vmem1_adr, vmo);
+	  $display("dispatch: pcs %b, dispenb %b dfall %b; vmo_reg[19:18] %o, npc %o",
+		   {pcs1,pcs0}, dispenb, dfall, vmo_reg[19:18], npc);
        end
 `endif
    
@@ -1468,7 +1495,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page PDL
 
-//xxx was sync
    part_1kx32ram_p i_PDL(
 			 .clk_a(clk),
 			 .reset(reset),
@@ -1764,7 +1790,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
     // page SPC
 
-//xxx was sync
    part_32x19ram i_SPC(
 		       .clk_a(clk),
 		       .reset(reset),
@@ -1869,20 +1894,32 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // page VCTRL1
 
    assign memop  = memrd | memwr | ifetch;
-   assign memprepare = memop;
 
    always @(posedge clk)
      if (reset)
-       begin
-	  memstart <= 0;
-	  mbusy_sync <= 0;
-       end
+       memprepare <= 0;
      else
-       if (phase1)
-	 begin
-	    memstart <= memprepare;
-	    mbusy_sync <= memrq;
-	 end
+       if (state_execute || state_write)
+	 memprepare <= memop;
+       else
+	 memprepare <= 0;
+
+   // read vmem
+   always @(posedge clk)
+     if (reset)
+       memstart <= 0;
+     else
+       if (~state_execute)
+	 memstart <= memprepare;
+       else
+	 memstart <= 0;
+
+   // check result of vmem
+   always @(posedge clk)
+     if (reset)
+       memcheck <= 0;
+     else
+	 memcheck <= memstart;
 
    assign pfw = (lvmo_23 & lvmo_22) & wrcyc;	/* write permission */
    assign pfr = lvmo_23 & ~wrcyc;		/* read permission */
@@ -1891,7 +1928,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset) 
        vmaok <= 1'b0;
      else
-       if (memprepare)
+       if (memcheck)
 	 begin
 	    last_pfr <= pfr;
 	    last_pfw <= wrcyc ? pfw : 1'b1; /* wrong, but matches usim */
@@ -1912,7 +1949,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  wrcyc <= 0;
        end
      else
-       if (state_write && memprepare)
+       if (state_fetch && memstart)
 	 begin
 	    if (memwr)
 	      begin
@@ -1932,7 +1969,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	      wrcyc <= 0;
 	   end
 
-   assign memrq = mbusy | (memstart & (pfr | pfw));
+   assign memrq = mbusy | (memcheck & (pfr | pfw));
 
 `ifdef debug_xbus
    always @(posedge clk)
@@ -1953,7 +1990,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        mbusy <= 0;
      else
-       if (mfinishd)
+       if (mfinish)
 	 mbusy <= 1'b0;
        else
 	 mbusy <= memrq;
@@ -1962,16 +1999,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign mfinish = memack | reset;
 
-   always @(posedge clk)
-     if (reset)
-       mfinishd <= 1'b0;
-     else
-       mfinishd <= mfinish;
-   
    assign waiting =
-		(destmem & mbusy/*_sync*/) |
+		(destmem & mbusy) |
 		(use_md & mbusy /*& ~memgrant*/) |	/* hang loses */
-		(lcinc & needfetch & mbusy/*_sync*/);	/* ifetch */
+		(lcinc & needfetch & mbusy);		/* ifetch */
 
    // page VCTRL2
 
@@ -2021,7 +2052,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page VMEM0 - virtual memory map stage 0
 
-//xxx was async
+//xxx still async
    part_2kx5ram i_VMEM0(
 			.clk_a(clk),
 			.reset(reset),
@@ -2029,16 +2060,20 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			.q_a(vmap),
 			.data_a(vma[31:27]),
 			.wren_a(vm0wp),
-			.rden_a(state_execute|state_write|state_fetch/*1'b1*/)
+// xxx vma is registered at end of state_write
+// xxx register output on negative edge during state_fetch
+			.rden_a(state_fetch && memprepare)
 			);
 
 `ifdef debug
    always @(vm0wp or mapwr0d or state_write)
+     if (debug != 0)
      if (vm0wp)
        $display("vm0wp %b, a=%o, di=%o; %t",
 		vm0wp, mapi[23:13], vma[31:27], $time);
 
    always @(vm1wp or mapwr1d or state_write)
+     if (debug != 0)
      if (vm1wp)
        $display("vm1wp %b, a=%o, di=%o; %t",
 		vm1wp, vmem1_adr, vma[23:0], $time);
@@ -2050,11 +2085,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign vmem1_adr = {vmap[4:0], mapi[12:8]};
 
-////   assign vmem1_we = vm1wp & ~clk;
-assign vmem1_we = vm1wp;
+   assign vmem1_we = vm1wp;
 
-   
-//xxx was async
    part_1kx24ram i_VMEM1(
 			 .clk_a(clk),
 			 .reset(reset),
@@ -2062,41 +2094,36 @@ assign vmem1_we = vm1wp;
 			 .q_a(vmo),
 			 .data_a(vma[23:0]),
 			 .wren_a(vmem1_we),
-			 .rden_a(phase0/*1'b1*/)
+			 .rden_a(state_fetch && memprepare)
 			 );
 
+   /*
+    * for memory cycle, we're mapping vma and register just before end of fetch,
+    * but for dispatch, we're mapping md and register just before end of write -
+    * so dispatch ram has a chance to read and register at end of write;
+    *
+    * dispatch ram output has to valid during fetch cycle to get npc correct
+    */
+   always @(negedge clk)
+     if (reset)
+       vmo_reg <= 0;
+     else
+       if ((state_fetch && memprepare) || (state_write && ~memrq))
+	 vmo_reg <= vmo;
+     
+   always @(negedge clk)
+     if (reset)
+       vmap_reg <= 0;
+     else
+       if ((state_fetch && memprepare) || (state_write && ~memrq))
+	 vmap_reg <= vmap;
+     
    // page VMEMDR - map output drive
 
-////   // transparent latch
-////   always @(memprepare or memstart or vmo or reset or clk)
-////     if (reset)
-////       begin
-////	  lvmo_23 = 0;
-////	  lvmo_22 = 0;
-////	  pma = 0;
-////       end
-////     else
-////       if (memprepare && memstart)
-////	 begin
-////	    lvmo_23 = vmo[23];
-////	    lvmo_22 = vmo[22];
-////	    pma = vmo[13:0];
-////	 end
-   // transparent latch
-always @(negedge clk)
-     if (reset)
-       begin
-	  lvmo_23 <= 0;
-	  lvmo_22 <= 0;
-	  pma <= 0;
-       end
-     else
-       if (memprepare && memstart)
-	 begin
-	    lvmo_23 <= vmo[23];
-	    lvmo_22 <= vmo[22];
-	    pma <= vmo[13:0];
-	 end
+   // output of vmem1 is registered
+   assign lvmo_23 = vmo_reg[23];
+   assign lvmo_22 = vmo_reg[22];
+   assign pma = vmo_reg[13:0];
 
    assign mapdrive = srcmap & phase1;
 
@@ -2394,6 +2421,10 @@ always @(negedge clk)
    assign state_out = state;
    assign machrun_out = machrun;
    
+   // *************
+   // Spy Interface
+   // *************
+
    // page SPY0
 
    /* read registers */
@@ -2433,23 +2464,9 @@ always @(negedge clk)
 		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 6'b100000 :
 		                                        6'b000000;
 
-   // *******
-   // Resets!
-   // *******
-
-// traditional CADR signals to xbus
-// mem[31:0]
-// mempar_in
-// adrpar_n
-// {pma[21:0],vma[7:0]}
-// memrq_n
-// memack_n
-// loadmd_n
-// ignpar_n
-// memgrant_n
-// wrcyc
-// int
-// mempar_out
+   // *************
+   // Bus Interface
+   // *************
 
    busint busint(
 		 .mclk(clk),

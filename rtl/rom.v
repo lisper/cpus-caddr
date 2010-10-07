@@ -8,6 +8,7 @@ module part_512x49prom( clk, addr, q );
    reg [48:0] 	 q;
 
 //`define no_rom
+//`define patch_rom
 
 `ifdef no_rom
    always @(posedge clk)
@@ -530,10 +531,6 @@ module part_512x49prom( clk, addr, q );
       9'h1fe: q = 49'h800000000000;
       9'h1ff: q = 49'h0800000250a7;
     endcase
-
-//`ifdef debug
- `define patch_rom
-//`endif
 
 `ifdef patch_rom
     // patches for debugging

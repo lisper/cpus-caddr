@@ -381,7 +381,6 @@ module busint(mclk, reset,
 		      (state == BUS_REQ && ~device_ack) ? BUS_REQ :
 		      (state == BUS_WAIT && ~req) ? BUS_IDLE :
 		      (state == BUS_WAIT && req) ? BUS_WAIT :
-//		      (state == BUS_SLAVE && ack_dram) ? BUS_IDLE :
       		      (state == BUS_SLAVE && ack_dram) ? BUS_SWAIT :
 		      (state == BUS_SLAVE && ~ack_dram) ? BUS_SLAVE :
       		      (state == BUS_SWAIT && busreqout_disk) ? BUS_SWAIT :
@@ -389,7 +388,7 @@ module busint(mclk, reset,
 		      BUS_IDLE;
 		      
    assign busgrantin_disk = state == BUS_SLAVE;
-   assign load = req & ~write & (state == BUS_WAIT);
+   assign load = device_ack & ~write & (state == BUS_REQ);
 
    // allow disk to drive dram
    assign dram_addr = state == BUS_SLAVE ? addrout_disk : addr;

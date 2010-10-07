@@ -354,10 +354,18 @@ module fast_ram_controller(
      else
        begin
 	  if (int_mcr_ready)
-	    mcr_ready <= 1;
+	    begin
+`ifdef debug_mcr
+	       if (~mcr_ready)
+		   $display("rc: mcr %o", mcr_data_out);
+`endif
+	       mcr_ready <= 1;
+	    end
 	  else
 	    if (int_mcr_done)
-	      mcr_done <= 1;
+	      begin
+		 mcr_done <= 1;
+	      end
 
 	  if (~mcr_req)
 	    mcr_ready <= 0;
@@ -418,6 +426,10 @@ module fast_ram_controller(
 	    begin
 	       vram_vga_data <= { sram1_in, sram2_in };
 	       vram_vga_ready <= 1;
+`ifdef debug
+	       $display("rc: vram vga read %o -> %o",
+			vram_vga_addr, { sram1_in, sram2_in });
+`endif
 	    end
 
 	  if (~vram_vga_req_sync)
@@ -577,17 +589,24 @@ module fast_ram_controller(
 	  else
 	    if (int_sdram_done)
 	      begin
-`ifdef debug
-		 if (~sdram_done)
-		   $display("rc: sdram_write %o", sdram_addr);
-`endif
 		 sdram_done <= 1;
 	      end
+
+`ifdef debug
+	  if (sdram_done)
+	    $display("rc: sdram_write %o <- %o", sdram_addr, sdram_data_in);
+`endif
 	  
 	  if (~sdram_req)
 	    sdram_rdy <= 0;
 	  if (~sdram_write || ~sdram_ready)
-	    sdram_done <= 0;
+	    begin
+`ifdef debug_xxx
+	       if (sdram_done)
+		 $display("rc: clear sdram_write");
+`endif
+	       sdram_done <= 0;
+	    end
        end
 
    assign sdram_data_out = sdram_out;
@@ -595,9 +614,12 @@ module fast_ram_controller(
    // sdram ack delay
    reg [6:0] sdram_rdy_delay;
 
+   assign    sdram_ready = sdram_rdy_delay[1];
 //   assign    sdram_ready = sdram_rdy_delay[2];
+//   assign    sdram_ready = sdram_rdy_delay[3];
 //   assign    sdram_ready = sdram_rdy_delay[4];
-   assign     sdram_ready = sdram_rdy_delay[6];
+//   assign    sdram_ready = sdram_rdy_delay[5];
+//   assign     sdram_ready = sdram_rdy_delay[6];
    
    always @(posedge cpu_clk)
      if (reset)
@@ -607,11 +629,11 @@ module fast_ram_controller(
 	  /* ready is at fixed time from req - assumes we keep up */
 	  sdram_rdy_delay[0] <= (sdram_req || sdram_write) & ~|sdram_rdy_delay;
 	  sdram_rdy_delay[1] <= sdram_rdy_delay[0];
-	  sdram_rdy_delay[2] <= sdram_rdy_delay[1];
-	  sdram_rdy_delay[3] <= sdram_rdy_delay[2];
-	  sdram_rdy_delay[4] <= sdram_rdy_delay[3];
-	  sdram_rdy_delay[5] <= sdram_rdy_delay[4];
-	  sdram_rdy_delay[6] <= sdram_rdy_delay[5];
+//	  sdram_rdy_delay[2] <= sdram_rdy_delay[1];
+//	  sdram_rdy_delay[3] <= sdram_rdy_delay[2];
+//	  sdram_rdy_delay[4] <= sdram_rdy_delay[3];
+//	  sdram_rdy_delay[5] <= sdram_rdy_delay[4];
+//	  sdram_rdy_delay[6] <= sdram_rdy_delay[5];
        end
 `endif
 

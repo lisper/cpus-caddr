@@ -316,6 +316,30 @@ module busint(mclk, reset,
     end
 `endif
 
+   //
+`ifdef use_iologger
+   always @(posedge mclk)
+     begin
+	// cpu write
+	if (req && write && state == BUS_REQ && next_state != BUS_REQ)
+	  begin
+             `DBG_DLY test.iologger(32'd2, addr, busin);
+	  end
+
+	// cpu read
+	if (req & load)
+	  begin
+             `DBG_DLY test.iologger(32'd1, addr, busout);
+	  end
+
+	// dma disk->mem
+	if (writeout_disk && state == BUS_SLAVE && next_state != BUS_SLAVE)
+	  begin
+             `DBG_DLY test.iologger(32'd4, addrout_disk, dataout_disk);
+	  end
+     end
+`endif
+   
    // bus control state machine
    always @ (posedge mclk)
      if (reset)
@@ -326,6 +350,16 @@ module busint(mclk, reset,
        begin
 	  state <= next_state;
 
+`ifdef debug
+	  if (next_state != state && next_state == BUS_REQ)
+	    begin
+	       $display("busint: BUS_REQ addr %o (decode %b); %t",
+			addr,
+			{decode_dram, decode_disk, decode_tv, decode_io, decode_unibus},
+			$time);
+	    end
+`endif
+	  
 `ifdef debug_detail
 	  if (next_state != state)
 	    begin

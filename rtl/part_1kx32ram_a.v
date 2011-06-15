@@ -1,26 +1,40 @@
-/* 1kx32 synchronous static ram */
+/* 1kx32 dual port synchronous static ram */
 
 `include "defines.vh"
 
-module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
+module part_1kx32dpram_a(reset,
+			 clk_a, address_a, q_a, data_a, wren_a, rden_a,
+			 clk_b, address_b, q_b, data_b, wren_b, rden_b);
+
+   input reset;
 
    input clk_a;
-   input reset;
    input [9:0] address_a;
    input [31:0] data_a;
    input 	wren_a, rden_a;
+
+   input 	 clk_b;
+   input [9:0] address_b;
+   input [31:0] data_b;
+   input 	wren_b, rden_b;
+
    output [31:0] q_a;
+   output [31:0] q_b;
 
 `ifdef QUARTUS
    altsyncram ram
      (
       .address_a(address_a),
-      .address_b(address_a),
+      .address_b(address_b),
       .clock0(clk_a),
       .data_a(data_a),
+      .data_b(data_b),
       .q_b(q_a),
-      .rden_b(rden_a),
+      .q_b(q_b),
+      .rden_a(rden_a),
+      .rden_b(rden_b),
       .wren_a(wren_a)
+      .wren_b(wren_b)
       );
 
   defparam ram.address_reg_b = "CLOCK0",
@@ -84,19 +98,21 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 	inst (
 		.CLKA(clk_a),
 		.DINA(data_a),
+		.DOUTA(q_a),
 		.ADDRA(address_a),
-		.ENA(1'b0),
+		.ENA(rden_a),
 		.WEA(wren_a),
-		.CLKB(clk_a),
-		.ADDRB(address_a),
-		.ENB(rden_a),
-		.DOUTB(q_a),
+
+		.CLKB(clk_b),
+		.DINB(data_b),
+		.DOUTB(q_b),
+		.ADDRB(address_b),
+		.ENB(rden_b),
+	        .WEB(wren_b),
+
 		.REGCEA(),
 		.SSRA(),
-		.DOUTA(),
-		.DINB(),
 		.REGCEB(),
-		.WEB(),
 		.SSRB());
    // synopsys translate_on
 `endif //  ISE
@@ -105,8 +121,10 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 `ifdef ISE_OR_SIMULATION
    reg [31:0] ram [0:1023];
    reg [31:0] out_a;
+   reg [31:0] out_b;
 
    assign q_a = out_a;
+   assign q_b = out_b;
    
 `ifdef debug
   integer i, debug;
@@ -122,23 +140,47 @@ module part_1kx32ram_a(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    always @(posedge clk_a)
      if (wren_a)
        begin
-          ram[ address_a ] = data_a;
+          ram[ address_a ] <= data_a;
 `ifdef debug
 	  if (address_a != 0 && debug != 0)
 	    $display("amem: W %o <- %o; %t", address_a, data_a, $time);
 `endif
        end
+     else if (wren_b)
+       begin
+          ram[ address_b ] <= data_b;
+`ifdef debug
+	  if (address_b != 0 && debug != 0)
+	    $display("amem: W %o <- %o; %t", address_b, data_b, $time);
+`endif
+       end
 
    always @(posedge clk_a)
-     if (rden_a)
+     if (reset)
+       out_a <= 0;
+     else if (rden_a)
        begin
-	  out_a = ram[ address_a ];
+	  out_a <= ram[ address_a ];
 `ifdef debug
 	  if (address_a != 0 && debug > 1)
 	    $display("amem: R %o -> %o; %t",
 		     address_a, ram[ address_a ], $time);
 `endif
        end
+
+   always @(posedge clk_b)
+     if (reset)
+       out_b <= 0;
+     else if (rden_b)
+       begin
+	  out_b <= ram[ address_b ];
+`ifdef debug
+	  if (address_b != 0 && debug > 1)
+	    $display("amem: R %o -> %o; %t",
+		     address_b, ram[ address_b ], $time);
+`endif
+       end
+
 `endif // SIMULATION
    
 endmodule

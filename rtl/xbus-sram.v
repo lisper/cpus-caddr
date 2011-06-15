@@ -30,8 +30,8 @@ module xbus_ram (
    output 	 sdram_write;
    input 	 sdram_done;
 
-//   parameter 	 DRAM_SIZE = 2097152;
-//   parameter 	 DRAM_BITS = 21;
+   parameter 	 DRAM_SIZE = 2097152;
+   parameter 	 DRAM_BITS = 21;
 
 //   parameter 	 DRAM_SIZE = 1048576;
 //   parameter 	 DRAM_BITS = 20;
@@ -42,8 +42,8 @@ module xbus_ram (
 //   parameter 	 DRAM_SIZE = 262144;
 //   parameter 	 DRAM_BITS = 18;
 
-   parameter 	 DRAM_SIZE = 131072;
-   parameter 	 DRAM_BITS = 17;
+//   parameter 	 DRAM_SIZE = 131072;
+//   parameter 	 DRAM_BITS = 17;
    
    //
    reg [31:0] 	 ram[DRAM_SIZE-1:0];
@@ -53,6 +53,7 @@ module xbus_ram (
    initial
      begin
 	debug = 0;
+debug = 1;
 	for (i = 0; i < DRAM_SIZE; i = i + 1)
 	  ram[i] = 0;
      end
@@ -64,8 +65,8 @@ module xbus_ram (
    // which is decoded but does not read/write...
    assign 	 decode = addr < 22'o11000000 ? 1'b1: 1'b0;
 
-//   assign 	 ack = ack_delayed[1];
-   assign 	 ack = ack_delayed[6];   
+   assign 	 ack = ack_delayed[1];
+//   assign 	 ack = ack_delayed[6];   
 
    wire [DRAM_BITS-1:0] addr20;
    assign addr20 = addr[DRAM_BITS-1:0];
@@ -110,14 +111,14 @@ module xbus_ram (
                $display("sdram: write @%o <- %o", addr20, datain);
 `endif
 	       if (addr < DRAM_SIZE)
-		 ram[addr20] = datain;
+		 ram[addr20] <= datain;
 	    end
 	  else
 	    begin
 `ifdef debug
 	       if (debug != 0)
-               $display("sdram: read @%o -> %o (0x%x), %t",
-			addr20, ram[addr20], ram[addr20], $time);
+               $display("sdram: read @%o -> %o (0x%x) (addr=%o), %t",
+			addr20, ram[addr20], ram[addr20], addr, $time);
 `endif
 	    end
      end

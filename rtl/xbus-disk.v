@@ -421,7 +421,7 @@ module xbus_disk (
    reg [31:0] dma_dataout;
 
 `ifdef debug
-   int debug/* verilator public_flat */;
+   integer debug/* verilator public_flat */;
 
    initial
      debug = 0;
@@ -473,20 +473,13 @@ module xbus_disk (
 	  attn_intr_enb <= 0;
 	  done_intr_enb <= 0;
 	  
-          disk_clp <= 0;
-
 	  reg_dataout = 0;
-	  
-	  disk_unit <= 0;
-	  disk_cyl <= 0;
-	  disk_head <= 0;
-	  disk_block <= 0;
        end
      else
        begin
 	  deassert_int = 0;
 	  disk_start = 0;
-	  
+
        if (decode)
 	 begin
 `ifdef debug_xxx
@@ -541,24 +534,12 @@ module xbus_disk (
 
 		     if (datain[11:10] != 2'b00)
 		       deassert_int = 1;
-		  end
-		3'o5:
+		  end // case: 3'o4
+
+		3'o5, 3'o6:
 		  begin
-`ifdef debug
-		     if (debug != 0) $display("disk: load clp %o", datain);
-`endif
-		     disk_clp <= datain[21:0];
 		  end
-		3'o6:
-		  begin
-`ifdef debug
-		     if (debug != 0) $display("disk: load da %o", datain);
-`endif
-		     disk_unit <= datain[30:28];
-		     disk_cyl <= datain[27:16];
-		     disk_head <= datain[12:8];
-		     disk_block <= datain[4:0];
-		  end
+		  
 		3'o7:
 		  begin
 `ifdef debug
@@ -577,6 +558,42 @@ module xbus_disk (
 		 end
 	   end
 	 end // if (decode)
+       end
+
+
+   always @(posedge clk)
+     if (reset)
+       begin
+          disk_clp <= 0;
+
+	  disk_unit <= 0;
+	  disk_cyl <= 0;
+	  disk_head <= 0;
+	  disk_block <= 0;
+       end
+     else
+       begin
+       if (decode && writein && (addrin[5:0] == 6'o75 || addrin[5:0] == 6'o76))
+	 begin
+	    if (addrin[2:0] == 3'o5)
+	     begin
+`ifdef debug
+		if (debug != 0) $display("disk: load clp %o", datain);
+`endif
+		disk_clp <= datain[21:0];
+	     end
+	    else
+	      if (addrin[2:0] == 3'o6)
+		begin
+`ifdef debug
+		   if (debug != 0) $display("disk: load da %o", datain);
+`endif
+		   disk_unit <= datain[30:28];
+		   disk_cyl <= datain[27:16];
+		   disk_head <= datain[12:8];
+		   disk_block <= datain[4:0];
+		end
+	 end
        else
 	 begin
 	    // increment disk address by 1 block
@@ -607,9 +624,10 @@ module xbus_disk (
 
 	    if (inc_clp)
 	      disk_clp <= disk_clp + 22'd1;
-	    
+
 	 end
-       end // else: !if(reset)
+       end
+   
 
    //
    ide ide(.clk(clk), .reset(reset),
@@ -1102,6 +1120,9 @@ module xbus_disk (
 
 	  s_last2:
 	    begin
+`ifdef debug_disk
+	       $display("disk: s_last2; more_ccws %b", more_ccws);
+`endif
 	       if (more_ccws)
 		 begin
 		    inc_da = 1;

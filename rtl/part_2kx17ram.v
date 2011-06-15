@@ -51,7 +51,72 @@ module part_2kx17dpram(reset,
            ram.widthad_b = 11;
 `endif // QUARTUS
 
-`ifdef ISE_OR_SIMULATION
+`ifdef ISE
+   // synopsys translate_off
+
+   BLK_MEM_GEN_V1_1 #(
+		11,	// c_addra_width
+		11,	// c_addrb_width
+		1,	// c_algorithm
+		9,	// c_byte_size
+		1,	// c_common_clk
+		"0",	// c_default_data
+		1,	// c_disable_warn_bhv_coll
+		1,	// c_disable_warn_bhv_range
+		"spartan3",	// c_family
+		1,	// c_has_ena
+		1,	// c_has_enb
+		0,	// c_has_mem_output_regs
+		0,	// c_has_mux_output_regs
+		0,	// c_has_regcea
+		0,	// c_has_regceb
+		0,	// c_has_ssra
+		0,	// c_has_ssrb
+		"no_coe_file_loaded",	// c_init_file_name
+		0,	// c_load_init_file
+		1,	// c_mem_type
+		1,	// c_prim_type
+		2048,	// c_read_depth_a
+		2048,	// c_read_depth_b
+		17,	// c_read_width_a
+		17,	// c_read_width_b
+		"NONE",	// c_sim_collision_check
+		"0",	// c_sinita_val
+		"0",	// c_sinitb_val
+		0,	// c_use_byte_wea
+		0,	// c_use_byte_web
+		0,	// c_use_default_data
+		1,	// c_wea_width
+		1,	// c_web_width
+		2048,	// c_write_depth_a
+		2048,	// c_write_depth_b
+		"WRITE_FIRST",	// c_write_mode_a
+		"WRITE_FIRST",	// c_write_mode_b
+		17,	// c_write_width_a
+		17)	// c_write_width_b
+	inst (
+		.CLKA(clk_a),
+		.DINA(data_a),
+		.DOUTA(q_a),
+		.ADDRA(address_a),
+		.ENA(rden_a),
+		.WEA(wren_a),
+
+		.CLKB(clk_b),
+		.DINB(data_b),
+		.DOUTB(q_b),
+		.ADDRB(address_b),
+		.ENB(rden_b),
+	        .WEB(wren_b),
+
+		.REGCEA(),
+		.SSRA(),
+		.REGCEB(),
+		.SSRB());
+   // synopsys translate_on
+`endif //  ISE
+
+`ifdef SIMULATION
    reg [16:0] 	 ram [0:2047];
    reg [16:0] 	 out_a;
    reg [16:0] 	 out_b;

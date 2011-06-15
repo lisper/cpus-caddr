@@ -61,7 +61,8 @@ module fpga_clocks(sysclk, slideswitch, dcm_reset,
    defparam DCM_INST.PHASE_SHIFT = 0;
    defparam DCM_INST.STARTUP_WAIT = "FALSE";
    
-`ifdef use_dcm   
+`define use_dcm
+`ifdef use_dcm
 //   clk100_dcm clk100_dcm(.CLKIN_IN(sysclk_buf), 
 //			 .RST_IN(dcm_reset), 
 //			 .CLK0_OUT(clk50),
@@ -75,20 +76,27 @@ module fpga_clocks(sysclk, slideswitch, dcm_reset,
 //		   .LOCKED_OUT());
 
    wire clk100_dcm;
-
+   wire clk50_dcm;
+   
    DCM dcm100(.CLKIN(sysclk_buf),
 	      .RST(dcm_reset),
-	      .CLKFB(clk50),
-	      .CLK0(clk50),
+	      .CLKFB(clk50_dcm),
+	      .CLK0(clk50_dcm),
 	      .CLK2X(clk100_dcm));
    defparam dcm100.CLKIN_PERIOD = 20.0;
 
    BUFG buf100(.I(clk100_dcm), .O(clk100));
+
+//
+reg 	clk100_div2;
+assign clk50 = clk100_div2;
+always @(posedge clk100)
+clk100_div2 <= ~clk100_div2;
+//
 `else
    reg 	clk100_div2;
 
-BUFG clk100_bufg (.I(sysclk_buf), .O(clk100));
-//   assign clk100 = sysclk_buf;
+   BUFG clk100_bufg (.I(sysclk_buf), .O(clk100));
    assign clk50 = clk100_div2;
 
    always @(posedge clk100)

@@ -1305,7 +1305,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	    else
 	      $display("load md <- %o; L lpc %o; %t", mds, lpc, $time);
 `endif
+`ifdef debug
 	    $display("load md <- %o; %t", mds, $time);
+`endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
 	 end

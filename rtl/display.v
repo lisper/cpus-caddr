@@ -16,11 +16,14 @@ module display(clk, reset, pc, dots, sevenseg, sevenseg_an);
 
    reg [10:0]    divider;
    reg           aclk;
+
+   reg [15:0] 	 pc_reg;
+   reg [3:0] 	 dots_reg;
    
-   assign digit = (anode == 2'b11) ? pc[11:9] :
-		  (anode == 2'b10) ? pc[8:6] :
-		  (anode == 2'b01) ? pc[5:3] :
-		  (anode == 2'b00) ? pc[2:0] :
+   assign digit = (anode == 2'b11) ? pc_reg[11:9] :
+		  (anode == 2'b10) ? pc_reg[8:6] :
+		  (anode == 2'b01) ? pc_reg[5:3] :
+		  (anode == 2'b00) ? pc_reg[2:0] :
 		  3'b0;
 
    assign sevenseg_an = (anode == 2'b11) ? 4'b0111 :
@@ -29,10 +32,22 @@ module display(clk, reset, pc, dots, sevenseg, sevenseg_an);
 			(anode == 2'b00) ? 4'b1110 :
 			4'b1111;
 
-   assign sevenseg[0] = ~dots[anode];
+   assign sevenseg[0] = ~dots_reg[anode];
    
    sevensegdecode decode({1'b0, digit}, sevenseg[7:1]);
 
+   always @(posedge clk)
+     if (reset)
+       begin
+	  pc_reg <= 0;
+	  dots_reg <= 0;
+       end
+     else
+       begin
+	  pc_reg <= pc;
+	  dots_reg <= dots;
+       end
+   
    always @(posedge clk)
      begin
        divider <= divider + 11'b1;

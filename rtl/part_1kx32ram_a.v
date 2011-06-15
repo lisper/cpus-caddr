@@ -117,8 +117,8 @@ module part_1kx32dpram_a(reset,
    // synopsys translate_on
 `endif //  ISE
 
-//`ifdef SIMULATION
-`ifdef ISE_OR_SIMULATION
+`ifdef SIMULATION
+//`ifdef ISE_OR_SIMULATION
    reg [31:0] ram [0:1023];
    reg [31:0] out_a;
    reg [31:0] out_b;

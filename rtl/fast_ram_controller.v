@@ -158,23 +158,37 @@ module fast_ram_controller(
    
    // ---------------------------
 
-   parameter S_IDLE = 0,
-	       S_VGA_RD = 1,
-	       S_MCR_RD1 = 2,
-	       S_MCR_RD2 = 3,
-	       S_MCR_WR1 = 4,
-	       S_MCR_WR2 = 5,
-	       S_MCR_WR3 = 6,
-	       S_MCR_WR4 = 7,
-	       S_SDRAM_RD = 8,
-	       S_SDRAM_WR1 = 9,
-	       S_SDRAM_WR2 = 10,
-	       S_VRAM_RD = 11,
-	       S_VRAM_WR1 = 12,
-	       S_VRAM_WR2 = 13;
+//   parameter S_IDLE        = 0,
+//	       S_VGA_RD    = 1,
+//	       S_MCR_RD1   = 2,
+//	       S_MCR_RD2   = 3,
+//	       S_MCR_WR1   = 4,
+//	       S_MCR_WR2   = 5,
+//	       S_MCR_WR3   = 6,
+//	       S_MCR_WR4   = 7,
+//	       S_SDRAM_RD  = 8,
+//	       S_SDRAM_WR1 = 9,
+//	       S_SDRAM_WR2 = 10,
+//	       S_VRAM_RD   = 11,
+//	       S_VRAM_WR1  = 12,
+//	       S_VRAM_WR2  = 13;
+   parameter S_IDLE        = 14'b0,
+	       S_VGA_RD    = 14'b00000000000001,
+	       S_MCR_RD1   = 14'b00000000000010,
+	       S_MCR_RD2   = 14'b00000000000100,
+	       S_MCR_WR1   = 14'b00000000001000,
+	       S_MCR_WR2   = 14'b00000000010000,
+	       S_MCR_WR3   = 14'b00000000100000,
+	       S_MCR_WR4   = 14'b00000001000000,
+	       S_SDRAM_RD  = 14'b00000010000000,
+	       S_SDRAM_WR1 = 14'b00000100000000,
+	       S_SDRAM_WR2 = 14'b00001000000000,
+	       S_VRAM_RD   = 14'b00010000000000,
+	       S_VRAM_WR1  = 14'b00100000000000,
+	       S_VRAM_WR2  = 14'b01000000000000;
    
-   reg [3:0] 	 state;
-   wire [3:0] 	 next_state;
+   reg [13:0] 	 state; // synthesis attribute fsm_encoding of state is one-hot
+   wire [13:0] 	 next_state;
 
    always @(posedge clk)
      if (reset)
@@ -396,7 +410,6 @@ module fast_ram_controller(
 `endif
 
    // vram_vga read - vga controller only
-   reg vga_req;
    reg [1:0] vram_vga_req_syncro;
    
    always @(posedge clk)

@@ -2,7 +2,7 @@
 
 `include "defines.vh"
 
-module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
+module part_1kx24ram_sync(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 
    input clk_a;
    input reset;

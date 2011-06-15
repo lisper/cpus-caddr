@@ -76,7 +76,8 @@ module part_1kx24ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
 		     address_a, ram[ address_a ], $time);
 `endif
        end
-assign q_a = ram[ address_a ];
+
+   assign q_a = ram[ address_a ];
 
 `endif // SIMULATION
 

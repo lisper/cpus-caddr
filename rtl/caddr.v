@@ -1,6 +1,10 @@
 /*
  * caddr
  *
+ * lots of debugging on fpga
+ * revamped bus interface
+ * 10/2010 brad parker brad@heeltoe.com
+ * 
  * major cleanup:
  * 11/2009 brad parker brad@heeltoe.com
  * 
@@ -69,11 +73,11 @@
  *	aadr = ir[41:32]
  * 
  * write (phase 1)
- *	a = a_latch
+ *	a = a_reg
  *	aadr = wadr
  *
  * fetch (phase 1)
- * 	a = a_latch
+ * 	a = a_reg
  *	aadr = ir[41:32]
  *	update pc
  *	latch md <- mds
@@ -163,7 +167,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    reg [48:0] 	ir;
 
    wire [31:0] 	a;
-   reg [31:0] 	a_latch;
+   reg [31:0] 	a_reg;
 
    reg [9:0] 	wadr;
    reg 		destd, destmd;
@@ -227,7 +231,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire [31:0] 	ob;
 
    // page IPAR
-   wire 	iparity, iparok;
 
    // page LC
    reg [25:0] 	lc;
@@ -266,7 +269,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    reg 		mdhaspar, mdpar;
    wire 	mdgetspar;
-   wire 	mempar_in;
 
    wire 	ignpar;
 
@@ -275,7 +277,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire [31:0] 	mem;
    wire [31:0] 	busint_bus;
    wire [15:0] 	busint_spyout;
-   wire 	mempar_out;
 
    wire 	bus_int;
    
@@ -285,7 +286,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire 	mfdrive;
 
    // page MLATCH
-   reg [31:0] 	mmem_latched;
+//   reg [31:0] 	m_reg;
 
    wire [31:0] 	m;
 
@@ -372,7 +373,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page SPCPAR
 
-   wire 	mdparerr, parerr, memparok;
    wire 	trap;
    reg 		boot_trap;
 
@@ -453,7 +453,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire 	machrun, stat_ovf, stathalt;
 
-   wire 	lowerhighok, highok;
    wire 	prog_reset, reset;
    wire 	err, errhalt;
    wire 	bus_reset;
@@ -486,8 +485,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page OLORD2
 
-   reg 		ape, mpe, pdlpe, dpe, ipe, spe, higherr, mempe;
-   reg 		v0pe, v1pe, statstop, halted;
+   reg 		higherr;
+   reg 		statstop;
+   reg 		halted;
 
    // page L
    reg [31:0] 	l;
@@ -608,16 +608,23 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // AML
    // transparent latch w/async reset
-   always @(phase0 or amem or reset)
+//   always @(phase0 or amem or reset)
+//     if (reset)
+//       a_reg = 0;
+//     else
+//       if (state_decode)
+//	 a_reg = amem;
+   always @(posedge clk)
      if (reset)
-       a_latch = 0;
+       a_reg <= 0;
      else
-       if (phase0)
-	 a_latch = amem;
+       if (state_decode)
+	 a_reg <= amem;
 
-   assign a = amemenb ? a_latch :
-	      apassenb ? l :
-	      32'hffffffff;
+//   assign a = amemenb ? a_reg :
+//	      apassenb ? l :
+//	      32'hffffffff;
+   assign a = apass ? l : a_reg;
 
    // page ALU0-1
 
@@ -1068,10 +1075,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page IPAR
 
-   assign iparity = 0;
-   assign iparok = imodd | iparity;
-
-   
    // page IREG
 
    always @(posedge clk)
@@ -1299,7 +1302,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 `endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
-	    mdpar <= mempar_in;
 	 end
 
 `ifdef debug
@@ -1324,8 +1326,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign mds = mdsel ? ob : mem;
 
-   assign mempar_out = 1'b1;
-
    // mux MEM
    assign mem =
 	       memdrive ? md :
@@ -1340,16 +1340,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page MLATCH
 
-   // transparent latch w/async reset
-   always @(phase0 or mmem or reset)
-     if (reset)
-       begin
-	  mmem_latched = 0;
-       end
-     else
-       if (phase0)
-	 mmem_latched = mmem;
-
 `ifdef debug_with_usim
    // tell disk controller when each fetch passes to force sync with usim
    always @(posedge clk)
@@ -1360,13 +1350,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 `endif
        
    // mux M
-   assign m = 
-	      mpassm ? mmem_latched :
-	      pdldrive ? pdl_latch :
-	      spcdrive ? {3'b0, spcptr, 5'b0, spco_latched} :
-	      mfdrive ? mf :
-              32'b0;
-
+   assign m =
+	     mpassm ? mmem :
+	     pdldrive ? pdl_latch :
+	     spcdrive ? {3'b0, spcptr, 5'b0, spco_latched} :
+	     mfdrive ? mf :
+	     32'b0;
 
    // page MMEM
 
@@ -1377,10 +1366,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			.data_a(l),
 			.q_a(mmem),
 			.wren_a(mwp),
-			.rden_a(1'b1)
+			.rden_a(phase0)
 			);
 
-//`define debug_mmem
 `ifdef debug_mmem
    always @(posedge clk)
      if (mwp && madr != 0)
@@ -1479,8 +1467,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		   popj, ignpopj);
 	  $display("; conds=%b,  aeqm=%b, aeqm_bits=%b",
 		   conds, aeqm, aeqm_bits);
-	  $display("; trap=%b,  parerr_n=%b, trapenb=%b boot_trap=%b",
-		   trap, parerr, trapenb, boot_trap);
+	  $display("; trap=%b,  trapenb=%b boot_trap=%b",
+		   trap, trapenb, boot_trap);
 	  $display("; nopa %b, inop %b, nop11 %b",
 		   nopa, inop, nop11);
        end
@@ -1870,10 +1858,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	spy_opc ?
 			{ 2'b0,opc } :
 	spy_flag1 ?
-			{ waiting, v1pe, v0pe, promdisable,
+			{ waiting, 1'b0, 1'b0, promdisable,
 			  stathalt, err, ssdone, srun,
-			  higherr, mempe, ipe, dpe,
-			  spe, pdlpe, mpe, ape } :
+			  1'b0, 1'b0, 1'b0, 1'b0,
+			  1'b0, 1'b0, 1'b0, 1'b0 } :
 	spy_pc ?
 			{ 2'b0,pc } :
         16'b1111111111111111;
@@ -1882,13 +1870,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page TRAP
 
-   assign mdparerr = 1'b0;
-
-   assign parerr = mdparerr & mdhaspar & use_md & ~waiting;
-
-   assign memparok = ~parerr | trapenb;
-
-   assign trap = (parerr & trapenb) | boot_trap;
+   assign trap = boot_trap;
 
 
    // page VCTRL1
@@ -2293,46 +2275,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  statstop <= stat_ovf;
        end
    
-   always @(posedge clk)
-     if (reset)
-       begin
-	  ape <= 0;
-	  mpe <= 0;
-	  pdlpe <= 0;
-	  dpe <= 0;
-	  ipe <= 0;
-	  spe <= 0;
-	  higherr <= 0;
-	  mempe <= 0;
-
-	  v0pe <= 0;
-	  v1pe <= 0;
-       end
-     else
-       begin
-	  ape <= 1'b0;
-	  mpe <= 1'b0;
-	  pdlpe <= 1'b0;
-	  dpe <= 1'b0;
-	  ipe <= ~iparok;
-	  spe <= 1'b0;
-	  higherr <= ~highok;
-	  mempe <= ~memparok;
-
-	  v0pe <= 1'b0;
-	  v1pe <= 1'b0;
-       end
-
-   assign lowerhighok = 1'b1;
-   assign highok = 1'b1;
-
    assign prog_reset = ldmode & spy_in[6];
 
    assign reset = ext_reset | prog_reset;
 
-   assign err = ape | mpe | pdlpe | dpe |
-		ipe | spe | higherr | mempe |
-		v0pe | v1pe | halted;
+   assign err = halted;
 
    assign errhalt = errstop & err;
 

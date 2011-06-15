@@ -39,13 +39,21 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    wire      assert_rw;
 
    reg [2:0] ata_state_next;
-   
 
+   reg [15:0] ide_data_in_reg;
+
+   //
+   always @(posedge clk)
+     if (reset)
+       ide_data_in_reg <= 0;
+     else
+       ide_data_in_reg <= ide_data_in;
+  
    // if write, drive ide_bus
    assign ide_data_out = (ata_wr && (ata_state == s0 ||
 				     ata_state == s1 ||
 				     ata_state == s2 ||
-   				     ata_state == s3)) ? ata_in : 16'b0/*16'bz*/;
+   				     ata_state == s3)) ? ata_in : 16'b0;
 
    // assert cs & da during r/w cycle
    assign assert_cs = (ata_rd || ata_wr) && ata_state != s4;
@@ -95,6 +103,6 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
        ata_out <= 0;
      else
        if (ata_state == s2 && ata_rd)
-	 ata_out <= ide_data_in;
+	 ata_out <= ide_data_in_reg;
 
 endmodule // ide

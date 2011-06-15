@@ -398,7 +398,7 @@ module xbus_disk (
    wire [15:0] ata_out;
    wire        ata_done;
 
-   wire [23:0] lba;
+   reg [23:0] lba;
    wire [22:0] block_number;
 
    wire [22:0] cyl_blocks;
@@ -644,8 +644,12 @@ module xbus_disk (
    
 
    // lba = block# * 2
-   assign lba = { block_number, 1'b0 };
-   
+   always @(posedge clk)
+     if (reset)
+       lba <= 0;
+     else
+       lba <= { block_number, 1'b0 };
+//   assign lba = { block_number, 1'b0 };
 
    always @(posedge clk)
      if (reset)

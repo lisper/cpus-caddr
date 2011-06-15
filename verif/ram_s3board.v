@@ -4,6 +4,8 @@
 //
 
 //`define use_dpi_ram
+//`define debug_ram_low
+//`define debug_s3ram
 
 `ifndef use_dpi_ram
 module ram_256kx16(addr, in, out, ce_n, ub_n, lb_n, we_n, oe_n);
@@ -50,11 +52,11 @@ module ram_256kx16(addr, in, out, ce_n, ub_n, lb_n, we_n, oe_n);
 	    $display("ram_256kx16: %t ce_n %b ub_n %b lb_n %b we_n %b oe_n %b",
 		     $time, ce_n, ub_n, lb_n, we_n, oe_n);
 
-	  if (~ub_n && ~lb_n) $display("ram_256kx16: read %o -> %o", addr, in);
+	  if (~ub_n && ~lb_n) $display("ram_256kx16: read %o -> %o", addr, out);
 	  else
-	    if (~ub_n) $display("ram_256kx16: readh %o -> %o", addr, in[7:0]);
+	    if (~ub_n) $display("ram_256kx16: readh %o -> %o", addr, out[7:0]);
 	    else
-	      if (~lb_n) $display("ram_256kx16: readl %o -> %o", addr, in[7:0]);
+	      if (~lb_n) $display("ram_256kx16: readl %o -> %o", addr, out[7:0]);
        end
 `endif
 
@@ -123,6 +125,7 @@ module ram_s3board(ram_a, ram_oe_n, ram_we_n,
 `ifndef use_dpi_ram
    initial
      begin
+	$display("ram_s3board.v: init ram array");
 	for (i = 0; i < 262143/*131072*//*8192*/; i=i+1)
 	  begin
              ram1.ram_h[i] = 8'b0;
@@ -183,9 +186,17 @@ module ram_s3board(ram_a, ram_oe_n, ram_we_n,
 		   ram1_ce_n, ram1_ub_n, ram1_lb_n, ram_we_n, ram_oe_n);
 
 	if (ram_oe_n == 0 && ram_we_n == 1)
-	  $display("ram_s3board: read  [%o] -> %o %t", ram_a, ram1_in, $time);
+	  $display("ram_s3board: read1  [%o] -> %o %t", ram_a, ram1_out, $time);
 	if (ram_oe_n == 1 && ram_we_n == 0)
-	  $display("ram_s3board: write [%o] <- %o %t", ram_a, ram1_in, $time);
+	  $display("ram_s3board: write1 [%o] <- %o %t", ram_a, ram1_in, $time);
+     end
+
+   always @(ram_a or ram_oe_n or ram2_ce_n or ram_we_n or ram2_in)
+     begin
+	if (ram_oe_n == 0 && ram_we_n == 1)
+	  $display("ram_s3board: read2  [%o] -> %o %t", ram_a, ram2_out, $time);
+	if (ram_oe_n == 1 && ram_we_n == 0)
+	  $display("ram_s3board: write2 [%o] <- %o %t", ram_a, ram2_in, $time);
      end
 `endif
 

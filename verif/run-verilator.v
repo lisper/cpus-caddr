@@ -64,11 +64,11 @@ endmodule
 module test;
    reg ext_osc;
    reg sysclk;
-   reg reset;
+   reg reset/* verilator public_flat_rw @(clk1x) */;
    reg interrupt;
 
    // controlled by rc circuit at power up
-   reg boot;
+   reg boot/* verilator public_flat_rw @(clk1x) */;
 
    reg [15:0]  spyin;
    wire [15:0] spyout;
@@ -113,7 +113,7 @@ module test;
    wire 	 vram_vga_ready;
 
    wire [13:0] 	 pc;
-   wire [4:0] 	 state;
+   wire [5:0] 	 state;
    wire 	 machrun;
    wire 	 prefetch;
    wire 	 fetch;
@@ -132,10 +132,11 @@ module test;
 
 //
    reg [4:0] slow;
-   wire      clk1x, clk2x;
-   wire      clk50/*verilator public_flat*/;
-   wire      clk100;
-
+   wire      clk1x/* verilator public_flat_rw @(clk50) */;
+   wire      clk50/* verilator public_flat_rw @(clk100) */;
+   wire      clk100/* verilator public_flat_rw @(pixclk) */;
+   wire      pixclk/* verilator public_flat_rw @(clk100) */;
+   
    initial
      slow = 0;
 
@@ -152,6 +153,56 @@ module test;
 //    
 `endif
    
+//
+`ifdef use_iologger
+   reg [63:0] 	 iologfile;
+   integer 	 cycles;
+
+   task iologger;
+      input [31:0] rw;
+      input [21:0] addr;
+      input [31:0] bus;
+      
+      begin
+	 if (rw == 0)
+	   $fdisplay(iologfile, "%0d %d %o P %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 0)
+	   $fdisplay(iologfile, "-----");
+	 if (rw == 1)
+	   $fdisplay(iologfile, "%0d %d %o R %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 2)
+	   $fdisplay(iologfile, "%0d %d %o W %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 3)
+	   $fdisplay(iologfile, "%0d %d %o I %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 4)
+	   $fdisplay(iologfile, "%0d %d %o D %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 10)
+	   $fdisplay(iologfile, "%0d %d %o S %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 11 && cpu.state == 6'b001000/*state_write*/)
+	   $fdisplay(iologfile, "%0d %d %o T %o %o", cycles, $time, cpu.lpc, addr, bus);
+      end
+   endtask
+
+   initial
+     begin
+	iologfile = $fopen("iologfile.txt", "w");
+     end
+
+   always @(posedge cpu.clk)
+     begin
+	if (cpu.state == 6'b100000 && ~cpu.iwrited && ~cpu.inop)
+	  begin
+ `ifdef use_iologger
+	     test.iologger(32'd0, {8'b0, cpu.lpc}, 0);
+ `endif
+	     cycles = cycles + 1;
+	  end
+     end
+`endif
+
+
+//
+
    caddr cpu (.clk(clk1x),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
@@ -280,7 +331,7 @@ module test;
 
 `ifdef use_vga_controller
    vga_display vga (.clk(clk50),
-		    .pixclk(clk100),
+		    .pixclk(pixclk),
 		    .reset(reset),
 
 		    .vram_addr(vram_vga_addr),

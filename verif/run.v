@@ -93,7 +93,7 @@ module test;
 //    
 
    wire [13:0]   pc;
-   wire [4:0]    state;
+   wire [5:0]    state;
    wire          machrun;
    wire 	 prefetch;
    wire 	 fetch;
@@ -101,6 +101,27 @@ module test;
    wire [3:0] 	 bus_state_out;
    wire [3:0] 	 rc_state_out;
    
+//
+`ifdef use_iologger
+   reg [63:0] 	 iologfile;
+
+   task iologger/* verilator public */;
+      input 	 rw;
+      input [21:0] addr;
+      input [31:0] bus;
+      integer 	   rw;
+      
+      begin
+	 if (rw == 1)
+	   $fdisplay(iologfile, "%0d %d %o R %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 2)
+	   $fdisplay(iologfile, "%0d %d %o W %o %o", cycles, $time, cpu.lpc, addr, bus);
+	 if (rw == 3)
+	   $fdisplay(iologfile, "%0d %d %o I %o %o", cycles, $time, cpu.lpc, addr, bus);
+      end
+   endtask
+`endif
+//
 
    caddr cpu (.clk(clk1x),
 	      .ext_int(interrupt),
@@ -151,6 +172,8 @@ module test;
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
+
+`ifdef use_ram_controller   
 
 //`define real_rc
 //`define debug_rc
@@ -218,6 +241,9 @@ module test;
 		      .sram2_lb_n(sram2_lb_n)
 		      );
 
+`endif // use_ram_controller   
+
+`ifdef use_vga_controller
    wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
 
    vga_display vga (.clk(clk50),
@@ -235,7 +261,7 @@ module test;
 		    .vga_hsync(vga_hsync),
 		    .vga_vsync(vga_vsync)
 		    );
-
+`endif // use_vga_controller
    
    ram_s3board ram(.ram_a(sram_a),
 		   .ram_oe_n(sram_oe_n),
@@ -261,12 +287,16 @@ module test;
    assign      dbread = 0;
    assign      dbwrite = 0;
 
-   reg [1023:0] arg;
+   reg [1023:0]  arg;
    integer 	n;
 
    initial
      begin
 	$timeformat(-9, 0, "ns", 7);
+
+`ifdef use_iologger
+	iologfile = $fopen("iologfile-cver.txt", "w");
+`endif
 
 `ifdef debug_log
 `else
@@ -380,16 +410,17 @@ module test;
 
    always @(posedge cpu.clk)
      begin
-	if (cpu.state == 5'b00001)
+	if (cpu.state == 6'b000001)
 	  cycles = cycles + 1;
 
 	case (cpu.state)
-  5'b00000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b00001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b00010: $display("%0o %o exec   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b00100: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b01000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b10000: $display("%0o %o wait   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000010: $display("%0o %o read   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000100: $display("%0o %o alu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b001000: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b010000: $display("%0o %o mmut   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b100000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
 	endcase
 
 `ifdef xxx
@@ -409,7 +440,7 @@ module test;
      end
 
    always @(posedge cpu.clk)
-     #1 if (debug_level == 1 && cpu.state == 5'b00100)
+     #1 if (debug_level == 1 && cpu.state == 6'b010000)
        begin
 	  $display("%0o %o A=%x M=%x N%b R=%x LC=%x",
 		   cpu.lpc, cpu.ir,
@@ -433,9 +464,9 @@ module test;
      end 
    
    always @(posedge cpu.clk)
-     #1 if (debug_level == 2 && cpu.state == 5'b00001)
+     #1 if (debug_level == 2 && cpu.state == 6'b000001)
        begin
-	if (cpu.state == 5'b00001) $display("-----");
+	if (cpu.state == 6'b000001) $display("-----");
 
 	$display("LPC=%o PC=%o NPC=%o PCS=%b%b IR=%o",
 		 cpu.lpc, cpu.pc, cpu.npc, cpu.pcs1, cpu.pcs0, cpu.ir);
@@ -464,15 +495,16 @@ module test;
 
 //if (cpu.lc == 26'o077677030) $finish;
 	      
-	if (cpu.state == 5'b00001) $display("-----");
+	if (cpu.state == 6'b000001) $display("-----");
 
 	case (cpu.state)
-  5'b00000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b00001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b00010: $display("%0o %o exec   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b00100: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b01000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  5'b10000: $display("%0o %o wait   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000010: $display("%0o %o read   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b000100: $display("%0o %o alu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b001000: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b010000: $display("%0o %o mmut   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b100000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
 	endcase
 	  
 //	$display("     A=%x M=%x, N=%x, Q=%x s=%b%b%b%b%b R=%x, L=%x",
@@ -487,8 +519,8 @@ module test;
 		 cpu.conds, cpu.jcond, cpu.jfalse, cpu.jfalse & ~cpu.jcond,
 		 cpu.npc, {cpu.pcs1, cpu.pcs0});
 
-	$display("     a_latch=%o m.latched=%o, aeqm %b %b",
-		 cpu.a_latch, cpu.mmem_latched, cpu.aeqm, cpu.aeqm_bits);
+	$display("     amem=%o mmem=%o, aeqm %b %b",
+		 cpu.amem, cpu.mmem, cpu.aeqm, cpu.aeqm_bits);
 	  
 //	$display("     vmaok %b, pfr %b, pfw %b; vmaenb %b",
 //		 cpu.vmaok, cpu.pfr, cpu.pfw, cpu.vmaenb);
@@ -502,14 +534,13 @@ module test;
 //	$display("     mpass=%b, mpassl=%b, mpassm=%b",
 //		 cpu.mpass, cpu.mpassl, cpu.mpassm);
 
-	$display("     mdrive: mp%b pdl%b spc%b mf%b destmdr%b; adrive amemenb%b apassenb%b",
+	$display("     mdrive: mp%b pdl%b spc%b mf%b destmdr%b",
 		 cpu.mpassm, cpu.pdldrive, cpu.spcdrive, cpu.mfdrive,
-		 cpu.destmdr,
-		 cpu.amemenb, cpu.apassenb);
+		 cpu.destmdr);
 
-	$display("     mfdrive: lc%b ipc%b dc%b pp%b pi%b q%b md%b mp%b vma%b map%b",
+	$display("     mfdrive: lc%b ipc%b dc%b pp%b pi%b q%b md%b vma%b map%b",
 		 cpu.lcdrive, cpu.opcdrive, cpu.dcdrive, cpu.ppdrive,
-		 cpu.pidrive, cpu.qdrive, cpu.mddrive, cpu.mpassl,
+		 cpu.pidrive, cpu.qdrive, cpu.mddrive,
 		 cpu.vmadrive, cpu.mapdrive);
 	  
 	$display("     vma %o, vmas %o, md %o, mds %o",
@@ -542,8 +573,8 @@ module test;
 		 cpu.newlc_in, cpu.have_wrong_word, cpu.lc0b,
 		 cpu.next_instr, cpu.next_instrd);
 
-	$display("     spcptr=%o, spc=%o, spco=%o, spco_latched=%o, jret=%b",
-		 cpu.spcptr, cpu.spc, cpu.spco, cpu.spco_latched, cpu.jret);
+	$display("     spcptr=%o, spc=%o, spco=%o, jret=%b",
+		 cpu.spcptr, cpu.spc, cpu.spco, cpu.jret);
 
 //        $display("     spop%b, spush%b, spcnt%b",
 //		 cpu.spop, cpu.spush, cpu.spcnt);

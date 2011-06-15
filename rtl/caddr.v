@@ -1,6 +1,11 @@
 /*
- * caddr
+ * caddr - synchronous cadr
  *
+ * made rams dual port
+ * added mmu cycle
+ * cycle by cycle cosim with usim
+ * 6/2011 brad parker brad@heeltoe.com
+ * 
  * lots of debugging on fpga
  * revamped bus interface
  * 10/2010 brad parker brad@heeltoe.com
@@ -73,28 +78,35 @@
  * decode
  *      start a&m read
  *	wadr <- ir[]
+ *	aadr = ir[41:32]
+ *      madr = ir[30:26]
+ *      early vmem0 read
  *
  * read
- *	aadr = ir[41:32]
+ *      amem & mmem valid by end of cycle
+ *	74181 propagation
+ *      pdl read (optional)
+ *      early vmem1 read
  *
  * alu
- *      amem & mmem valid
- *	transparent latch a <- amem[addr]
+ *	74181 propagation
  * 
  * write
- *      start a&m write 
- *	a = a_reg
- *	aadr = wadr
+ *      a&m write 
+ * 	normal vmem0 read
+ *      spc read
+ *      spc write (optional)
+ *      pdl write (optional)
+ *      dispatch write (optional)
  *
  * mmu
+ *	normal vmem1 read (optional)
  * 
  * fetch 
- * 	a = a_reg
- *	aadr = ir[41:32]
  *	update pc
- *	latch md <- mds
- * 
  *	ir <- i (or i|iob)
+ *      update spcptr
+ *      update pdlptr
  */
 
 module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
@@ -291,8 +303,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire 	mfdrive;
 
    // page MLATCH
-//   reg [31:0] 	m_reg;
-
    wire [31:0] 	m;
 
    // page MMEM
@@ -405,9 +415,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire 	pfr;
    reg 		vmaok;			/* vma access ok */
 
-   reg 		last_pfr;		/* result of last mem op */
-   reg 		last_pfw;
-	
    wire 	mfinish;
 
    wire 	memack;
@@ -443,14 +450,12 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire [23:8] 	mapi;
 
    wire [4:0] 	vmap;
-//   reg [4:0] 	vmap_reg;
 
    // page VMEM0 - virtual memory map stage 0
 
    wire 	use_map;
 
    wire [23:0] 	vmo;
-//   reg [23:0] 	vmo_reg;
 
    wire 	mapdrive;
 
@@ -880,7 +885,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		  (dispenb & dp & ~dr) |
 		  (irjump & ~ir[6] & ir[8] & jcond);
    
-   assign srp = state_write/*state_decode*/;
+   assign srp = state_write;
    assign swp = spush & state_write;
    assign spcenb = srcspc | srcspcpop;
    assign spcdrive = spcenb &
@@ -1115,11 +1120,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        l <= 0;
      else
-//xxx
-       // vma is latched during write, so this must be too
-//       if (state_fetch)
-//       if ((vmaenb && state_write) || (~vmaenb && state_alu/*state_fetch*/))
-       if ((vmaenb && (state_write||state_alu)) || (~vmaenb && state_alu/*state_fetch*/))
+       // vma is latched during alu, so this must be too
+       if ((vmaenb && (state_write||state_alu)) || (~vmaenb && state_alu))
 	 l <= ob;
 
 
@@ -1182,7 +1184,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	      vma :
 	mapdrive ?
 	      { ~pfw, ~pfr, 1'b1, vmap[4:0], vmo[23:0] } :
-//	      { ~last_pfw, ~last_pfr, 1'b0, vmap[4:0], vmo[23:0] } :
 	      32'b0;
 
 
@@ -1286,7 +1287,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page MD
 
-//   always @(posedge mdclk)
    always @(posedge clk) 
      if (reset)
        begin
@@ -1295,11 +1295,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  mdpar <= 1'b0;
        end
      else
-//really this is loadmd during decode or write; destmdr during phase 1
-//       if ((state_write && mdclk) || (state_decode && loadmd))
-//       if (((phase0||state_write) && loadmd) || (state_fetch && destmdr))
-//       if (loadmd || (state_fetch && destmdr))
-       if ((loadmd && memrq) || (state_alu/*state_fetch*/ && destmdr))
+       if ((loadmd && memrq) || (state_alu && destmdr))
 	 begin
 `ifdef debug
             if (debug != 0)
@@ -1329,9 +1325,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign mdgetspar = ~destmdr & ~ignpar;
    assign ignpar = 1'b0;
 
-//see above
-//   assign mdclk = loadmd | ((state_write|state_fetch) & destmdr);
-      assign mdclk = loadmd | destmdr;
+   assign mdclk = loadmd | destmdr;
    
    // page MDS
 
@@ -1456,9 +1450,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign ipc = pc + 14'd1;
 
-`ifdef debug/*_dispatch*/
+`ifdef debug_dispatch
    always @(posedge clk)
-//     if (debug != 0)
      if (state_fetch && irdisp/*({pcs1,pcs0} == 2'b10)*/)
        begin
 	  $display("dispatch: dadr=%o %b%b%b %o; dmask %o r %o ir %b vmo %b md %o",
@@ -1526,7 +1519,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // page PDLCTL
 
    /* m-src = pdl buffer, or index based write */
-//   assign pdlp = (phase0 & ir[30]) | (~phase0 & ~pwidx);
    assign pdlp = (state_read & ir[30]) | (~state_read & ~pwidx);
 
    assign pdla = pdlp ? pdlptr : pdlidx;
@@ -1568,24 +1560,25 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_write && destpdlx)
 	 pdlidx <= ob[9:0];
 
-//
+`ifdef debug
    always @(posedge clk)
-     if (state_write && destpdlx)
+     if (state_write && destpdlx && pdlix != ob[9:0])
        $display("pdlidx <- %o", ob[9:0]);
-//
+`endif
+   
+   // pdlpop = read[pdlptr] (state_read), pdlptr-- (state_fetch)
+   // pdlpush = pdlptr++ (state_read), write[pdlptr] (state_write)
    
    always @(posedge clk)
      if (reset)
        pdlptr <= 0;
      else
-       // pdlpush = pdlptr++ (state_read), write (state_write)
-       if (state_read/*state_decode*/)
+       if (state_read)
 	 begin
 	    if (~destpdlp && pdlcnt && ~srcpdlpop)
 	      pdlptr <= pdlptr + 10'd1;
 	 end
        else
-	 // pdlpop = read (state_read), pdlptr-- (state_fetch)
 	 if (state_fetch)
 	   begin
 	      if (destpdlp)
@@ -1853,19 +1846,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        spcptr <= 0;
      else
-`ifdef xxx
-       if (state_read/*state_decode*/)
-	 begin
-	      if (spcnt && ~spush)
-		spcptr <= spcptr - 5'd1;
-	 end
-       else
-	 if (state_fetch)
-	   begin
-	      if (spcnt && spush)
-		spcptr <= spcptr + 5'd1;
-	   end
-`else
        if (state_fetch)
 	 begin
 	    if (spcnt)
@@ -1876,7 +1856,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		   spcptr <= spcptr - 5'd1;
 	      end
 	 end
-`endif
    
    // page SPCLCH
 
@@ -1895,9 +1874,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 //       reta <= 0;
 //     else
 //       /* n is not valid until after decode */
-//       if (state_alu/*state_read*//*state_decode*/)
+//       if (state_alu)
 //	 reta <= n ? wpc : ipc;
-assign reta = n ? wpc : ipc;
+
+   assign reta = n ? wpc : ipc;
 
    // page SPY1-2
 
@@ -1971,18 +1951,10 @@ assign reta = n ? wpc : ipc;
 
    always @(posedge clk)
      if (reset)
-       begin
-	  last_pfr <= 0;
-	  last_pfw <= 0;
-	  vmaok <= 1'b0;
-       end
+       vmaok <= 1'b0;
      else
        if (memcheck)
-	 begin
-	    last_pfr <= pfr;
-	    last_pfw <= wrcyc ? pfw : 1'b1; /* wrong, but matches usim */
-	    vmaok <= pfr | pfw;
-	 end
+	 vmaok <= pfr | pfw;
     
    always @(posedge clk)
      if (reset)
@@ -2042,8 +2014,6 @@ assign reta = n ? wpc : ipc;
    assign mfinish = memack | reset;
 
    assign waiting =
-//		(destmem & mbusy) |
-//		(use_md & mbusy /*& ~memgrant*/) |	/* hang loses */
 		(memrq & mbusy) |
 		(lcinc & needfetch & mbusy);		/* ifetch */
 
@@ -2060,9 +2030,6 @@ assign reta = n ? wpc : ipc;
    assign mapwr0 = wmap & vma[26];
    assign mapwr1 = wmap & vma[25];
 
-//   assign vm0rp = (state_decode && (srcmap| wmap)) | (state_mmu && memprepare);
-//   assign vm1rp = (state_read && srcmap)  |          (state_fetch && memstart/*memprepare*/);
-
    wire   early_vm0_rd;
    wire   early_vm1_rd;
 
@@ -2070,22 +2037,13 @@ assign reta = n ? wpc : ipc;
    wire   normal_vm1_rd;
 
    // for dispatch, no alu needed, so read early and skip mmu state
-//xxx for byte, no alu needed, so read early
-//xxx for alu, 
-`ifdef xxx
-   assign early_vm0_rd  = irdisp && dmapbenb;
-   assign early_vm1_rd  = irdisp && dmapbenb;
-
-   // for m mapping and writing, read after alu and use extra mmu state
-   assign normal_vm0_rd = srcmap | wmap;
-   assign normal_vm1_rd = srcmap       ;
-`else
+   // for byte,     no alu needed, so read early
+   // for alu,      no alu needed, so read early
    assign early_vm0_rd  = (irdisp && dmapbenb) | srcmap;
    assign early_vm1_rd  = (irdisp && dmapbenb) | srcmap;
 
    assign normal_vm0_rd = wmap;
    assign normal_vm1_rd = 1'b0;
-`endif
    
    assign vm0rp = (state_decode && early_vm0_rd) |
 		  (state_write  && normal_vm0_rd) |
@@ -2124,10 +2082,13 @@ assign reta = n ? wpc : ipc;
        vma <= 0;
      else
        begin
-	  if (state_alu/*state_write*/ && vmaenb)
+	  if (state_alu && vmaenb)
 	    begin
 	       vma <= vmas;
-$display("vma <- %o", vmas);
+`ifdef debug
+	       if (vma != vmas)
+		 $display("vma <- %o", vmas);
+`endif
 	    end
        end
 
@@ -2139,7 +2100,7 @@ $display("vma <- %o", vmas);
 
    assign vmas = vmasel ? ob : { 8'b0, lc[25:2] };
 
-   assign mapi = ~memprepare/*memstart*/ ? md[23:8] : vma[23:8];
+   assign mapi = ~memprepare ? md[23:8] : vma[23:8];
 
 
    // page VMEM0 - virtual memory map stage 0
@@ -2154,7 +2115,6 @@ $display("vma <- %o", vmas);
 			  .q_a(vmap),
 			  .data_a(5'b0),
 			  .wren_a(1'b0),
-// xxx vma is registered at end of state_write
 			  .rden_a(vm0rp),
 
 			  .clk_b(clk),

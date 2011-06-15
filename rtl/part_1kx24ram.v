@@ -66,7 +66,6 @@ module part_1kx24dpram(reset,
    initial
      begin
 	debug = 0;
-debug = 2;
 	for (i = 0; i < 1024; i=i+1)
           ram[i] = 24'b0;
      end

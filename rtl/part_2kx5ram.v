@@ -66,7 +66,6 @@ module part_2kx5dpram(reset,
    initial
      begin
 	debug = 0;
-debug = 2;
 	for (i = 0; i < 2048; i=i+1)
           ram[i] = 5'b0;
      end

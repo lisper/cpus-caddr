@@ -52,7 +52,25 @@ module part_2kx5dpram(reset,
            ram.widthad_b = 11;
 `endif // QUARTUS
 
-`ifdef ISE_OR_SIMULATION
+`ifdef ISE
+   ise_2kx5_dpram inst
+     (
+      .clka(clk_a),
+      .ena(rden_a),
+      .wea(wren_a),
+      .addra(address_a),
+      .dina(data_a),
+      .douta(q_a),
+      .clkb(clk_b),
+      .enb(rden_b),
+      .web(wren_b),
+      .addrb(address_b),
+      .dinb(data_b),
+      .doutb(q_b)
+      );
+`endif
+
+`ifdef SIMULATION
    reg [4:0] 	ram [0:2047];
    reg [4:0] 	out_a;
    reg [4:0] 	out_b;

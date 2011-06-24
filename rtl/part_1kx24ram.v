@@ -52,7 +52,25 @@ module part_1kx24dpram(reset,
            ram.widthad_b = 10;
 `endif // QUARTUS
 
-`ifdef ISE_OR_SIMULATION
+`ifdef ISE
+   ise_1kx24_dpram inst
+     (
+      .clka(clk_a),
+      .ena(rden_a),
+      .wea(wren_a),
+      .addra(address_a),
+      .dina(data_a),
+      .douta(q_a),
+      .clkb(clk_b),
+      .enb(rden_b),
+      .web(wren_b),
+      .addrb(address_b),
+      .dinb(data_b),
+      .doutb(q_b)
+      );
+`endif //  ISE
+
+`ifdef SIMULATION
    reg [23:0] 	 ram [0:1023];
    reg [23:0] 	 out_a;
    reg [23:0] 	 out_b;

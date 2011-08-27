@@ -154,9 +154,10 @@ module test;
 `endif
    
 //
+   integer 	 cycles;
+
 `ifdef use_iologger
    reg [63:0] 	 iologfile;
-   integer 	 cycles;
 
    task iologger;
       input [31:0] rw;
@@ -187,7 +188,8 @@ module test;
      begin
 	iologfile = $fopen("iologfile.txt", "w");
      end
-
+`endif
+   
    always @(posedge cpu.clk)
      begin
 	if (cpu.state == 6'b100000 && ~cpu.iwrited && ~cpu.inop)
@@ -198,7 +200,6 @@ module test;
 	     cycles = cycles + 1;
 	  end
      end
-`endif
 
 
 //

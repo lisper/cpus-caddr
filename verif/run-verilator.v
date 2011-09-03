@@ -1,6 +1,8 @@
 /*
  */
 
+//`define debug_bus
+
 //`define debug_vcd
 `define debug
 `define DBG_DLY
@@ -131,24 +133,24 @@ module test;
    wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
 
 //
-   reg [4:0] slow;
+   reg [1:0] slow_ctr;
    wire      clk1x/* verilator public_flat_rw @(clk50) */;
    wire      clk50/* verilator public_flat_rw @(clk100) */;
    wire      clk100/* verilator public_flat_rw @(pixclk) */;
    wire      pixclk/* verilator public_flat_rw @(clk100) */;
    
    initial
-     slow = 0;
+     slow_ctr = 2'b0;
 
 `ifdef use_verilog_clocks
    always @(posedge ext_osc)
      sysclk <= ~sysclk;
    
    always @(posedge sysclk)
-       slow <= slow + 1;
+       slow_ctr <= slow_ctr + 1;
 
-   assign clk1x = slow[1];
-   assign clk50 = ~slow[0];
+   assign clk1x = slow_ctr[1];
+   assign clk50 = ~slow_ctr[0];
    assign clk100 = sysclk;
 //    
 `endif
@@ -254,13 +256,9 @@ module test;
 	      .ide_cs(ide_cs),
 	      .ide_da(ide_da));
 
-   assign vram_cpu_ready = 1'b1;
+//   assign vram_cpu_ready = 1'b1;
 
 `ifdef use_ram_controller   
-//`define real_rc
-//`define debug_rc
-`define fast_rc
-//`define min_rc
    
 `ifdef real_rc
    ram_controller
@@ -270,6 +268,9 @@ module test;
 `endif
 `ifdef fast_rc
    fast_ram_controller
+`endif
+`ifdef slow_rc
+   slow_ram_controller
 `endif
 `ifdef min_rc
    min_ram_controller
@@ -326,6 +327,8 @@ module test;
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
 		      );
+`else
+   assign mcr_ready = 1;
 `endif
    
    wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;

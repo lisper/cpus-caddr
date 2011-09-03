@@ -33,9 +33,12 @@ module debug_ram_controller(clk, vga_clk, cpu_clk, reset,
    output [48:0] mcr_data_out;
    input [48:0]  mcr_data_in;
    output 	 mcr_ready;
+   reg 		 mcr_ready;
    input 	 mcr_write;
    output 	 mcr_done;
 
+   reg [3:0]	 mcr_dly;
+   
    input [21:0]  sdram_addr;
    output [31:0] sdram_data_out;
    input [31:0]  sdram_data_in;
@@ -118,22 +121,32 @@ module debug_ram_controller(clk, vga_clk, cpu_clk, reset,
 `endif
        end
 
-   assign mcr_ready = 1;
+   always @(posedge cpu_clk)
+     if (reset)
+       mcr_dly <= 0;
+     else
+       mcr_dly <= { mcr_dly[2:0], prefetch };
    
    always @(posedge cpu_clk)
      if (reset)
-       mcr_out <= 0;
+       begin
+	  mcr_out <= 0;
+	  mcr_ready <= 0;
+       end
      else
-//xxx brad
-//       if (prefetch)
+       if (mcr_dly[3])
 	 begin
 	    mcr_out <= mcr_ram[ mcr_addr ];
+	    mcr_ready <= 1;
 `ifdef debug
 	    if (debug != 0)
 	      $display("iram: R addr %o -> %o; %t",
 		       mcr_addr, mcr_ram[ mcr_addr ], $time);
 `endif
 	 end
+       else
+	 mcr_ready <= 0;
+
 
    // -------------------------------------------
 
@@ -169,16 +182,12 @@ module debug_ram_controller(clk, vga_clk, cpu_clk, reset,
 			   dram[sdram_addr20] : 32'hffffffff;
 
 //   assign sdram_start = ~fetch && ~mcr_state && ack_delayed == 0;
-assign sdram_start = ack_delayed == 0;
+   assign sdram_start = ack_delayed == 0;
    assign sdram_start_write = sdram_start && sdram_write;
    assign sdram_start_read = sdram_start && sdram_req;
 
-//   assign sdram_done = ack_delayed[7] && sdram_was_write;
-//   assign sdram_ready = ack_delayed[7] && sdram_was_read;
-//assign sdram_done = ack_delayed[4] && sdram_was_write;
-//assign sdram_ready = ack_delayed[4] && sdram_was_read;
-assign sdram_done = ack_delayed[6] && sdram_was_write;
-assign sdram_ready = ack_delayed[6] && sdram_was_read;
+   assign sdram_done = ack_delayed[1] && sdram_was_write;
+   assign sdram_ready = ack_delayed[1] && sdram_was_read;
    
    always @(posedge cpu_clk)
      if (reset)
@@ -189,9 +198,6 @@ assign sdram_ready = ack_delayed[6] && sdram_was_read;
           ack_delayed[1] <= ack_delayed[0];
           ack_delayed[2] <= ack_delayed[1];
           ack_delayed[3] <= ack_delayed[2];
-          ack_delayed[4] <= ack_delayed[3];
-          ack_delayed[5] <= ack_delayed[4];
-	  ack_delayed[6] <= ack_delayed[5];
        end
 
    always @(posedge cpu_clk)

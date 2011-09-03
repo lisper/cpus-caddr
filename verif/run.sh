@@ -1,10 +1,13 @@
 #!/bin/sh
-#tmp/Vtest +p +f +w +ca
-if [ "$1" == "" ]; then
-    f="output";
-else
-    f=$1;
-fi
-echo "file /$f/"
-tmp/Vtest +p +f +w +c1 +l $f
 
+# debug, for cosim
+#tmp/Vtest +c0 +p +d +r +w 
+
+# waves
+#tmp/Vtest +w +b37000000
+
+# fpga clocks
+#tmp/Vtest +p +c1
+
+# quick test
+tmp/Vtest +p +c0

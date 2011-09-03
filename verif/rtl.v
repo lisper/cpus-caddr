@@ -1,4 +1,8 @@
-`timescale 1ns / 1ns
+//
+// define rtl for simulation runs
+//
+
+// // // `timescale 1ns / 1ns
 
 //`define QUARTUS
 //`define ISE
@@ -13,40 +17,19 @@
 `endif
 
 //`define build_fpga
-//`define build_debug
-`define build_test
+`define build_debug
+//`define build_test
 
 //
 // build_fpga
 //
 `ifdef build_fpga
-`define use_ram_controller   
-`define use_s3board_ram
-`define use_vga_controller
-
-`include "../rtl2/caddr.v"
-`include "../rtl2/74181.v"
-`include "../rtl2/74182.v"
-`include "../rtl2/prom.v"
-`include "../rtl2/rom.v"
-`include "../rtl2/fast_ram_controller.v"
-`include "../rtl2/vga_display.v"
-`include "../rtl2/busint.v"
-`include "../rtl2/xbus-ram.v"
-`include "../rtl2/xbus-disk.v"
-`include "../rtl2/xbus-tv.v"
-`include "../rtl2/xbus-io.v"
-`include "../rtl2/xbus-unibus.v"
-`include "../rtl2/ide.v"
-
-`include "../rtl2/part_1kx32ram_a.v"
-`include "../rtl2/part_1kx32ram_p.v"
-`include "../rtl2/part_32x19ram.v"
-`include "../rtl2/part_1kx24ram.v"
-`include "../rtl2/part_2kx17ram.v"
-`include "../rtl2/part_32x32ram.v"
-`include "../rtl2/part_2kx5ram.v"
-`endif // build_fpga
+ `define use_ram_controller   
+ `define slow_rc
+ `define use_s3board_ram
+ `define use_vga_controller
+ `define build_debug_or_fpga
+`endif
 
 //
 // build_debug
@@ -56,34 +39,20 @@
 // vga controller
 //
 `ifdef build_debug
-`define debug
-`define use_ram_controller   
-`define use_s3board_ram
-`define use_vga_controller
-
-`include "../rtl2/caddr.v"
-`include "../rtl2/74181.v"
-`include "../rtl2/74182.v"
-`include "../rtl2/prom.v"
-`include "../rtl2/rom.v"
-`include "../rtl2/fast_ram_controller.v"
-`include "../rtl2/vga_display.v"
-
-`include "../rtl2/busint.v"
-`include "../rtl2/xbus-ram.v"
-`include "../rtl2/xbus-disk.v"
-`include "../rtl2/xbus-tv.v"
-`include "../rtl2/xbus-io.v"
-`include "../rtl2/xbus-unibus.v"
-`include "../rtl2/ide.v"
-
-`include "../rtl2/part_1kx32ram_a.v"
-`include "../rtl2/part_1kx32ram_p.v"
-`include "../rtl2/part_32x19ram.v"
-`include "../rtl2/part_1kx24ram.v"
-`include "../rtl2/part_2kx17ram.v"
-`include "../rtl2/part_32x32ram.v"
-`include "../rtl2/part_2kx5ram.v"
+ `define debug
+ `define use_ram_controller   
+ `define slow_rc
+// `define debug_rc
+// `define debug_md
+// `define debug_vma
+// `define debug_dispatch
+ `define debug_patch_rom
+// `define debug_patch_disk_copy
+ `define use_s3board_ram
+ `define use_vga_controller
+ `define build_debug_or_fpga
+//temp-debug
+//`define use_ucode_ram
 `endif // build_debug
 
 //
@@ -94,15 +63,18 @@
 // 1x clock
 //
 `ifdef build_test
-`define use_ucode_ram
-//`define debug_with_usim_delay
-//`define debug_with_usim
-`define patch_rom
-`define patch_iram_copy
-//`define use_iologger
+ `define use_ucode_ram
+// `define debug_with_usim_delay
+// `define debug_with_usim
+ `define debug_patch_rom
+ `define debug_patch_disk_copy
+// `define use_iologger
+`endif // build_test
 
+//
+// rtl
+//
 `include "../rtl/caddr.v"
-
 `include "../rtl/74181.v"
 `include "../rtl/74182.v"
 
@@ -110,11 +82,39 @@
 `include "../rtl/rom.v"
 //`include "debug_rom.v"
 
+`ifdef fast_rc
+ `include "../rtl/fast_ram_controller.v"
+`endif
+
+`ifdef slow_rc
+ `include "../rtl/slow_ram_controller.v"
+`endif
+
+`ifdef debug_rc
+ `include "debug_ram_controller.v"
+`endif
+
+`ifdef min_rc
+ `include "min_ram_controller.v"
+`endif
+
+`ifdef build_debug_or_fpga
+ `include "../rtl/vga_display.v"
+`endif
+
 `include "../rtl/busint.v"
-`include "../rtl/xbus-sram.v"
+
+`ifdef build_debug_or_fpga
+ `include "../rtl/xbus-ram.v"
+`else
+ `include "../rtl/xbus-sram.v"
+`endif
+  
 `include "../rtl/xbus-disk.v"
 //`include "debug-xbus-disk.v"
-`include "debug-xbus-tv.v"
+
+`include "../rtl/xbus-tv.v"
+//`include "debug-xbus-tv.v"
 
 `include "../rtl/xbus-io.v"
 `include "../rtl/xbus-unibus.v"
@@ -127,5 +127,7 @@
 `include "../rtl/part_2kx17ram.v"
 `include "../rtl/part_32x32ram.v"
 `include "../rtl/part_2kx5ram.v"
-`include "../rtl/part_16kx49ram.v"
-`endif // build_test
+
+`ifdef use_ucode_ram
+ `include "../rtl/part_16kx49ram.v"
+`endif

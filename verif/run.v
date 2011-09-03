@@ -175,10 +175,6 @@ module test;
 
 `ifdef use_ram_controller   
 
-//`define real_rc
-//`define debug_rc
-`define fast_rc
-   
 `ifdef real_rc
    ram_controller
 `endif
@@ -187,6 +183,12 @@ module test;
 `endif
 `ifdef fast_rc
    fast_ram_controller
+`endif
+`ifdef slow_rc
+   slow_ram_controller
+`endif
+`ifdef min_rc
+   min_ram_controller
 `endif
      		   rc
 		     (.clk(clk100),
@@ -240,7 +242,8 @@ module test;
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
 		      );
-
+`else
+   assign mcr_ready = 1;
 `endif // use_ram_controller   
 
 `ifdef use_vga_controller
@@ -341,60 +344,15 @@ module test;
 	reset = 0;
 	spyin = 0;
 
+	ram.ram1.ram_h[0] = 0;
+	ram.ram2.ram_l[0] = 0;
+		
 	#1 begin
 	   reset = 1;
 	   boot = 0;
 
         end
 
-//`define patch_vram_test
-`ifdef patch_vram_test
-	cpu.i_AMEM.ram[10'o65] = 32'o77051763;
-	cpu.i_AMEM.ram[10'o66] = 32'o77051764;
-
-	cpu.i_MMEM.ram[10'o02] = 32'o01234567;
-	cpu.i_MMEM.ram[10'o03] = 32'hffffffff;
-
-	cpu.i_VMEM0.ram[11'o3742] = 5'o00;
-	cpu.i_VMEM1.ram[10'o0023] = 24'o60036123;
-`endif
-
-//`define patch_rw_test	
-`ifdef patch_rw_test
-
-	cpu.i_AMEM.ram[10'o2] = 32'o400000;
-	cpu.i_AMEM.ram[10'o4] = 32'o401000;
-	cpu.i_AMEM.ram[10'o6] = 32'o402000;
-	cpu.i_AMEM.ram[10'o10] = 32'o403000;
-	cpu.i_AMEM.ram[10'o436] = 32'o403447;
-
-	cpu.i_MMEM.ram[10'o2] = 32'o400000;
-	cpu.i_MMEM.ram[10'o4] = 32'o401000;
-	cpu.i_MMEM.ram[10'o6] = 32'o402000;
-	cpu.i_MMEM.ram[10'o10] = 32'o403000;
-	cpu.i_MMEM.ram[10'o436] = 32'o403447;
-
-	cpu.i_AMEM.ram[10'o20] = 32'o00000001;
-	cpu.i_MMEM.ram[10'o20] = 32'o00000001;
-	
-	cpu.i_AMEM.ram[10'o21] = 32'o01234567;
-	cpu.i_MMEM.ram[10'o21] = 32'o01234567;
-	
-	cpu.i_AMEM.ram[10'o22] = 32'hffffffff;
-	cpu.i_MMEM.ram[10'o22] = 32'hffffffff;
-
-	cpu.i_VMEM0.ram[11'o20] = 5'o31;
-	cpu.i_VMEM1.ram[10'o1447] = 24'o63200254;
-
-	cpu.i_VMEM1.ram[10'o1440] = 24'o03200254;
-	cpu.i_VMEM1.ram[10'o1442] = 24'o23200254;
-	cpu.i_VMEM1.ram[10'o1444] = 24'o43200254;
-	cpu.i_VMEM1.ram[10'o1446] = 24'o63200254;
-`endif
-
-	ram.ram1.ram_h[0] = 0;
-	ram.ram2.ram_l[0] = 0;
-		
 	#500 boot = 1;
 
 	#500 reset = 0;
@@ -408,6 +366,19 @@ module test;
 	#10 sysclk = 1;
      end
 
+   // ide
+   assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
+
+   assign ide_data_in = ide_data_bus;
+     
+   always @(posedge clk1x)
+     begin
+	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
+     end
+
+   //
+   // debug
+   //
    always @(posedge cpu.clk)
      begin
 	if (cpu.state == 6'b000001)
@@ -676,13 +647,4 @@ module test;
 	  
      end 
 
-   assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
-
-   assign ide_data_in = ide_data_bus;
-     
-   always @(posedge clk1x)
-     begin
-	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
-     end
-   
 endmodule

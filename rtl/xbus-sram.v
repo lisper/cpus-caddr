@@ -30,8 +30,8 @@ module xbus_ram (
    output 	 sdram_write;
    input 	 sdram_done;
 
-   parameter 	 DRAM_SIZE = 2097152;
-   parameter 	 DRAM_BITS = 21;
+//   parameter 	 DRAM_SIZE = 2097152;
+//   parameter 	 DRAM_BITS = 21;
 
 //   parameter 	 DRAM_SIZE = 1048576;
 //   parameter 	 DRAM_BITS = 20;
@@ -42,8 +42,8 @@ module xbus_ram (
 //   parameter 	 DRAM_SIZE = 262144;
 //   parameter 	 DRAM_BITS = 18;
 
-//   parameter 	 DRAM_SIZE = 131072;
-//   parameter 	 DRAM_BITS = 17;
+   parameter 	 DRAM_SIZE = 131072;
+   parameter 	 DRAM_BITS = 17;
    
    //
    reg [31:0] 	 ram[DRAM_SIZE-1:0];

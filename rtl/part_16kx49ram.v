@@ -11,11 +11,11 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    input 	wren_a, rden_a;
    output [48:0] q_a;
 
-//`ifdef debug
+`ifdef debug
    parameter IRAM_SIZE = 16384;
-//`else
-//   parameter IRAM_SIZE = 4;
-//`endif
+`else
+   parameter IRAM_SIZE = 4;
+`endif
    
 `ifdef QUARTUS
    altsyncram ram
@@ -75,7 +75,7 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
      if (rden_a)
        begin
 	  // patch out disk-copy (which takes hours to sim)
-`ifdef patch_iram_copy
+`ifdef debug_patch_disk_copy
 	  out_a <= address_a == 14'o24045 ? 49'h000000001000 : ram[ address_a ];
 `else
 	  out_a <= ram[ address_a ];

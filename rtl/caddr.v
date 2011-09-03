@@ -407,7 +407,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    reg 		memstart;
    reg 		memcheck;
    
-   reg 		rdcyc, mbusy;
+   reg 		rdcyc;
+   reg 		mbusy;
+
    wire 	memrq;
    reg 		wrcyc;
 
@@ -560,7 +562,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    reg [5:0] state;
    wire [5:0] next_state;
    wire       state_decode, state_read, state_alu, state_write, state_fetch;
-   wire       state_mmu;
+   wire       state_mmu, state_prefetch;
    
    always @(posedge clk)
      if (reset)
@@ -571,6 +573,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire       need_mmu_state;
    assign     need_mmu_state = memprepare | wmap | srcmap;
 
+   wire       mcr_hold;
+   assign     mcr_hold = promdisabled && ~mcr_ready;
+
+   
    assign next_state = 
 		       state == STATE_RESET ? STATE_DECODE :
 		       (state == STATE_DECODE && machrun) ? STATE_READ :
@@ -580,6 +586,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		       (state == STATE_WRITE && need_mmu_state) ? STATE_MMU :
 		       (state == STATE_WRITE && ~need_mmu_state) ? STATE_FETCH :
 		       state == STATE_MMU ? STATE_FETCH :
+		       (state == STATE_FETCH && mcr_hold) ? STATE_FETCH :
 		       STATE_DECODE;
 
    assign state_decode = state[0];
@@ -587,7 +594,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign state_alu = state[2];
    assign state_write = state[3];
    assign state_mmu = state[4];
-   assign state_fetch = state[5];
+   assign state_prefetch = state[5] & mcr_hold;
+   assign state_fetch = state[5] & ~mcr_hold;
 
    // page actl
 
@@ -986,7 +994,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			  .q_a({dr,dp,dn,dpc}),
 			  .data_a(17'b0),
 			  .wren_a(1'b0),
-			  .rden_a(1'b1),
+//			  .rden_a(1'b1),
+			  .rden_a(~state_prefetch),
 
 			  .clk_b(clk),
 			  .address_b(dadr),
@@ -1297,15 +1306,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if ((loadmd && memrq) || (state_alu && destmdr))
 	 begin
-`ifdef debug
+`ifdef debug_md
             if (debug != 0)
 	    if (state_fetch && destmdr)
 	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o; lpc %o",
 		       mds, mdsel, osel, alu, mo, lpc);
 	    else
 	      $display("load md <- %o; L lpc %o; %t", mds, lpc, $time);
-`endif
-`ifdef debug
 	    $display("load md <- %o; %t", mds, $time);
 `endif
 	    md <= mds;
@@ -1564,7 +1571,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 `ifdef debug
    always @(posedge clk)
-     if (state_write && destpdlx && pdlix != ob[9:0])
+     if (state_write && destpdlx && pdlidx != ob[9:0])
        $display("pdlidx <- %o", ob[9:0]);
 `endif
    
@@ -1946,7 +1953,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        memcheck <= 0;
      else
-	 memcheck <= memstart;
+       memcheck <= memstart;
 
    assign pfw = (lvmo_23 & lvmo_22) & wrcyc;	/* write permission */
    assign pfr = lvmo_23 & ~wrcyc;		/* read permission */
@@ -1965,7 +1972,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  wrcyc <= 0;
        end
      else
-       if (state_fetch && memstart)
+       if ((state_fetch || state_prefetch) && memstart && memcheck)
 	 begin
 	    if (memwr)
 	      begin
@@ -1979,13 +1986,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	      end
 	 end
        else
-	 if (~memrq && ~memprepare && ~memstart)
+	 if ((~memrq && ~memprepare && ~memstart) || mfinish)
 	   begin
 	      rdcyc <= 0;
 	      wrcyc <= 0;
 	   end
 
-   assign memrq = mbusy | (memcheck & (pfr | pfw));
+   assign memrq = mbusy | (memcheck & ~memstart & (pfr | pfw));
 
 `ifdef debug_xbus
    always @(posedge clk)
@@ -2006,10 +2013,18 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        mbusy <= 0;
      else
+//       if (mfinish)
+//	 mbusy <= 1'b0;
+//       else
+//	 mbusy <= memrq;
        if (mfinish)
 	 mbusy <= 1'b0;
        else
-	 mbusy <= memrq;
+	 if (memcheck & (pfr | pfw))
+	   mbusy <= 1;
+
+//always @(posedge clk) if (memstart) $display("memstart! %t", $time);
+   
 
    //------
 
@@ -2087,7 +2102,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	  if (state_alu && vmaenb)
 	    begin
 	       vma <= vmas;
-`ifdef debug
+`ifdef debug_vma
 	       if (vma != vmas)
 		 $display("vma <- %o", vmas);
 `endif
@@ -2317,6 +2332,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 `ifdef debug
 	  if (promdisable == 1 && promdisabled == 0)
 	    $display("prom: disabled");
+	  if (promdisable == 0 && promdisabled == 1)
+	    $display("prom: enabled");
 `endif
        end
 
@@ -2430,7 +2447,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // for externals
    assign fetch_out = state_fetch;
-   assign prefetch_out = state_write;
+   assign prefetch_out = (need_mmu_state ? state_mmu : state_write) || state_prefetch;
    assign pc_out = pc;
    assign state_out = state;
    assign machrun_out = machrun;

@@ -187,6 +187,9 @@ module busint(mclk, reset,
 		  );
 
 
+   wire 	req_valid;
+   assign 	req_valid = req && state == BUS_REQ;
+		       
    wire 	ackin_disk;
    wire 	writeout_disk;
    wire 	reqout_disk;
@@ -199,7 +202,7 @@ module busint(mclk, reset,
 		   .addrin(addr),
 		   .datain(disk_datain),
 		   .dataout(dataout_disk),
-		   .reqin(req),
+		   .reqin(req_valid),
 		   .writein(write),
 		   .ackout(ack_disk),
 		   .decodeout(decode_disk),
@@ -229,7 +232,7 @@ module busint(mclk, reset,
 	       .addr(addr),
 	       .datain(busin),
 	       .dataout(dataout_tv),
-	       .req(req),
+	       .req(req_valid),
 	       .write(write),
 	       .ack(ack_tv),
 	       .decode(decode_tv),
@@ -250,7 +253,7 @@ module busint(mclk, reset,
 	       .addr(addr),
 	       .datain(busin),
 	       .dataout(dataout_io),
-	       .req(req),
+	       .req(req_valid),
 	       .write(write),
 	       .ack(ack_io),
 	       .decode(decode_io),
@@ -264,7 +267,7 @@ module busint(mclk, reset,
 		       .addr(addr),
 		       .datain(busin),
 		       .dataout(dataout_unibus),
-		       .req(req),
+		       .req(req_valid),
 		       .write(write),
 		       .ack(ack_unibus),
 		       .decode(decode_unibus),
@@ -350,7 +353,7 @@ module busint(mclk, reset,
        begin
 	  state <= next_state;
 
-`ifdef debug
+`ifdef debug_bus
 	  if (next_state != state && next_state == BUS_REQ)
 	    begin
 	       $display("busint: BUS_REQ addr %o (decode %b); %t",

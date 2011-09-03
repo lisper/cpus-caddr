@@ -1153,7 +1153,7 @@ module xbus_disk (
 	    begin
 	       assert_int = 1;
 `ifdef debug
-	       if (debug != 0) $display("disk: s_done0, interrupt");
+	       if (debug != 0) $display("disk: s_done0, interrupt; %t", $time);
 `endif
 	       
 	       clear_err = 1;

@@ -532,7 +532,7 @@ module part_512x49prom( clk, addr, q );
       9'h1ff: q = 49'h0800000250a7;
     endcase
 
-`ifdef patch_rom
+`ifdef debug_patch_rom
     // patches for debugging
     /* verilator lint_off CASEINCOMPLETE */
     case (addr)
@@ -556,10 +556,10 @@ module part_512x49prom( clk, addr, q );
     end
    
 `ifdef debug_prom
-  always @(posegde clk)
+  always @(posedge clk)
     begin
-      $display("prom: prom addr %o val 0x%x; @%t",
-	       addr, q, $time);
+      $display("prom: prom addr %o val 0x%x %o; @%t",
+	       addr, q, q, $time);
     end
 `endif
    

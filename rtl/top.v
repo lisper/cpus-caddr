@@ -321,7 +321,7 @@ module top(rs232_txd, rs232_rxd,
    assign      dbread = 0;
    assign      dbwrite = 0;
 
-   fast_ram_controller rc (
+   slow_ram_controller rc (
 		      .clk(clk100),
 		      .vga_clk(clk50),
 		      .cpu_clk(clk1x),

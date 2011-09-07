@@ -1,5 +1,5 @@
-`define ISE
-//`define SIMULATION
+//`define ISE
+`define SIMULATION
 
 `ifdef ISE
 `define ISE_OR_SIMULATION

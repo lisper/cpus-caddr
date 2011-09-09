@@ -275,6 +275,9 @@ module test;
 `ifdef min_rc
    min_ram_controller
 `endif
+`ifdef pipe_rc
+   pipe_ram_controller
+`endif
 		  rc
 		     (.clk(clk100),
 		      .vga_clk(clk50),

@@ -41,7 +41,8 @@
 `ifdef build_debug
  `define debug
  `define use_ram_controller   
- `define slow_rc
+// `define slow_rc
+ `define pipe_rc
 // `define debug_rc
 // `define debug_md
 // `define debug_vma
@@ -96,6 +97,10 @@
 
 `ifdef min_rc
  `include "min_ram_controller.v"
+`endif
+
+`ifdef pipe_rc
+ `include "../rtl/pipe_ram_controller.v"
 `endif
 
 `ifdef build_debug_or_fpga

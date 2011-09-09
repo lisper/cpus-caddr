@@ -1,6 +1,7 @@
 `timescale 1ns / 1ns
 
-`include "../rtl/support.v"
+//`include "../rtl/support.v"
+`include "/mwave/home/brad/cpus/caddr/rtl/support.v"
 
 module test_support;
 
@@ -20,6 +21,8 @@ module test_support;
 		   .cpuclk(clk1x),
 		   .button_r(button[3]),
 		   .button_b(button[2]),
+   		   .button_h(button[1]),
+   		   .button_c(button[0]),
 		   .dcm_reset(dcm_reset),
 		   .reset(reset),
 		   .interrupt(interrupt),
@@ -51,8 +54,9 @@ module test_support;
 
 	#1000 locked = 1;
 	#5000 button = 4'b1000;
-	#40000000 button = 4'b0000;
-
+//#5000; $finish;
+	
+ 	#40000000 button = 4'b0000;
 	#40000000 $finish;
      end
    

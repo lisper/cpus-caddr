@@ -1,0 +1,25 @@
+brad@mwave:~/cpus/caddr/rtl$ svn diff caddr.v 
+Index: caddr.v
+===================================================================
+--- caddr.v	(revision 81)
++++ caddr.v	(working copy)
+@@ -195,7 +195,7 @@
+    reg [9:0] 	wadr;
+ 
+    wire [7:0] 	aeqm_bits;
+-   wire 	aeqm;
++   reg 		aeqm;
+    wire [32:0] 	alu;
+ 
+    wire 	divposlasttime, divsubcond, divaddcond;
+@@ -627,7 +627,12 @@
+ 
+    // 74181 pulls down AEB if not equal
+    // aeqm is the simulated open collector
+-   assign aeqm = aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;
++   //assign aeqm = aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;
++   always @(posedge clk)
++     if (reset)
++       aeqm <= 0;
++     else
++       aeqm <= aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;

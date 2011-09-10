@@ -5,7 +5,7 @@ module display(clk, reset, pc, dots, sevenseg, sevenseg_an);
    
     input 	clk;
     input 	reset;
-    input [15:0] pc;
+    input [13:0] pc;
     input [3:0]  dots;
     output [7:0] sevenseg;
     output [3:0] sevenseg_an;
@@ -17,7 +17,7 @@ module display(clk, reset, pc, dots, sevenseg, sevenseg_an);
    reg [10:0]    divider;
    reg           aclk;
 
-   reg [15:0] 	 pc_reg;
+   reg [13:0] 	 pc_reg;
    reg [3:0] 	 dots_reg;
    
    assign digit = (anode == 2'b11) ? pc_reg[11:9] :
@@ -49,14 +49,20 @@ module display(clk, reset, pc, dots, sevenseg, sevenseg_an);
        end
    
    always @(posedge clk)
-     begin
-       divider <= divider + 11'b1;
-       if (divider == 0)
-          aclk = ~aclk;
-     end
+     if (reset)
+       divider <= 0;
+     else
+       begin
+	  divider <= divider + 11'b1;
+	  if (divider == 0)
+            aclk = ~aclk;
+       end
 
    // digit scan clock
-   always @(posedge aclk)
+   always @(posedge aclk or posedge reset)
+     if (reset)
+       anode <= 0;
+     else
        anode <= anode + 1'b1;
 
 endmodule

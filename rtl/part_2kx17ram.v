@@ -52,16 +52,19 @@ module part_2kx17dpram(reset,
 `endif // QUARTUS
 
 `ifdef ISE
+   wire ena_a = rden_a | wren_a;
+   wire ena_b = rden_b | wren_b;
+   
    ise_2kx17_dpram inst
      (
       .clka(clk_a),
-      .ena(rden_a),
+      .ena(ena_a),
       .wea(wren_a),
       .addra(address_a),
       .dina(data_a),
       .douta(q_a),
       .clkb(clk_b),
-      .enb(rden_b),
+      .enb(ena_b),
       .web(wren_b),
       .addrb(address_b),
       .dinb(data_b),

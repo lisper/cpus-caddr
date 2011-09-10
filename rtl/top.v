@@ -2,124 +2,8 @@
  * top of fpga for CADDR
  */
 
-module fpga_clocks(sysclk, slideswitch, dcm_reset,
-		   sysclk_buf, clk50, clk100, clk1x, pixclk);
-
-   input sysclk;
-   input [7:0] slideswitch;
-   input       dcm_reset;
-   
-   output      sysclk_buf;
-   output      clk50;
-   output      clk100;
-   output      clk1x;
-   output      pixclk;
-   
-   // ------------------------------------
-   
-   IBUFG sysclk_buffer (.I(sysclk), 
-			.O(sysclk_buf));
-
-   // DCM
-   wire GND1;
-   wire CLKFX_BUF;
-   wire CLK2X_BUF;
-   wire CLKFB_IN;
-   wire LOCKED_OUT;
-   
-   assign GND1 = 0;
-   
-   BUFG CLKFX_BUFG_INST (.I(CLKFX_BUF), 
-                         .O(pixclk));
-
-   BUFG CLK2X_BUFG_INST (.I(CLK2X_BUF), 
-                         .O(CLKFB_IN));
-
-   DCM DCM_INST (.CLKIN(sysclk_buf),
-		 .CLKFB(CLKFB_IN), 
-                 .DSSEN(GND1), 
-                 .PSCLK(GND1), 
-                 .PSEN(GND1), 
-                 .PSINCDEC(GND1), 
-                 .RST(dcm_reset), 
-                 .CLKFX(CLKFX_BUF), 
-                 .CLK2X(CLK2X_BUF), 
-                 .LOCKED(LOCKED_OUT));
-   
-   defparam DCM_INST.CLK_FEEDBACK = "2X";
-   defparam DCM_INST.CLKDV_DIVIDE = 2.0;
-   defparam DCM_INST.CLKFX_DIVIDE = 6;
-   defparam DCM_INST.CLKFX_MULTIPLY = 13;
-   defparam DCM_INST.CLKIN_DIVIDE_BY_2 = "FALSE";
-   defparam DCM_INST.CLKIN_PERIOD = 20.0;
-   defparam DCM_INST.CLKOUT_PHASE_SHIFT = "NONE";
-   defparam DCM_INST.DESKEW_ADJUST = "SYSTEM_SYNCHRONOUS";
-   defparam DCM_INST.DFS_FREQUENCY_MODE = "LOW";
-   defparam DCM_INST.DLL_FREQUENCY_MODE = "LOW";
-   defparam DCM_INST.DUTY_CYCLE_CORRECTION = "TRUE";
-   defparam DCM_INST.FACTORY_JF = 16'h8080;
-   defparam DCM_INST.PHASE_SHIFT = 0;
-   defparam DCM_INST.STARTUP_WAIT = "FALSE";
-   
-`define use_dcm
-`ifdef use_dcm
-//   clk100_dcm clk100_dcm(.CLKIN_IN(sysclk_buf), 
-//			 .RST_IN(dcm_reset), 
-//			 .CLK0_OUT(clk50),
-//			 .CLK2X_OUT(clk100), 
-//			 .LOCKED_OUT());
-   
-//   clk_dcm clk_dcm(.CLKIN_IN(sysclk_buf), 
-//		   .RST_IN(dcm_reset), 
-//		   .CLKFX_OUT(pixclk), 
-////		   .CLKIN_IBUFG_OUT(sysclk_buf), 
-//		   .LOCKED_OUT());
-
-   wire clk100_dcm;
-   wire clk50_dcm;
-   
-   DCM dcm100(.CLKIN(sysclk_buf),
-	      .RST(dcm_reset),
-	      .CLKFB(clk50_dcm),
-	      .CLK0(clk50_dcm),
-	      .CLK2X(clk100_dcm));
-   defparam dcm100.CLKIN_PERIOD = 20.0;
-
-   BUFG buf100(.I(clk100_dcm), .O(clk100));
-
-//
-reg 	clk100_div2;
-assign clk50 = clk100_div2;
-always @(posedge clk100)
-clk100_div2 <= ~clk100_div2;
-//
-`else
-   reg 	clk100_div2;
-
-   BUFG clk100_bufg (.I(sysclk_buf), .O(clk100));
-   assign clk50 = clk100_div2;
-
-   always @(posedge clk100)
-     clk100_div2 <= ~clk100_div2;
-`endif
-
-   //----
-   reg [22:0] slow;
-
-   always @(posedge clk50)
-       slow <= slow + 1;
-
-   assign clk1x =
-		 slideswitch[6] ? slow[18] :
-		 slideswitch[5] ? slow[6] :
-		 slideswitch[4] ? slow[5] :
-		 slideswitch[3] ? slow[4] :
-		 slideswitch[2] ? slow[2] :
-		 slideswitch[1] ? slow[1] :
-		 slideswitch[0] ? slow[0] :
-		 clk50;
-
-endmodule
+`define full_design
+`define use_vga   
 
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
@@ -223,7 +107,7 @@ module top(rs232_txd, rs232_rxd,
    wire 	 vram_vga_ready;
 
    wire [13:0] 	 pc;
-   wire [4:0] 	 cpu_state; // synthesis attribute keep cpu_state true;
+   wire [5:0] 	 cpu_state; // synthesis attribute keep cpu_state true;
    wire [4:0] 	 disk_state; // synthesis attribute keep disk_state true;
    wire [3:0] 	 bus_state; // synthesis attribute keep bus_state true;
    wire [3:0] 	 rc_state; // synthesis attribute keep rc_state true;
@@ -239,9 +123,11 @@ module top(rs232_txd, rs232_rxd,
    wire [15:0] 	 sram2_out;
 
    wire 	 sysclk_buf;
+   wire [7:0] 	 switches;
 
    fpga_clocks fpga_clocks(.sysclk(sysclk),
 			   .slideswitch(slideswitch),
+			   .switches(switches),
 			   .dcm_reset(dcm_reset),
 			   .sysclk_buf(sysclk_buf),
 			   .clk50(clk50),
@@ -262,7 +148,6 @@ module top(rs232_txd, rs232_rxd,
 		   .boot(boot),
 		   .halt(halt));
 
-`define full_design
 `ifdef full_design
    caddr cpu (
 	      .clk(clk1x),
@@ -321,7 +206,7 @@ module top(rs232_txd, rs232_rxd,
    assign      dbread = 0;
    assign      dbwrite = 0;
 
-   slow_ram_controller rc (
+   pipe_ram_controller rc (
 		      .clk(clk100),
 		      .vga_clk(clk50),
 		      .cpu_clk(clk1x),
@@ -395,7 +280,6 @@ module top(rs232_txd, rs232_rxd,
    assign sram2_lb_n = 1'b1;
 `endif
 
-`define use_vga   
 `ifdef use_vga
    wire vram_vga_req_x;
    
@@ -415,7 +299,7 @@ module top(rs232_txd, rs232_rxd,
 		    .vga_vsync(vga_vsync)
 		    );
 
-   assign vram_vga_req = slideswitch[7] ? vram_vga_req_x : 0;
+   assign vram_vga_req = switches[7] ? vram_vga_req_x : 0;
 `else
    assign vram_vga_req = 0;
    assign vga_red = 0;

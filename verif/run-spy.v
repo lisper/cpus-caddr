@@ -2,7 +2,9 @@
 
 `timescale 1ns / 1ns
 
+`define fake_uart
 //`define sim_time
+
 `include "../rtl/spy.v"
 
 module run_spy;

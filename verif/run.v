@@ -13,6 +13,7 @@
 `include "rtl.v"
 
 `include "ram_s3board.v"
+`include "../rtl/spy.v"
   
 `timescale 1ns / 1ns
 
@@ -24,7 +25,7 @@ module test;
    // controlled by rc circuit at power up
    reg boot;
 
-   reg [15:0] spyin;
+   wire [15:0] spyin;
    wire [15:0] spyout;
    wire        dbread, dbwrite;
    wire [3:0]  eadr;
@@ -190,6 +191,9 @@ module test;
 `ifdef min_rc
    min_ram_controller
 `endif
+`ifdef pipe_rc
+   pipe_ram_controller
+`endif
      		   rc
 		     (.clk(clk100),
 		      .vga_clk(clk50),
@@ -279,17 +283,31 @@ module test;
 		   .ram2_ce_n(sram2_ce_n),
 		   .ram2_ub_n(sram2_ub_n),
 		   .ram2_lb_n(sram2_lb_n));
-		   
+
+   spy_port spy_port(
+		     .sysclk(sysclk),
+		     .clk(clk1x),
+		     .reset(reset),
+		     .rs232_rxd(rs232_rxd),
+		     .rs232_txd(rs232_txd),
+		     .spy_in(spyout),
+		     .spy_out(spyin),
+		     .dbread(dbread),
+		     .dbwrite(dbwrite),
+		     .eadr(eadr)
+		     );
+
+//   assign      eadr = 4'b0;
+//   assign      dbread = 0;
+//   assign      dbwrite = 0;
+//   assign      spyin = 0;
+
    integer     addr;
    integer     debug_level;
    integer     dumping;
    integer     cycles;
    integer     max_cycles;
      
-   assign      eadr = 4'b0;
-   assign      dbread = 0;
-   assign      dbwrite = 0;
-
    reg [1023:0]  arg;
    integer 	n;
 
@@ -342,7 +360,6 @@ module test;
 	sysclk = 0;
 	interrupt = 0;
 	reset = 0;
-	spyin = 0;
 
 	ram.ram1.ram_h[0] = 0;
 	ram.ram2.ram_l[0] = 0;
@@ -390,7 +407,7 @@ module test;
   6'b000010: $display("%0o %o read   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b000100: $display("%0o %o alu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b001000: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  6'b010000: $display("%0o %o mmut   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+  6'b010000: $display("%0o %o mmu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b100000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
 	endcase
 

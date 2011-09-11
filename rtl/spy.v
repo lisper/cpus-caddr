@@ -2,7 +2,7 @@
 // serial port spy support
 //
 
-// // // // brg.v
+// brg.v
 // baud rate generator for uart
 
 module brg(clk, reset, tx_baud_clk, rx_baud_clk);
@@ -74,6 +74,7 @@ module brg(clk, reset, tx_baud_clk, rx_baud_clk);
 endmodule
 
 
+`ifndef fake_uart
 // uart.v
 // simple low speed async uart for RS-232
 // brad@heeltoe.com 2009
@@ -320,6 +321,195 @@ module uart(clk, reset,
    
 endmodule
 
+`else // !`ifndef fake_uart
+
+module uart(clk, reset,
+	    txclk, ld_tx_req, ld_tx_ack, tx_data, tx_enable, tx_out, tx_empty,
+	    rxclk, uld_rx_req, uld_rx_ack, rx_data, rx_enable, rx_in, rx_empty);
+   
+   input        clk;
+   input        reset;
+   input        txclk;
+   input        ld_tx_req;
+   output 	ld_tx_ack;
+   input [7:0] 	tx_data;
+   input        tx_enable;
+   output       tx_out;
+   output       tx_empty;
+   input        rxclk;
+   input        uld_rx_req;
+   output 	uld_rx_ack;
+   output [7:0] rx_data;
+   input        rx_enable;
+   input        rx_in;
+   output       rx_empty;
+
+   reg 		ld_tx_ack;
+   reg 		uld_rx_ack;
+   reg [7:0] 	rx_data;
+   reg 		rx_empty;
+   
+   //
+   integer 	tx_count;
+   integer 	tx_ptr;
+   integer 	tx_list[10:0];
+
+   assign 	tx_empty = 0;
+
+   initial
+     begin
+	rx_empty = 1;
+
+	tx_ptr = 0;
+	tx_count = 5;
+	tx_list[0] = 8'h30;
+	tx_list[1] = 8'h40;
+	tx_list[2] = 8'h50;
+	tx_list[3] = 8'h60;
+	tx_list[4] = 8'h93;
+
+	#8000; rx_empty = 0;
+
+`ifdef test_halt
+	#110000;
+	tx_ptr = 0;
+	tx_count = 5;
+	tx_list[0] = 8'h30;
+	tx_list[1] = 8'h40;
+	tx_list[2] = 8'h50;
+	tx_list[3] = 8'h61;
+	tx_list[4] = 8'h93;
+	rx_empty = 0;
+`endif
+`define test_step
+`ifdef test_step
+	#110000;
+	tx_ptr = 0;
+	tx_count = 5;
+	tx_list[0] = 8'h30;
+	tx_list[1] = 8'h40;
+	tx_list[2] = 8'h50;
+	tx_list[3] = 8'h62;
+	tx_list[4] = 8'h93;
+	rx_empty = 0;
+
+	#110000;
+	tx_ptr = 0;
+	tx_count = 5;
+	tx_list[0] = 8'h30;
+	tx_list[1] = 8'h40;
+	tx_list[2] = 8'h50;
+	tx_list[3] = 8'h60;
+	tx_list[4] = 8'h93;
+	rx_empty = 0;
+
+	#110000;
+	tx_ptr = 0;
+	tx_count = 5;
+	tx_list[0] = 8'h30;
+	tx_list[1] = 8'h40;
+	tx_list[2] = 8'h50;
+	tx_list[3] = 8'h62;
+	tx_list[4] = 8'h93;
+	rx_empty = 0;
+
+	#110000;
+	tx_ptr = 0;
+	tx_count = 5;
+	tx_list[0] = 8'h30;
+	tx_list[1] = 8'h40;
+	tx_list[2] = 8'h50;
+	tx_list[3] = 8'h60;
+	tx_list[4] = 8'h93;
+	rx_empty = 0;
+`endif 	
+
+	#120000;
+	$finish;
+     end
+
+   reg [1:0]	rx_uld;
+   reg [1:0] 	rx_uld_next;
+   
+   reg [1:0]	tx_ld;
+   reg [1:0] 	tx_ld_next;
+
+   always @(posedge rxclk or posedge reset)
+     if (reset)
+       rx_uld <= 2'b00;
+     else
+       rx_uld <= rx_uld_next;
+
+   always @(uld_rx_req or rx_uld)
+     begin
+	rx_uld_next = rx_uld;
+	uld_rx_ack = 0;
+	case (rx_uld)
+	  2'b00: if (uld_rx_req) rx_uld_next = 2'b01;
+	  2'b01: begin
+	     if (tx_count > 0)
+	       begin
+		  rx_data = tx_list[tx_ptr];
+		  $display("fake_uart: send %x, count %d", tx_list[tx_ptr], tx_count);
+	       end
+	     else
+	       begin
+		  rx_data = 0;
+		  rx_empty = 1;
+	       end
+	     
+	     uld_rx_ack = 1;
+	     rx_uld_next = 2'b10;
+	    end
+	  2'b10: begin
+	     uld_rx_ack = 1;
+	     if (~uld_rx_req)
+	       begin
+		  rx_uld_next = 2'b00;
+		  tx_ptr = tx_ptr + 1;
+		  tx_count = tx_count - 1;
+	       end
+	    end
+	  default: rx_uld_next = 2'b00;
+	endcase
+     end
+
+   wire uld_rx_data;
+   assign uld_rx_data = rx_uld == 2'b01;
+   
+   // require tx_ld_req to deassert before accepting next char
+   always @(posedge txclk or posedge reset)
+     if (reset)
+       tx_ld <= 2'b00;
+     else
+       tx_ld <= tx_ld_next;
+
+   always @(ld_tx_req or tx_ld)
+     begin
+	tx_ld_next = tx_ld;
+	ld_tx_ack = 0;
+	case (tx_ld)
+	  2'b00: if (ld_tx_req) tx_ld_next = 2'b01;
+	  2'b01: begin
+	     ld_tx_ack = 1;
+	     tx_ld_next = 2'b10;
+	    end
+	  2'b10: begin
+	     ld_tx_ack = 1;
+	     if (~ld_tx_req) tx_ld_next = 2'b00;
+	    end
+	  default: tx_ld_next = 2'b00;
+	endcase
+     end
+   
+   wire ld_tx_data;
+   assign ld_tx_data = tx_ld == 2'b01;
+   
+   
+endmodule
+
+`endif // !`ifndef fake_uart
+
 /*
  serial spy port
 
@@ -427,7 +617,6 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
 		.rx_in(rs232_rxd),
 		.rx_empty(rx_empty));
 
-
    reg [15:0] data;
    reg [3:0]  reg_addr;
    reg [15:0] response;
@@ -479,7 +668,8 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
      else
        spyu_state <= spyu_next_state;
 
-   assign start_read = (spyu_state == SPYU_OP) && (rx_data[7:4] == 8);
+   /* add == 2 so "space" can be used to test interface */
+   assign start_read = (spyu_state == SPYU_OP) && ((rx_data[7:4] == 8) || (rx_data[7:4] == 2));
    assign start_write = (spyu_state == SPYU_OP) && (rx_data[7:4] == 9);
    
    always @(posedge clk)
@@ -529,6 +719,19 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
 	  respond <= start_read;
        end
 
+`ifdef debug
+   always @(posedge clk)
+     begin
+	if (dbread)
+	  $display("SPY: read %o", eadr);
+	if (dbwrite)
+	  $display("SPY: write %o <- %o", eadr, data);
+
+	//if (spyu_state == SPYU_RX2)
+	//$display("SPY: got uart byte 0x%x", rx_data);
+     end
+`endif
+   
    always @(posedge clk)
      if (reset)
        response <= 0;

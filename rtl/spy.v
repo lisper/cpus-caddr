@@ -100,9 +100,6 @@ module uart(clk, reset,
    input        rx_in;
    output       rx_empty;
 
-   reg 		ld_tx_ack;
-   reg 		uld_rx_ack;
- 		
    reg [7:0] 	tx_reg;
    reg          tx_empty;
    reg          tx_over_run;
@@ -119,11 +116,14 @@ module uart(clk, reset,
    reg          rx_d2;
    reg          rx_busy;
 
+   //
    reg [1:0]	rx_uld;
-   reg [1:0] 	rx_uld_next;
+   wire [1:0] 	rx_uld_next;
+   wire 	uld_rx_data;
    
    reg [1:0]	tx_ld;
-   reg [1:0] 	tx_ld_next;
+   wire [1:0] 	tx_ld_next;
+   wire 	ld_tx_data;
 
    // require uld_rx_req to deassert before sending next char
    always @(posedge rxclk or posedge reset)
@@ -132,26 +132,14 @@ module uart(clk, reset,
      else
        rx_uld <= rx_uld_next;
 
-   always @(uld_rx_req or rx_uld)
-     begin
-	rx_uld_next = rx_uld;
-	uld_rx_ack = 0;
-	case (rx_uld)
-	  2'b00: if (uld_rx_req) rx_uld_next = 2'b01;
-	  2'b01: begin
-	     uld_rx_ack = 1;
-	     rx_uld_next = 2'b10;
-	    end
-	  2'b10: begin
-	     uld_rx_ack = 1;
-	     if (~uld_rx_req) rx_uld_next = 2'b00;
-	    end
-	  default: rx_uld_next = 2'b00;
-	endcase
-     end
+   assign rx_uld_next =
+		      (rx_uld == 0 && rx_uld_req) ? 1 :
+		      (rx_uld == 1) ? 2 :
+		      (rx_uld == 2 && ~rx_uld_req) ? 0 :
+		       rx_uld;
 
-   wire uld_rx_data;
-   assign uld_rx_data = rx_uld == 2'b01;
+   assign uld_rx_ack = (rx_uld == 1) || (rx_uld == 2);
+   assign uld_rx_data = (rx_uld == 1);
    
    // require tx_ld_req to deassert before accepting next char
    always @(posedge txclk or posedge reset)
@@ -160,26 +148,14 @@ module uart(clk, reset,
      else
        tx_ld <= tx_ld_next;
 
-   always @(ld_tx_req or tx_ld)
-     begin
-	tx_ld_next = tx_ld;
-	ld_tx_ack = 0;
-	case (tx_ld)
-	  2'b00: if (ld_tx_req) tx_ld_next = 2'b01;
-	  2'b01: begin
-	     ld_tx_ack = 1;
-	     tx_ld_next = 2'b10;
-	    end
-	  2'b10: begin
-	     ld_tx_ack = 1;
-	     if (~ld_tx_req) tx_ld_next = 2'b00;
-	    end
-	  default: tx_ld_next = 2'b00;
-	endcase
-     end
-   
-   wire ld_tx_data;
-   assign ld_tx_data = tx_ld == 2'b01;
+   assign tx_ld_next =
+		      (tx_ld == 0 && tx_ld_req) ? 1 :
+		      (tx_ld == 1) ? 2 :
+		      (tx_ld == 2 && ~tx_ld_req) ? 0 :
+		      tx_ld;
+
+   assign tx_ld_ack = (tx_ld == 1) || (tx_ld == 2);
+   assign ld_tx_data = (tx_ld == 1);
    
    
    // uart rx
@@ -344,8 +320,6 @@ module uart(clk, reset,
    input        rx_in;
    output       rx_empty;
 
-   reg 		ld_tx_ack;
-   reg 		uld_rx_ack;
    reg [7:0] 	rx_data;
    reg 		rx_empty;
    
@@ -360,6 +334,13 @@ module uart(clk, reset,
      begin
 	rx_empty = 1;
 
+	#2000;
+	
+//`define test_halt
+//`define test_step
+`define test_get
+
+`ifdef test_halt
 	tx_ptr = 0;
 	tx_count = 5;
 	tx_list[0] = 8'h30;
@@ -367,10 +348,7 @@ module uart(clk, reset,
 	tx_list[2] = 8'h50;
 	tx_list[3] = 8'h60;
 	tx_list[4] = 8'h93;
-
-	#8000; rx_empty = 0;
-
-`ifdef test_halt
+	rx_empty = 0;
 	#110000;
 	tx_ptr = 0;
 	tx_count = 5;
@@ -380,10 +358,16 @@ module uart(clk, reset,
 	tx_list[3] = 8'h61;
 	tx_list[4] = 8'h93;
 	rx_empty = 0;
-`endif
-`define test_step
-`ifdef test_step
 	#110000;
+`endif
+`ifdef test_get
+	tx_ptr = 0;
+	tx_count = 1;
+	tx_list[0] = 8'h80;
+	rx_empty = 0;
+	#1250000;
+`endif
+`ifdef test_step
 	tx_ptr = 0;
 	tx_count = 5;
 	tx_list[0] = 8'h30;
@@ -429,53 +413,51 @@ module uart(clk, reset,
      end
 
    reg [1:0]	rx_uld;
-   reg [1:0] 	rx_uld_next;
+   wire [1:0] 	rx_uld_next;
+   wire 	uld_rx_data;
    
    reg [1:0]	tx_ld;
-   reg [1:0] 	tx_ld_next;
+   wire [1:0] 	tx_ld_next;
+   wire 	ld_tx_data;
 
+   // require uld_rx_req to deassert before sending next char
    always @(posedge rxclk or posedge reset)
      if (reset)
        rx_uld <= 2'b00;
      else
        rx_uld <= rx_uld_next;
 
-   always @(uld_rx_req or rx_uld)
-     begin
-	rx_uld_next = rx_uld;
-	uld_rx_ack = 0;
-	case (rx_uld)
-	  2'b00: if (uld_rx_req) rx_uld_next = 2'b01;
-	  2'b01: begin
-	     if (tx_count > 0)
-	       begin
-		  rx_data = tx_list[tx_ptr];
-		  $display("fake_uart: send %x, count %d", tx_list[tx_ptr], tx_count);
-	       end
-	     else
-	       begin
-		  rx_data = 0;
-		  rx_empty = 1;
-	       end
-	     
-	     uld_rx_ack = 1;
-	     rx_uld_next = 2'b10;
-	    end
-	  2'b10: begin
-	     uld_rx_ack = 1;
-	     if (~uld_rx_req)
-	       begin
-		  rx_uld_next = 2'b00;
-		  tx_ptr = tx_ptr + 1;
-		  tx_count = tx_count - 1;
-	       end
-	    end
-	  default: rx_uld_next = 2'b00;
-	endcase
-     end
+   assign rx_uld_next =
+		      (rx_uld == 0 && uld_rx_req) ? 1 :
+		      (rx_uld == 1) ? 2 :
+		      (rx_uld == 2 && ~uld_rx_req) ? 0 :
+		       rx_uld;
 
-   wire uld_rx_data;
-   assign uld_rx_data = rx_uld == 2'b01;
+   assign uld_rx_ack = (rx_uld == 1) || (rx_uld == 2);
+   assign uld_rx_data = (rx_uld == 1);
+
+   always @(posedge rxclk)
+     if (rx_uld == 1)
+       begin
+	  if (tx_count > 0)
+	    begin
+	       rx_data = tx_list[tx_ptr];
+	       $display("fake_uart: jam %x, count %d", tx_list[tx_ptr], tx_count);
+	    end
+	  else
+	    begin
+	       rx_data = 0;
+	    end
+       end // if (rx_uld == 1)
+   
+   always @(posedge rxclk)
+     if (rx_uld == 2 && ~uld_rx_req)
+       begin
+	  tx_ptr = tx_ptr + 1;
+	  tx_count = tx_count - 1;
+	  if (tx_count == 0)
+	    rx_empty = 1;
+       end
    
    // require tx_ld_req to deassert before accepting next char
    always @(posedge txclk or posedge reset)
@@ -484,27 +466,19 @@ module uart(clk, reset,
      else
        tx_ld <= tx_ld_next;
 
-   always @(ld_tx_req or tx_ld)
-     begin
-	tx_ld_next = tx_ld;
-	ld_tx_ack = 0;
-	case (tx_ld)
-	  2'b00: if (ld_tx_req) tx_ld_next = 2'b01;
-	  2'b01: begin
-	     ld_tx_ack = 1;
-	     tx_ld_next = 2'b10;
-	    end
-	  2'b10: begin
-	     ld_tx_ack = 1;
-	     if (~ld_tx_req) tx_ld_next = 2'b00;
-	    end
-	  default: tx_ld_next = 2'b00;
-	endcase
-     end
-   
-   wire ld_tx_data;
-   assign ld_tx_data = tx_ld == 2'b01;
-   
+   assign tx_ld_next =
+		      (tx_ld == 0 && ld_tx_req) ? 1 :
+		      (tx_ld == 1 && ~ld_tx_req) ? 0 :
+//		      (tx_ld == 1) ? 2 :
+//		      (tx_ld == 2 && ~ld_tx_req) ? 0 :
+		      tx_ld;
+
+   assign ld_tx_ack = (tx_ld == 1) || (tx_ld == 2);
+   assign ld_tx_data = (tx_ld == 1);
+
+   always @(posedge txclk)
+     if (tx_ld == 1)
+       $display("fake_uart: send %x", tx_data);
    
 endmodule
 
@@ -769,10 +743,7 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
 			 (tx_state == 1) ? 2 :
 			 (tx_state == 2 && ld_tx_ack) ? 3 :
 			 (tx_state == 3 && ~ld_tx_ack) ? 4 :
-			 (tx_state == 4) ? 5 :
-			 (tx_state == 5) ? 6 :
-			 (tx_state == 6) ? 7 :
-			 (tx_state == 7) ? 0 :
+			 (tx_state == 4) ? 0 :
 			 tx_state;
    
    always @(posedge clk)

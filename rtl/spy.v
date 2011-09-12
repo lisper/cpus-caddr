@@ -736,7 +736,7 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
      if (reset)
        response <= 0;
      else
-       if (start_read)
+       if (dbread/*start_read*/)
 	 response <= spy_in;
 
    // transmit one character
@@ -752,9 +752,9 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
      else
        case (spyu_state)
 	 SPYU_TX1: tx_data <= { 4'h3, response[15:12] };
-	 SPYU_TX3: tx_data <= { 4'h4, response[15:12] };
-	 SPYU_TX5: tx_data <= { 4'h5, response[15:12] };
-	 SPYU_TX7: tx_data <= { 4'h6, response[15:12] };
+	 SPYU_TX3: tx_data <= { 4'h4, response[11:8] };
+	 SPYU_TX5: tx_data <= { 4'h5, response[7:4] };
+	 SPYU_TX7: tx_data <= { 4'h6, response[3:0] };
 	 default: ;
        endcase
 
@@ -769,7 +769,10 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
 			 (tx_state == 1) ? 2 :
 			 (tx_state == 2 && ld_tx_ack) ? 3 :
 			 (tx_state == 3 && ~ld_tx_ack) ? 4 :
-			 (tx_state == 4) ? 0 :
+			 (tx_state == 4) ? 5 :
+			 (tx_state == 5) ? 6 :
+			 (tx_state == 6) ? 7 :
+			 (tx_state == 7) ? 0 :
 			 tx_state;
    
    always @(posedge clk)

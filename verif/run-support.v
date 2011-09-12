@@ -44,6 +44,15 @@ module test_support;
 	$dumpvars(0, test_support);
      end
 
+   always @(posedge sysclk)
+     begin
+	if (dcm_reset)
+	  locked = 0;
+	else
+	  if (~dcm_reset)
+	    #20 locked = 1;
+     end
+
    initial
      begin
 	slow = 0;
@@ -51,7 +60,6 @@ module test_support;
 	button = 4'b0000;
 	locked = 0;
 
-//	#1000 locked = 1;
 	#5000 button = 4'b1000;
 //#5000; $finish;
 	

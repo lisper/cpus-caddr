@@ -2,7 +2,7 @@
 
 `timescale 1ns / 1ns
 
-`define fake_uart
+//`define fake_uart
 //`define sim_time
 
 `include "../rtl/spy.v"
@@ -70,11 +70,12 @@ module run_spy;
 	clk = 0;
 	reset = 0;
 	rx = 1;
-	spy_in = 0;
+	spy_in = 16'o1234;
 
 	#1 reset = 1;
 	#50 reset = 0;
 
+`ifndef fake_uart
 	send_tt_rx(8'h80);
 	#1000000;
 	send_tt_rx(8'h81);
@@ -93,8 +94,14 @@ module run_spy;
 	#1000000;
 	send_tt_rx(8'h93);
 	#1000000;
-
 	$finish;
+`endif
+
+	#1000000;
+	#1000000;
+	#1000000;
+	#1000000;
+	
      end
 
   always

@@ -21,13 +21,13 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
 
    //
    reg [11:0] sys_slowcount;
-   reg 	      sys_slowclk;
-
    reg [5:0]  sys_medcount;
-   reg 	      sys_medclk;
+   reg [1:0]  cpu_slowcount;
    
-   reg 	      cpu_slowclk;
-
+   wire       sys_medevent;
+   wire       sys_slowevent;
+   wire       cpu_slowevent;
+   
    reg [2:0]  reset_state;
    wire [2:0]  reset_state_next;
 
@@ -62,10 +62,8 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
 	reset_state = 0;
 	cpu_state = 0;
 	sys_slowcount = 0;
-	sys_slowclk = 0;
 	sys_medcount = 0;
-        sys_medclk = 0;
-	cpu_slowclk = 0;
+	cpu_slowcount = 0;
 	hold = 0;
 	press_history = 0;
      end
@@ -73,10 +71,10 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
    // debounce clock
    always @(posedge cpuclk or posedge dcm_reset)
      if (dcm_reset)
-       cpu_slowclk <= 0;
+       cpu_slowcount <= 0;
      else
-       cpu_slowclk <= ~cpu_slowclk;
-
+       cpu_slowcount = cpu_slowcount + 1;
+   
    assign dcm_reset = reset_state == r_reset1;
    assign reset = cpu_state == c_reset1 || cpu_state == c_reset2 || cpu_state == c_reset3;
    assign boot = cpu_state == c_reset3 || cpu_state == c_boot;
@@ -90,9 +88,12 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
 			  (cpu_state == c_boot) ? c_wait :
 			  (cpu_state == c_wait && reset_state == r_idle) ? c_idle :
 			  cpu_state;
+
+   assign cpu_slowevent = cpu_slowcount == 2'b11;
    
-   always @(posedge cpu_slowclk)
-     cpu_state <= cpu_state_next;
+   always @(posedge cpuclk)
+     if (cpu_slowevent)
+       cpu_state <= cpu_state_next;
 
    // main state machine
    assign reset_state_next =
@@ -103,37 +104,37 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
 			    (reset_state == r_wait & ~pressed) ? r_idle :
 			    reset_state;
 			    
-   always @(posedge sys_medclk)
-     reset_state <= reset_state_next;
-
+   always @(posedge sysclk)
+     if (sys_medevent)
+       reset_state <= reset_state_next;
    
    // dcm clock
    always @(posedge sysclk)
      begin
 	sys_medcount <= sys_medcount + 1;
-
-	if (sys_medcount == 6'b111111)
-          sys_medclk <= ~sys_medclk;
      end
 
+   assign sys_medevent = sys_medcount == 6'b111111;
+   
    // debounce clock
    always @(posedge sysclk)
      begin
 	sys_slowcount <= sys_slowcount + 1;
-
-	if (sys_slowcount == 12'h0fff)
-          sys_slowclk <= ~sys_slowclk;
      end
 
+   assign sys_slowevent = sys_slowcount == 12'h0fff;
+   
    // sample push button
-   always @(posedge sys_slowclk)
-     hold <= { hold[8:0], button_r };
+   always @(posedge sysclk)
+     if (sys_slowevent)
+       hold <= { hold[8:0], button_r };
 
    assign press_detected = hold == 10'b1111111111;
 
    // generate button events
-   always @(posedge sys_slowclk)
-     press_history <= press_detected;
+   always @(posedge sysclk)
+     if (sys_slowevent)
+       press_history <= press_detected;
 
    assign pressed = (!press_history && press_detected);
    assign released = (press_history && ~press_detected);

@@ -133,9 +133,9 @@ module uart(clk, reset,
        rx_uld <= rx_uld_next;
 
    assign rx_uld_next =
-		      (rx_uld == 0 && rx_uld_req) ? 1 :
+		      (rx_uld == 0 && uld_rx_req) ? 1 :
 		      (rx_uld == 1) ? 2 :
-		      (rx_uld == 2 && ~rx_uld_req) ? 0 :
+		      (rx_uld == 2 && ~uld_rx_req) ? 0 :
 		       rx_uld;
 
    assign uld_rx_ack = (rx_uld == 1) || (rx_uld == 2);
@@ -149,12 +149,13 @@ module uart(clk, reset,
        tx_ld <= tx_ld_next;
 
    assign tx_ld_next =
-		      (tx_ld == 0 && tx_ld_req) ? 1 :
-		      (tx_ld == 1) ? 2 :
-		      (tx_ld == 2 && ~tx_ld_req) ? 0 :
+		      (tx_ld == 0 && ld_tx_req) ? 1 :
+		      (tx_ld == 1 && ~ld_tx_req) ? 0 :
+//		      (tx_ld == 1) ? 2 :
+//		      (tx_ld == 2 && ~ld_tx_req) ? 0 :
 		      tx_ld;
 
-   assign tx_ld_ack = (tx_ld == 1) || (tx_ld == 2);
+   assign ld_tx_ack = (tx_ld == 1) || (tx_ld == 2);
    assign ld_tx_data = (tx_ld == 1);
    
    
@@ -282,11 +283,12 @@ module uart(clk, reset,
 		 4'd6: tx_out <= tx_reg[5];
 		 4'd7: tx_out <= tx_reg[6];
 		 4'd8: tx_out <= tx_reg[7];
-		 4'd9: begin
-		    tx_out <= 1;
-		    tx_cnt <= 0;
-		    tx_empty <= 1;
-		 end
+		 4'd9: tx_out <= 1;
+		 4'd10:
+		   begin
+		      tx_cnt <= 0;
+		      tx_empty <= 1;
+		   end
 		 default: tx_out <= 0;
 	       endcase
 	    end
@@ -736,14 +738,15 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
    wire [2:0] tx_next_state;
    
    assign ld_tx_req = (tx_state == 1) || (tx_state == 2);
-   assign tx_done = tx_state == 4;
+   assign tx_done = tx_state == 5;
    
    assign tx_next_state =
 			 (tx_state == 0 && tx_start) ? 1 :
 			 (tx_state == 1) ? 2 :
 			 (tx_state == 2 && ld_tx_ack) ? 3 :
 			 (tx_state == 3 && ~ld_tx_ack) ? 4 :
-			 (tx_state == 4) ? 0 :
+			 (tx_state == 4 && tx_empty) ? 5 :
+			 (tx_state == 5) ? 0 :
 			 tx_state;
    
    always @(posedge clk)

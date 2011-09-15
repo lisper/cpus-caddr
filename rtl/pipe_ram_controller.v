@@ -195,7 +195,11 @@ module pipe_ram_controller(
    
    reg [14:0] 	 int_vram_cpu_addr;
    reg [31:0] 	 int_vram_cpu_data_in;
-   
+
+`ifdef debug
+   reg 		 debug;
+`endif
+ 		 
    // ---------------------------
 
    parameter S_IDLE = 0,
@@ -356,7 +360,7 @@ module pipe_ram_controller(
 
 `ifdef debug
    always @(posedge clk)
-     if (mcr_write && state == S_MCR_WR1)
+     if (mcr_write && state == S_MCR_WR1 && debug)
        $display("mcr: write @%o <- %o",
 		mcr_addr, mcr_addr == 14'o24045 ? 49'h000000001000 : mcr_data_in);
 `endif
@@ -643,9 +647,9 @@ module pipe_ram_controller(
 	    end
 
 `ifdef debug
-	  if (~sdram_ready && int_sdram_ready_e)
+	  if (~sdram_ready && int_sdram_ready_e && debug)
 	    $display("rc: sdram read %o -> %o; %t", sdram_addr, sdram_out, $time);
-	  if (sdram_write && int_sdram_done_e)
+	  if (sdram_write && int_sdram_done_e && debug)
 	    $display("rc: sdram write %o <- %o; %t", sdram_addr, sdram_data_in, $time);
 `endif
        end

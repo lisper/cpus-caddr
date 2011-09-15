@@ -53,7 +53,7 @@ module xbus_ram (
    initial
      begin
 	debug = 0;
-debug = 1;
+//debug = 1;
 	for (i = 0; i < DRAM_SIZE; i = i + 1)
 	  ram[i] = 0;
      end

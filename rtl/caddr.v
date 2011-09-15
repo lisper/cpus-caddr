@@ -1062,8 +1062,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_fetch && destintctl)
 	 begin
 `ifdef debug
-	    $display("destintctl: ob %o (%b %b %b %b)",
-		     ob, ob[29], ob[28], ob[27], ob[26]);
+	    if (debug > 0)
+	      $display("destintctl: ob %o (%b %b %b %b)",
+		       ob, ob[29], ob[28], ob[27], ob[26]);
 `endif
             lc_byte_mode <= ob[29];
             prog_unibus_reset <= ob[28];
@@ -1571,7 +1572,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
 `ifdef debug
    always @(posedge clk)
-     if (state_write && destpdlx && pdlidx != ob[9:0])
+     if (state_write && destpdlx && pdlidx != ob[9:0] && debug > 0)
        $display("pdlidx <- %o", ob[9:0]);
 `endif
    
@@ -1828,9 +1829,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // spcpush = write[spcptr+1] (state_write), spcptr++ (state_fetch)
 
    wire [4:0] spcptr_p1;
-   wire [4:0] spcadr;
 
    assign spcptr_p1 = spcptr + 5'b00001;
+
+   wire [4:0] spcadr;
    assign spcadr = (spcnt && spush) ? spcptr_p1 : spcptr;
    
    part_32x19dpram i_SPC(
@@ -1890,6 +1892,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page SPY1-2
 
+   reg [31:0] ob_last;
+
+   /* grab ob from last cycle for spy */
+   always @(posedge clk)
+     if (reset)
+       ob_last <= 0;
+     else
+       if (state_fetch)
+	 ob_last <= ob;
+   
    wire[15:0] spy_mux;
 
    assign spy_out = dbread ? spy_mux : 16'b1111111111111111;
@@ -1898,8 +1910,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	spy_irh ? ir[47:32] :
 	spy_irm ? ir[31:16] :
 	spy_irl ? ir[15:0] :
-	spy_obh ? ob[31:16] :
-	spy_obl ? ob[15:0] :
+	spy_obh ? ob_last[31:16] :
+	spy_obl ? ob_last[15:0] :
 	spy_ah  ? a[31:16] :
 	spy_al  ? a[15:0] :
 	spy_mh  ? m[31:16] :
@@ -2215,23 +2227,26 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
   
    // page DEBUG
 
-   always @(posedge lddbirh or posedge reset)
+   always @(posedge clk)
      if (reset)
        spy_ir[47:32] <= 16'b0;
      else
-       spy_ir[47:32] <= spy_in;
+       if (lddbirh)
+	 spy_ir[47:32] <= spy_in;
 
-   always @(posedge lddbirm or posedge reset)
+   always @(posedge clk)
      if (reset)
        spy_ir[31:16] <= 16'b0;
      else
-       spy_ir[31:16] <= spy_in;
+       if (lddbirm)
+	 spy_ir[31:16] <= spy_in;
 
-   always @(posedge lddbirl or posedge reset)
+   always @(posedge clk)
      if (reset)
        spy_ir[15:0] <= 16'b0;
      else
-       spy_ir[15:0] <= spy_in;
+       if (lddbirl)
+	 spy_ir[15:0] <= spy_in;
 
    // put latched value on I bus when idebug asserted
    assign i =
@@ -2461,7 +2476,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    /* read registers */
    assign {spy_obh, spy_obl, spy_pc, spy_opc,
 	   spy_nc, spy_irh, spy_irm, spy_irl} =
-	  (eadr[3] & ~dbread) ? 8'b0000000 :
+	  (eadr[3] | ~dbread) ? 8'b0000000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
@@ -2469,12 +2484,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
+       		({eadr[2],eadr[1],eadr[0]} == 3'b111) ? 8'b10000000 :
 		                                        8'b00000000;
 
    /* read registers */
    assign {spy_sth, spy_stl, spy_ah, spy_al,
 	   spy_mh, spy_ml, spy_flag2, spy_flag1} =
-	  (~eadr[3] & ~dbread) ? 8'b00000000 :
+	  (~eadr[3] | ~dbread) ? 8'b00000000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
@@ -2482,6 +2498,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b111) ? 8'b10000000 :
 		                                        8'b00000000;
 
    /* load registers */

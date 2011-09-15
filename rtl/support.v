@@ -73,7 +73,7 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
      if (dcm_reset)
        cpu_slowcount <= 0;
      else
-       cpu_slowcount = cpu_slowcount + 1;
+       cpu_slowcount <= cpu_slowcount + 1;
    
    assign dcm_reset = reset_state == r_reset1;
    assign reset = cpu_state == c_reset1 || cpu_state == c_reset2 || cpu_state == c_reset3;
@@ -122,7 +122,7 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
 	sys_slowcount <= sys_slowcount + 1;
      end
 
-   assign sys_slowevent = sys_slowcount == 12'h0fff;
+   assign sys_slowevent = sys_slowcount == 12'hfff;
    
    // sample push button
    always @(posedge sysclk)

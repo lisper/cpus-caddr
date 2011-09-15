@@ -19,7 +19,7 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
    reg [7:0] 	switches;
    
    // ------------------------------------
-   
+
    IBUFG sysclk_buffer (.I(sysclk), 
 			.O(sysclk_buf));
 
@@ -43,7 +43,7 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
    BUFG CLK2X_BUFG_INST (.I(CLK2X_BUF), 
                          .O(CLKFB_IN));
 
-   DCM DCM_INST (.CLKIN(sysclk_buf),
+   DCM DCM_INST (.CLKIN(clk50/*sysclk_buf*/),
 		 .CLKFB(CLKFB_IN), 
                  .DSSEN(GND1), 
                  .PSCLK(GND1), 
@@ -73,16 +73,17 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 `ifdef clk100_dcm
    wire clk100_dcm;
    wire clk50_dcm;
-   
+
    DCM dcm100(.CLKIN(sysclk_buf),
 	      .RST(dcm_reset),
-	      .CLKFB(clk50_dcm),
+	      .CLKFB(clk50/*_dcm*/),
 	      .CLK0(clk50_dcm),
-	      .CLK2X(clk100_dcm));
+	      .CLK2X(clk100_dcm));  // synthesis attribute loc of dcm100 is "DCM_X1Y0";
    defparam dcm100.CLKIN_PERIOD = 20.0;
 
    BUFG buf100(.I(clk100_dcm), .O(clk100));
    BUFG buf50(.I(clk50_dcm), .O(clk50));
+
 `endif
 
 `ifdef no_dcm

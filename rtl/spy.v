@@ -134,7 +134,8 @@ module uart(clk, reset,
 
    assign rx_uld_next =
 		      (rx_uld == 0 && uld_rx_req) ? 1 :
-		      (rx_uld == 1) ? 2 :
+		      (rx_uld == 1 && ~uld_rx_req) ? 0 :
+		      (rx_uld == 1 && uld_rx_req) ? 2 :
 		      (rx_uld == 2 && ~uld_rx_req) ? 0 :
 		       rx_uld;
 
@@ -150,9 +151,9 @@ module uart(clk, reset,
 
    assign tx_ld_next =
 		      (tx_ld == 0 && ld_tx_req) ? 1 :
-		      (tx_ld == 1 && ~ld_tx_req) ? 0 :
-//		      (tx_ld == 1) ? 2 :
-//		      (tx_ld == 2 && ~ld_tx_req) ? 0 :
+		      (tx_ld == 1 && ~ld_tx_req) ? 0 : /* only load once */
+		      (tx_ld == 1 && ld_tx_req) ? 2 :
+		      (tx_ld == 2 && ~ld_tx_req) ? 0 :
 		      tx_ld;
 
    assign ld_tx_ack = (tx_ld == 1) || (tx_ld == 2);
@@ -712,7 +713,7 @@ module spy_port(sysclk, clk, reset, rs232_rxd, rs232_txd,
      if (reset)
        response <= 0;
      else
-       if (dbread/*start_read*/)
+       if (dbread)
 	 response <= spy_in;
 
    // transmit one character

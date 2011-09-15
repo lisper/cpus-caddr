@@ -1,3 +1,10 @@
+
+   assign spcadr = (spcnt && spush) ? spcptr_p1 : spcptr;
+
+should be registered at end of STATE_ALU
+
+------------
+
 brad@mwave:~/cpus/caddr/rtl$ svn diff caddr.v 
 Index: caddr.v
 ===================================================================
@@ -23,3 +30,25 @@ Index: caddr.v
 +       aeqm <= 0;
 +     else
 +       aeqm <= aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;
+
+--- ide.v	2011-09-08 17:42:28.327874652 -0400
++++ ide.v.new	2011-09-04 07:56:55.937655407 -0400
+@@ -50,11 +50,16 @@
+        ide_data_in_reg <= ide_data_in;
+   
+    // if write, drive ide_bus
++   reg [15:0] 	 reg_ata_in;
++
++   always @(posedge clk)
++     reg_ata_in <= ata_in;
++   
+    assign ide_data_out = (ata_wr && (ata_state == s0 ||
+ 				     ata_state == s1 ||
+ 				     ata_state == s2 ||
+-   				     ata_state == s3)) ? ata_in : 16'b0;
+-
++   				     ata_state == s3)) ? reg_ata_in : 16'b0;
++   
+    // assert cs & da during r/w cycle
+    assign assert_cs = (ata_rd || ata_wr) && ata_state != s4;
+    

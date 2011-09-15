@@ -201,11 +201,29 @@ module top(rs232_txd, rs232_rxd,
    
    assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
    assign ide_data_in = ide_data_bus;
-   
+
+`define use_spyport
+`ifdef use_spyport
+   spy_port spy_port(
+		     .sysclk(clk50/*sysclk_buf*/),
+		     .clk(clk1x),
+		     .reset(reset),
+		     .rs232_rxd(rs232_rxd),
+		     .rs232_txd(rs232_txd),
+		     .spy_in(spy_out),
+		     .spy_out(spy_in),
+		     .dbread(dbread),
+		     .dbwrite(dbwrite),
+		     .eadr(eadr)
+		     );
+`else   
    assign      eadr = 4'b0;
    assign      dbread = 0;
    assign      dbwrite = 0;
-
+   assign      spyin = 0;
+   assign      rs232_txd = 1'b1;
+`endif
+   
    pipe_ram_controller rc (
 		      .clk(clk100),
 		      .vga_clk(clk50),
@@ -320,8 +338,6 @@ module top(rs232_txd, rs232_rxd,
 
    assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
    
-   assign rs232_txd = 1'b1;
-
    assign sram1_io = ~sram_we_n ? sram1_out : 16'bz;
    assign sram1_in = sram1_io;
    

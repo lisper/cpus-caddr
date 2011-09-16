@@ -10,12 +10,12 @@ TIMESPEC "TS_clk1" = PERIOD "clk1x" 20ns HIGH 50%;
 # Time specifications for 50MHz clock
 #
 TIMESPEC TS01 = FROM : FFS : TO : FFS : 20 ns;
-TIMESPEC TS02 = FROM : RAMS : TO : FFS : 20 ns;
-TIMESPEC TS03 = FROM : FFS : TO : RAMS : 20 ns;
-TIMESPEC TS04 = FROM : RAMS : TO : RAMS : 20 ns;
+#TIMESPEC TS02 = FROM : RAMS : TO : FFS : 20 ns;
+#TIMESPEC TS03 = FROM : FFS : TO : RAMS : 20 ns;
+#TIMESPEC TS04 = FROM : RAMS : TO : RAMS : 20 ns;
 TIMESPEC TS05 = FROM : FFS : TO : PADS : 20 ns;
 TIMESPEC TS06 = FROM : PADS : TO : FFS : 20 ns;
-TIMESPEC TS07 = FROM : PADS : TO : RAMS : 20 ns;
+#TIMESPEC TS07 = FROM : PADS : TO : RAMS : 20 ns;
 #TIMESPEC TS08 = FROM : RAMS : TO : PADS : 20 ns;
 
 # A -> L, M -> L can be 40ns
@@ -280,3 +280,5 @@ INST "ide_data_bus<13>"	DRIVE=24;
 INST "ide_data_bus<14>"	DRIVE=24;
 INST "ide_data_bus<15>"	DRIVE=24;
 
+#INST "fpga_clocks/dcm100" LOC=DCM_X1Y0;  # sysclk_buf_BUFG
+#NET "sysclk" CLOCK_DEDICATED_ROUTE = FALSE; 

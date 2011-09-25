@@ -1,0 +1,12 @@
+# Output products list for <ise_2kx17_dpram>
+blk_mem_gen_ds512.pdf
+blk_mem_gen_readme.txt
+ise_2kx17_dpram.asy
+ise_2kx17_dpram.gise
+ise_2kx17_dpram.ngc
+ise_2kx17_dpram.v
+ise_2kx17_dpram.veo
+ise_2kx17_dpram.xco
+ise_2kx17_dpram.xise
+ise_2kx17_dpram_flist.txt
+ise_2kx17_dpram_xmdf.tcl

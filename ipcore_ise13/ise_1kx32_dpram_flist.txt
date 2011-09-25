@@ -1,0 +1,12 @@
+# Output products list for <ise_1kx32_dpram>
+blk_mem_gen_ds512.pdf
+blk_mem_gen_readme.txt
+ise_1kx32_dpram.asy
+ise_1kx32_dpram.gise
+ise_1kx32_dpram.ngc
+ise_1kx32_dpram.v
+ise_1kx32_dpram.veo
+ise_1kx32_dpram.xco
+ise_1kx32_dpram.xise
+ise_1kx32_dpram_flist.txt
+ise_1kx32_dpram_xmdf.tcl

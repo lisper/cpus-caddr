@@ -336,7 +336,8 @@ module top(rs232_txd, rs232_rxd,
    assign led[1] = ~ide_diow;
    assign led[0] = ~ide_dior;
 
-   assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
+//   assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
+   assign dots[3:0] = rc_state;
    
    assign sram1_io = ~sram_we_n ? sram1_out : 16'bz;
    assign sram1_in = sram1_io;

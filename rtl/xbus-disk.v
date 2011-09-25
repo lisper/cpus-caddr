@@ -358,6 +358,14 @@ module xbus_disk (
    reg [4:0] state;
    reg [4:0] state_next;
 
+// synthesis attribute keep state true;
+// synthesis attribute keep reqin true;
+// synthesis attribute keep ackout true;
+// synthesis attribute keep reqout true;
+// synthesis attribute keep busreqout true;
+// synthesis attribute keep busgrantin true;
+// synthesis attribute keep writeout true;
+// synthesis attribute keep ackin true;
    
    parameter DISK_CYLS = 815,
 	       DISK_HEADS = 19,
@@ -745,7 +753,7 @@ module xbus_disk (
      if (reset)
        ata_hold <= 0;
      else
-     if (state == s_read0 && ata_done)
+     if (state == s_read1 && ata_done)
        ata_hold <= ata_out;
 
    //

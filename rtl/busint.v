@@ -106,6 +106,8 @@ module busint(mclk, reset,
    input 	 sdram_ready;
    output 	 sdram_write;
    input 	 sdram_done;
+// synthesis attribute keep sdram_write true;
+// synthesis attribute keep sdram_done true;
 
    output [14:0] vram_addr;
    output [31:0] vram_data_out;
@@ -124,6 +126,7 @@ module busint(mclk, reset,
 
    reg [3:0] 	state;
    wire [3:0] 	next_state;
+// synthesis attribute keep state true;
 
    reg [4:0] 	timeout_count;
  	

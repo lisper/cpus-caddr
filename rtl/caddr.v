@@ -196,6 +196,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    wire [7:0] 	aeqm_bits;
    wire 	aeqm;
+//   reg 	aeqm;
    wire [32:0] 	alu;
 
    wire 	divposlasttime, divsubcond, divaddcond;
@@ -628,6 +629,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // 74181 pulls down AEB if not equal
    // aeqm is the simulated open collector
    assign aeqm = aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;
+//  always @(posedge clk)
+//     if (reset)
+//       aeqm <= 0;
+//     else
+//       aeqm <= aeqm_bits == { 8'b11111111 } ? 1'b1 : 1'b0;
 
    wire[2:0] nc_alu;
    wire      cin32_n, cin28_n, cin24_n, cin20_n;
@@ -1832,8 +1838,20 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign spcptr_p1 = spcptr + 5'b00001;
 
+`define old_spc
+`ifdef old_spc
    wire [4:0] spcadr;
    assign spcadr = (spcnt && spush) ? spcptr_p1 : spcptr;
+`else
+   reg [4:0] spcadr;
+
+   always @(posedge clk)
+     if (reset)
+       spcadr <= 0;
+     else
+//       if (state_read)
+	 spcadr <= (spcnt && spush) ? spcptr_p1 : spcptr;
+`endif
    
    part_32x19dpram i_SPC(
 			 .reset(reset),
@@ -1929,7 +1947,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	spy_pc ?
 			{ 2'b0,pc } :
         16'b1111111111111111;
-
 
 
    // page TRAP
@@ -2484,7 +2501,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
-       		({eadr[2],eadr[1],eadr[0]} == 3'b111) ? 8'b10000000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b111) ? 8'b10000000 :
 		                                        8'b00000000;
 
    /* read registers */

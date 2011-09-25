@@ -1,0 +1,20 @@
+# Date: Fri Sep 16 21:54:43 2011
+SET flowvendor = Other
+SET vhdlsim = False
+SET verilogsim = True
+SET workingdirectory = C:\brad\caddr\ipcore\tmp
+SET speedgrade = -4
+SET simulationfiles = Behavioral
+SET asysymbol = False
+SET addpads = False
+SET device = xc3s1000
+SET implementationfiletype = Ngc
+SET busformat = BusFormatAngleBracketNotRipped
+SET foundationsym = False
+SET package = ft256
+SET createndf = False
+SET designentry = Verilog
+SET devicefamily = spartan3
+SET formalverification = False
+SET removerpms = False
+

@@ -1,0 +1,6 @@
+# Output products list for <ise_1kx32_dpram>
+ise_1kx32_dpram.ngc
+ise_1kx32_dpram.v
+ise_1kx32_dpram.veo
+ise_1kx32_dpram.xco
+ise_1kx32_dpram_flist.txt

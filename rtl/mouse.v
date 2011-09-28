@@ -79,7 +79,6 @@ module mouse(clk,
 		    .ps2_data(ps2_data_out),
 		    .code(m_out_code),
 		    .send(m_out_send),
-		    .parity(1'b0),
 		    .busy(m_out_busy),
 		    .rdy(m_out_rdy)
 		    );

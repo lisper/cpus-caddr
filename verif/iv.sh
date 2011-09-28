@@ -1,5 +1,5 @@
 #!/bin/sh
 
-iverilog run.v
-vvp -M../pli/ide -mpli_ide ./a.out >xx2 &
+iverilog -I../rtl run.v
+#vvp -M../pli/ide -mpli_ide ./a.out >xx2 &
 

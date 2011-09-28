@@ -1,4 +1,5 @@
 /*
+ * top for running with cver
  */
 
 //`define patch_rw_test // test rw
@@ -9,6 +10,9 @@
 
 `define debug_xbus
 //`define debug_vmem
+`define debug_md
+
+`define build_debug
 
 `include "rtl.v"
 
@@ -77,21 +81,40 @@ module test;
 
 //
    reg [4:0] slow;
-   wire      clk1x, clk2x;
-   wire      clk100, clk50;
+   wire      clk1x;
+   wire      clk100;
+   reg 	     clk50;
+   reg 	     pixclk;
+   
+   assign clk100 = sysclk;
 
+   initial
+     clk50 = 0;
+   
+   always @(posedge clk100)
+     clk50 = ~clk50;
+
+   always
+     begin
+	#4.625 pixclk = 0;
+	#4.625 pixclk = 1;
+     end
+
+   // 100mhz clock
+   always
+     begin
+	#5 sysclk = 0;
+	#5 sysclk = 1;
+     end
+
+   // slow clock
    initial
      slow = 0;
 
-   always @(posedge sysclk)
-     slow <= slow + 1;
+   always @(posedge clk50)
+     slow <= #5 slow + 1;
 
-   assign clk1x = slow[3];
-   assign clk2x = ~slow[1];
-
-   assign clk50 = ~slow[0];
-   assign clk100 = sysclk;
-//    
+   assign clk1x = slow[4];
 
    wire [13:0]   pc;
    wire [5:0]    state;
@@ -141,8 +164,8 @@ module test;
 	      .machrun_out(machrun),
 	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
-	      .disk_state_out(disk_state),
-	      .bus_state_out(bus_state),
+	      .disk_state_out(disk_state_out),
+	      .bus_state_out(bus_state_out),
      
 	      .mcr_addr(mcr_addr),
 	      .mcr_data_out(mcr_data_out),
@@ -167,12 +190,19 @@ module test;
 	      .vram_write(vram_cpu_write),
 	      .vram_done(vram_cpu_done),
 
-	      .ide_data_in(ide_data_in),
+	      .ide_data_in(ide_data_bus/*ide_data_in*/),
 	      .ide_data_out(ide_data_out),
 	      .ide_dior(ide_dior),
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
-	      .ide_da(ide_da));
+	      .ide_da(ide_da),
+
+	      .kb_data(kb_data),
+	      .kb_ready(kb_ready),
+	      .ms_x(ms_x),
+	      .ms_y(ms_y),
+	      .ms_button(ms_button),
+	      .ms_ready(ms_ready));
 
 `ifdef use_ram_controller   
 
@@ -228,7 +258,7 @@ module test;
 		      .vram_cpu_done(vram_cpu_done),
       
 		      .vram_vga_addr(vram_vga_addr),
-		      .vram_vga_data_out(vram_vga_data_in),
+		      .vram_vga_data_out(vram_vga_data_out),
 		      .vram_vga_req(vram_vga_req),
 		      .vram_vga_ready(vram_vga_ready),
       
@@ -254,7 +284,7 @@ module test;
    wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
 
    vga_display vga (.clk(clk50),
-		    .pixclk(clk100),
+		    .pixclk(pixclk),
 		    .reset(reset),
 
 		    .vram_addr(vram_vga_addr),
@@ -297,11 +327,14 @@ module test;
 		     .eadr(eadr)
 		     );
 
-//   assign      eadr = 4'b0;
-//   assign      dbread = 0;
-//   assign      dbwrite = 0;
-//   assign      spyin = 0;
-
+   assign      kb_ready = 0;
+   assign      kb_data = 0;
+   
+   assign      ms_ready = 0;
+   assign      ms_x = 0;
+   assign      ms_y = 0;
+   assign      ms_button = 0;
+   
    integer     addr;
    integer     debug_level;
    integer     dumping;
@@ -309,7 +342,7 @@ module test;
    integer     max_cycles;
      
    reg [1023:0]  arg;
-   integer 	n;
+   integer 	n, varg;
 
    initial
      begin
@@ -331,12 +364,17 @@ module test;
 	cycles = 0;
 	max_cycles = 0;
 
-`ifdef debug_vcd
-	$dumpfile("caddr.vcd");
-	$dumpvars(0, test);
-	dumping = 1;
+`ifdef __CVER__
+	n = $scan$plusargs("w=", arg);
+	if (n > 0)
+	  begin
+	     $dumpfile("caddr.vcd");
+	     n = $sscanf(arg, "%d", varg);
+	     if (varg > 0)
+	       dumping = 1;
+	  end
 `endif
-
+	
 `ifdef __ICARUS__
        n = $value$plusargs("cycles=%d", arg);
 	if (n > 0)
@@ -355,6 +393,24 @@ module test;
 `endif
      end
 
+   integer rcount;
+   
+   initial
+     rcount = 0;
+   
+   always @(posedge clk1x)
+     begin
+	rcount = rcount + 1;
+	if (rcount < 50)
+	  reset = 1;
+	if (rcount == 40)
+	  boot = 1;
+	if (rcount == 100)
+	  reset = 0;
+	if (rcount == 110)
+	  boot = 0;
+     end 
+   
    initial
      begin
 	sysclk = 0;
@@ -364,23 +420,15 @@ module test;
 	ram.ram1.ram_h[0] = 0;
 	ram.ram2.ram_l[0] = 0;
 		
-	#1 begin
-	   reset = 1;
-	   boot = 0;
-
-        end
-
-	#500 boot = 1;
-
-	#500 reset = 0;
-	#500 boot = 0;
-     end
-
-   // 50mhz clock
-   always
-     begin
-	#10 sysclk = 0;
-	#10 sysclk = 1;
+//	#1 begin
+//	   reset = 1;
+//	   boot = 0;
+//        end
+//
+//	#500 boot = 1;
+//
+//	#500 reset = 0;
+//	#500 boot = 0;
      end
 
    // ide
@@ -401,15 +449,24 @@ module test;
 	if (cpu.state == 6'b000001)
 	  cycles = cycles + 1;
 
+`ifdef debug_all
 	case (cpu.state)
   6'b000000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b000001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+`ifdef debug_all
   6'b000010: $display("%0o %o read   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b000100: $display("%0o %o alu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b001000: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b010000: $display("%0o %o mmu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
   6'b100000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+`endif
 	endcase
+`endif
+	
+	if (cpu.state == 6'b000001)
+	$display("%0o %o A=%x M=%x N%b MD=%x LC=%x",
+		 cpu.lpc, cpu.ir,
+		 cpu.a, cpu.m, cpu.n, cpu.md, cpu.lc);
 
 `ifdef xxx
 	if (cycles > 25 && (cpu.lpc > 7 && cpu.lpc < 14'o50) &&
@@ -427,6 +484,18 @@ module test;
 	  end
      end
 
+   always @(posedge cpu.clk)
+     begin
+	if (cpu.promdisable == 1 && !dumping)
+	  begin
+	     dumping = 1;
+	     $dumpvars(0, test);
+	     $dumpon;
+	     $dumpall;
+	     $display("dumping: on");
+	  end
+     end
+   
    always @(posedge cpu.clk)
      #1 if (debug_level == 1 && cpu.state == 6'b010000)
        begin

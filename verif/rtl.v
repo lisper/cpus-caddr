@@ -17,7 +17,7 @@
 `endif
 
 //`define build_fpga
-`define build_debug
+//`define build_debug
 //`define build_test
 
 //
@@ -52,8 +52,6 @@
  `define use_s3board_ram
  `define use_vga_controller
  `define build_debug_or_fpga
-//temp-debug
-//`define use_ucode_ram
 `endif // build_debug
 
 //
@@ -118,12 +116,23 @@
 `include "../rtl/xbus-disk.v"
 //`include "debug-xbus-disk.v"
 
-`include "../rtl/xbus-tv.v"
-//`include "debug-xbus-tv.v"
+
+`ifdef build_test
+ `include "debug-xbus-tv.v"
+`else
+ `include "../rtl/xbus-tv.v"
+`endif
 
 `include "../rtl/xbus-io.v"
 `include "../rtl/xbus-unibus.v"
 `include "../rtl/ide.v"
+`include "../rtl/ps2_support.v"
+`include "../rtl/ps2.v"
+`include "../rtl/ps2_send.v"
+`include "../rtl/keyboard.v"
+`include "../rtl/mouse.v"
+`include "../rtl/scancode_convert.v"
+`include "../rtl/scancode_rom.v"
 
 `include "../rtl/part_1kx32ram_a.v"
 `include "../rtl/part_1kx32ram_p.v"

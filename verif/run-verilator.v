@@ -3,9 +3,12 @@
 
 //`define debug_bus
 
+
 //`define debug_vcd
 `define debug
 `define DBG_DLY
+
+`define build_debug
   
 //`include "defs.v"
 `include "rtl.v"
@@ -132,6 +135,13 @@ module test;
    wire 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
    wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
 
+   wire [15:0] 	 kb_data;
+   wire 	 kb_ready;
+   
+   wire [11:0] 	 ms_x, ms_y;
+   wire [2:0] 	 ms_button;
+   wire 	 ms_ready;
+
 //
    reg [1:0] slow_ctr;
    wire      clk1x/* verilator public_flat_rw @(clk50) */;
@@ -254,7 +264,14 @@ module test;
 	      .ide_dior(ide_dior),
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
-	      .ide_da(ide_da));
+	      .ide_da(ide_da),
+	      
+	      .kb_data(kb_data),
+	      .kb_ready(kb_ready),
+	      .ms_x(ms_x),
+	      .ms_y(ms_y),
+	      .ms_button(ms_button),
+	      .ms_ready(ms_ready));
 
 //   assign vram_cpu_ready = 1'b1;
 
@@ -388,6 +405,14 @@ module test;
    assign      dbwrite = 0;
    assign      spyin = 0;
 
+   assign      kb_ready = 0;
+   assign      kb_data = 16'b0;
+   
+   assign      ms_ready = 0;
+   assign      ms_x = 12'b0;
+   assign      ms_y = 12'b0;
+   assign      ms_button = 3'b0;
+   
    wrap_ide wrap_ide(.clk(clk1x),
 		     .ide_data_in(ide_data_out),
 		     .ide_data_out(ide_data_in),

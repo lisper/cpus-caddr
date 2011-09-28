@@ -34,6 +34,22 @@ module mouse(clk,
 
    // ---------------------------------------------------------
    
+   reg [4:0] 	 m_state;
+   wire [4:0] 	 m_state_next;
+
+   parameter [4:0]
+		M_IDLE = 0,
+		M_POLL1 = 1,
+		M_POLL2 = 2,
+		M_RX1A = 3,
+		M_RX1B = 4,
+		M_RX2A = 5,
+		M_RX2B = 6,
+		M_RX3A = 7,
+		M_RX3B = 8,
+		M_RX4A = 9,
+		M_RX4B = 10;
+   
    wire 	  m_rdy;
    wire 	  m_bsy;
    wire [7:0] 	  m_code;
@@ -76,28 +92,12 @@ module mouse(clk,
    //
    // send 0xeb read command and then collect 4 bytes
    //
-   reg [4:0] m_state;
-   wire [4:0] m_state_next;
-
    always @(posedge clk)
      if (reset)
        m_state <= 0;
      else
        m_state <= m_state_next;
 
-   parameter [4:0]
-		M_IDLE = 0,
-		M_POLL1 = 1,
-		M_POLL2 = 2,
-		M_RX1A = 3,
-		M_RX1B = 4,
-		M_RX2A = 5,
-		M_RX2B = 6,
-		M_RX3A = 7,
-		M_RX3B = 8,
-		M_RX4A = 9,
-		M_RX4B = 10;
-   
    assign m_state_next =
 			m_err ? M_IDLE :
 			(m_state == M_IDLE && ~m_full) ? M_POLL1 :

@@ -21,5 +21,8 @@ module ps2_send(clk,		// main clock
    output      ps2_clk;
    output      ps2_data;
 
+   assign ps2_clk = 0;
+   assign ps2_data = 0;
+
 endmodule
 

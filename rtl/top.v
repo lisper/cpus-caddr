@@ -131,12 +131,12 @@ module top(rs232_txd, rs232_rxd,
    wire 	 sysclk_buf;
    wire [7:0] 	 switches;
 
-   input [15:0]  kb_data;
-   input 	 kb_ready;
+   wire [15:0] 	 kb_data;
+   wire 	 kb_ready;
    
-   input [11:0]  ms_x, ms_y;
-   input [2:0] 	 ms_button;
-   input 	 ms_ready;
+   wire [11:0] 	 ms_x, ms_y;
+   wire [2:0] 	 ms_button;
+   wire 	 ms_ready;
 
    fpga_clocks fpga_clocks(.sysclk(sysclk),
 			   .slideswitch(slideswitch),

@@ -111,7 +111,7 @@ module ps2(clk,		// main clock
    assign error    = error_r;		// error flag
 
    // update the various registers
-   always @(posedge clk or negedge reset)
+   always @(posedge clk)
      if (reset)
        begin
 	  ps2_clk_r <= 5'b11111;  // assume PS/2 clock has been high

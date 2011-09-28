@@ -6,7 +6,9 @@ module xbus_io(
 	       clk, reset,
 	       addr, datain, dataout,
 	       req, write, ack, decode,
-	       interrupt, vector
+	       interrupt, vector,
+	       kb_data, kb_ready,
+	       ms_x, ms_y, ms_button, ms_ready
 	       );
 
    input clk;
@@ -15,9 +17,16 @@ module xbus_io(
    input [31:0] datain;		/* request data */
    input 	req;		/* request */
    input 	write;		/* request read#/write */
+
+   input [15:0] kb_data;
+   input 	kb_ready;
+   
+   input [11:0] ms_x, ms_y;
+   input [2:0] 	ms_button;
+   input 	ms_ready;
    
    output [31:0] dataout;
-   reg [31:0] dataout;
+   reg [31:0] 	 dataout;
 
    output 	 ack;		/* request done */
    output 	 decode;	/* request addr ok */
@@ -65,7 +74,9 @@ module xbus_io(
 
    wire 	 hz60_clk_fired;
 
-   reg 		 set_clk_rdy;
+   wire		 set_clk_rdy;
+   wire		 set_kb_rdy;
+   wire		 set_ms_rdy;
    
 
    //
@@ -142,7 +153,7 @@ module xbus_io(
 		   end
 
 		 22'o17772045: /* KBD CSR */
-		   dataout = { 28'b0, iob_csr };
+		   dataout = { 24'b0, iob_rdy, iob_csr };
 
 		 22'o17772050: /* USEC CLK */
 		   begin
@@ -180,28 +191,32 @@ dataout = 0;
 	    begin
 	       if (set_clk_rdy)
 		 iob_rdy[2] <= 1;
+	       if (set_kb_rdy)
+		 iob_rdy[1] <= 1;
+	       if (set_ms_rdy)
+		 iob_rdy[0] <= 1;
 	    end
      end
 
-//   assign interrupt = hz60_clk_int_enable && clk_done;
-   assign 	 interrupt = 0;
+   // interrupts
+   wire ms_int, kb_int, clk_int;
+   
+   assign ms_int = iob_rdy[0] & iob_csr[1];
+   assign kb_int = iob_rdy[1] & iob_csr[2];
+   assign clk_int = iob_rdy[2] & iob_csr[3];
+   
+   assign interrupt = 
+//		      (hz60_clk_int_enable && clk_done) |
+		      kb_int | ms_int | clk_int;
 
+   assign vector =
+		  (ms_int || kb_int) ? 8'o0260 :
+		  clk_int ? 8'o0274 :
+		  0;
+   
+   // 60hz clock
    assign hz60_clk_fired = hz60_counter == hz60_clk_div[19:0];
 
-   always @(posedge clk)
-     if (reset)
-       begin
-	  iob_key_scan <= 0;
-	  mouse_rawx <= 0;
-	  mouse_rawy <= 0;
-	  mouse_x <= 0;
-	  mouse_y <= 0;
-	  mouse_tail <= 0;
-	  mouse_middle <= 0;
-	  mouse_head <= 0;
-       end
-
-   // 60hz clock
    always @(posedge clk)
      if (reset)
        begin
@@ -211,16 +226,16 @@ dataout = 0;
      else
        if (hz60_enabled)
 	 begin
-	    set_clk_rdy = 0;
-	    if (hz60_counter == hz60_clk_div[19:0])
+	    if (hz60_clk_fired)
 	      begin
 		 hz60_counter <= 0;
 		 hz60_clock <= hz60_clock + 1;
-		 set_clk_rdy = 1;
 	      end
 	    else
 	      hz60_counter <= hz60_counter + 20'd1;
 	 end
+
+   assign set_clk_rdy = hz60_clk_fired;
 
 
    // microsecond counter
@@ -241,6 +256,41 @@ dataout = 0;
 
 
    assign vector = 8'b0;
+
+   // keyboard
+   always @(posedge clk)
+     if (reset)
+       iob_key_scan <= 0;
+     else
+       if (kb_ready)
+	 iob_key_scan <= { 16'b0, kb_data };
+
+   assign set_kb_rdy = kb_ready;
+
+   // mouse
+   always @(posedge clk)
+     if (reset)
+       begin
+	  mouse_rawx <= 0;
+	  mouse_rawy <= 0;
+	  mouse_x <= 0;
+	  mouse_y <= 0;
+	  mouse_tail <= 0;
+	  mouse_middle <= 0;
+	  mouse_head <= 0;
+       end
+     else
+       if (ms_ready)
+	 begin
+	    mouse_x <= ms_x;
+	    mouse_y <= ms_y;
+	    mouse_head <= ms_button[2];
+	    mouse_middle <= ms_button[1];
+	    mouse_tail <= ms_button[0];
+	 end
+
+   assign set_ms_rdy = ms_ready;
+
    
 endmodule // xbus_io
 

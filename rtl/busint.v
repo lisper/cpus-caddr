@@ -73,6 +73,9 @@ module busint(mclk, reset,
 
 	      ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
 
+	      kb_data, kb_ready,
+	      ms_x, ms_y, ms_button, ms_ready,
+
 	      promdisable, disk_state, bus_state);
 
    input mclk;
@@ -116,13 +119,21 @@ module busint(mclk, reset,
    input 	 vram_ready;
    output 	 vram_write;
    input 	 vram_done;
+
+   input [15:0]  kb_data;
+   input 	 kb_ready;
+   
+   input [11:0]  ms_x, ms_y;
+   input [2:0] 	 ms_button;
+   input 	 ms_ready;
    
    //
-   parameter 	 BUS_IDLE  = 4'b0000,
- 		   BUS_REQ   = 4'b0001,
- 		   BUS_WAIT  = 4'b0010,
- 		   BUS_SLAVE = 4'b0100,
-    		   BUS_SWAIT = 4'b1000;
+   parameter [3:0]
+		BUS_IDLE  = 4'b0000,
+ 		BUS_REQ   = 4'b0001,
+ 		BUS_WAIT  = 4'b0010,
+ 		BUS_SLAVE = 4'b0100,
+    		BUS_SWAIT = 4'b1000;
 
    reg [3:0] 	state;
    wire [3:0] 	next_state;
@@ -144,8 +155,8 @@ module busint(mclk, reset,
    wire 	interrupt;
    wire 	interrupt_disk, interrupt_tv, interrupt_io, interrupt_unibus;
    
-   wire 	busreqout_disk;
-   wire 	busgrantin_disk;
+   wire 	disk_busreq2busint;
+   wire 	busgrantin2disk;
 
    wire 	dram_reqin;
    wire 	dram_writein;
@@ -194,8 +205,8 @@ module busint(mclk, reset,
    assign 	req_valid = req && state == BUS_REQ;
 		       
    wire 	ackin_disk;
-   wire 	writeout_disk;
-   wire 	reqout_disk;
+   wire 	disk_write2busint;
+   wire 	disk_req2busint;
    wire 	decodein_disk;
    
    xbus_disk disk (
@@ -211,12 +222,12 @@ module busint(mclk, reset,
 		   .decodeout(decode_disk),
 		   .interrupt(interrupt_disk),
 
-	   .busreqout(busreqout_disk),
-	   .busgrantin(busgrantin_disk),
+		   .busreqout(disk_busreq2busint),
+		   .busgrantin(busgrantin2disk),
 		   .addrout(addrout_disk),
-		   .reqout(reqout_disk),
-	   .ackin(ackin_disk),
-		   .writeout(writeout_disk),
+		   .reqout(disk_req2busint),
+		   .ackin(ackin_disk),
+		   .writeout(disk_write2busint),
 		   .decodein(decodein_disk),
 
 		   .ide_data_in(ide_data_in),
@@ -261,7 +272,13 @@ module busint(mclk, reset,
 	       .ack(ack_io),
 	       .decode(decode_io),
 	       .interrupt(interrupt_io),
-	       .vector(vector)
+	       .vector(vector),
+	       .kb_data(kb_data),
+	       .kb_ready(kb_ready),
+	       .ms_x(ms_x),
+	       .ms_y(ms_y),
+	       .ms_button(ms_button),
+	       .ms_ready(ms_ready)
 	       );
 
    xbus_unibus unibus (
@@ -339,7 +356,7 @@ module busint(mclk, reset,
 	  end
 
 	// dma disk->mem
-	if (writeout_disk && state == BUS_SLAVE && next_state != BUS_SLAVE)
+	if (disk_write2busint && state == BUS_SLAVE && next_state != BUS_SLAVE)
 	  begin
              `DBG_DLY test.iologger(32'd4, addrout_disk, dataout_disk);
 	  end
@@ -416,29 +433,29 @@ module busint(mclk, reset,
    // basic bus arbiter
    assign next_state =
 		      (state == BUS_IDLE && req) ? BUS_REQ :
-		      (state == BUS_IDLE && busreqout_disk) ? BUS_SLAVE :
+		      (state == BUS_IDLE && disk_busreq2busint) ? BUS_SLAVE :
 		      (state == BUS_REQ && device_ack) ? BUS_WAIT :
 		      (state == BUS_REQ && ~device_ack) ? BUS_REQ :
 		      (state == BUS_WAIT && ~req) ? BUS_IDLE :
 		      (state == BUS_WAIT && req) ? BUS_WAIT :
       		      (state == BUS_SLAVE && ack_dram) ? BUS_SWAIT :
 		      (state == BUS_SLAVE && ~ack_dram) ? BUS_SLAVE :
-      		      (state == BUS_SWAIT && busreqout_disk) ? BUS_SWAIT :
-		      (state == BUS_SWAIT && ~busreqout_disk) ? BUS_IDLE :
+      		      (state == BUS_SWAIT && disk_busreq2busint) ? BUS_SWAIT :
+		      (state == BUS_SWAIT && ~disk_busreq2busint) ? BUS_IDLE :
 		      BUS_IDLE;
 		      
-   assign busgrantin_disk = state == BUS_SLAVE;
+   assign busgrantin2disk = state == BUS_SLAVE;
    assign load = device_ack & ~write & (state == BUS_REQ);
 
    // allow disk to drive dram
    assign dram_addr = state == BUS_SLAVE ? addrout_disk : addr;
-   assign dram_reqin = state == BUS_SLAVE ? reqout_disk : (req && state == BUS_REQ);
-   assign dram_writein = state == BUS_SLAVE ? writeout_disk : (write && state == BUS_REQ);
+   assign dram_reqin = state == BUS_SLAVE ? disk_req2busint : (req && state == BUS_REQ);
+   assign dram_writein = state == BUS_SLAVE ? disk_write2busint : (write && state == BUS_REQ);
    assign dram_datain = state == BUS_SLAVE ? dataout_disk : busin;
 
    assign disk_datain = state == BUS_SLAVE ? dataout_dram : busin;
-   assign decodein_disk = busgrantin_disk & decode_dram;
-   assign ackin_disk = busgrantin_disk & ack_dram;
+   assign decodein_disk = busgrantin2disk & decode_dram;
+   assign ackin_disk = busgrantin2disk & ack_dram;
    
 
    // bus timeout

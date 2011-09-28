@@ -477,7 +477,6 @@ module pipe_ram_controller(
    //
    // vram_vga read - vga controller only
    //
-   reg vga_req;
    reg [1:0] vram_vga_req_syncro;
    
    always @(posedge clk)
@@ -507,7 +506,7 @@ module pipe_ram_controller(
 	    begin
 	       vram_vga_data <= { sram1_resp_in, sram2_resp_in };
 	       vram_vga_ready <= 1;
-`ifdef debug
+`ifdef debug_vga
 	       $display("rc: vram vga read %o -> %o",
 			vram_vga_addr, { sram1_resp_in, sram2_resp_in });
 `endif

@@ -469,7 +469,7 @@ module xbus_disk (
        ack_delayed <= 0;
      else
        begin
-	  ack_delayed[0] <= decode;
+	  ack_delayed[0] <= decode && ~ack_delayed[1];
 	  ack_delayed[1] <= ack_delayed[0];
        end
 
@@ -753,7 +753,7 @@ module xbus_disk (
      if (reset)
        ata_hold <= 0;
      else
-     if (state == s_read1 && ata_done)
+     if (state == s_read0 && ata_done)
        ata_hold <= ata_out;
 
    //

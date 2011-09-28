@@ -3,11 +3,14 @@
  */
 
 `define full_design
-`define use_vga   
+`define use_spyport
+`define use_vga
+`define use_ps2
 
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
 	   ps2_clk, ps2_data,
+	   ms_ps2_clk, ms_ps2_data,
 	   vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync,
 	   sevenseg, sevenseg_an,
 	   slideswitch,
@@ -24,8 +27,11 @@ module top(rs232_txd, rs232_rxd,
    output [7:0] led;
    input 	sysclk; // synthesis attribute period sysclk "50 MHz";
 
-   input	ps2_clk;
-   input 	ps2_data;
+   inout	ps2_clk;
+   inout 	ps2_data;
+   
+   inout	ms_ps2_clk;
+   inout 	ms_ps2_data;
    
    output 	vga_red;
    output 	vga_blu;
@@ -62,10 +68,10 @@ module top(rs232_txd, rs232_rxd,
 
    // -----------------------------------------------------------------
 
-   wire 	 clk50; // synthesis attribute period clk50 "25 MHz";
-   wire 	 clk100; // synthesis attribute period clk100 "50 MHz";
-   wire 	 pixclk; // synthesis attribute period clk100 "108 MHz";
-   wire 	 clk1x; // synthesis attribute period clk1x "25 MHz";
+   wire 	 clk50; // synthesis attribute period clk50 "50 MHz";
+   wire 	 clk100; // synthesis attribute period clk100 "100 MHz";
+   wire 	 pixclk; // synthesis attribute period pixclk "108 MHz";
+   wire 	 cpuclk; // synthesis attribute period cpuclk "50 MHz";
  	 
    wire 	 dcm_reset;
    wire 	 reset;
@@ -125,6 +131,13 @@ module top(rs232_txd, rs232_rxd,
    wire 	 sysclk_buf;
    wire [7:0] 	 switches;
 
+   input [15:0]  kb_data;
+   input 	 kb_ready;
+   
+   input [11:0]  ms_x, ms_y;
+   input [2:0] 	 ms_button;
+   input 	 ms_ready;
+
    fpga_clocks fpga_clocks(.sysclk(sysclk),
 			   .slideswitch(slideswitch),
 			   .switches(switches),
@@ -132,12 +145,12 @@ module top(rs232_txd, rs232_rxd,
 			   .sysclk_buf(sysclk_buf),
 			   .clk50(clk50),
 			   .clk100(clk100),
-			   .clk1x(clk1x),
+			   .clk1x(cpuclk),
 			   .pixclk(pixclk)
 			   );
    
    support support(.sysclk(sysclk_buf),
-		   .cpuclk(clk1x),
+		   .cpuclk(cpuclk),
 		   .button_r(button[3]),
 		   .button_b(button[2]),
 		   .button_h(button[1]),
@@ -150,7 +163,7 @@ module top(rs232_txd, rs232_rxd,
 
 `ifdef full_design
    caddr cpu (
-	      .clk(clk1x),
+	      .clk(cpuclk),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
 	      .ext_boot(boot),
@@ -197,12 +210,18 @@ module top(rs232_txd, rs232_rxd,
 	      .ide_dior(ide_dior),
 	      .ide_diow(ide_diow),
 	      .ide_cs(ide_cs),
-	      .ide_da(ide_da));
+	      .ide_da(ide_da),
+
+	      .kb_data(kb_data),
+	      .kb_ready(kb_ready),
+	      .ms_x(ms_x),
+	      .ms_y(ms_y),
+	      .ms_button(ms_button),
+	      .ms_ready(ms_ready));
    
    assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
    assign ide_data_in = ide_data_bus;
 
-`define use_spyport
 `ifdef use_spyport
    spy_port spy_port(
 		     .sysclk(clk50/*sysclk_buf*/),
@@ -227,7 +246,7 @@ module top(rs232_txd, rs232_rxd,
    pipe_ram_controller rc (
 		      .clk(clk100),
 		      .vga_clk(clk50),
-		      .cpu_clk(clk1x),
+		      .cpu_clk(cpuclk),
 		      .reset(reset),
 		      .prefetch(prefetch),
 		      .fetch(fetch),
@@ -301,7 +320,7 @@ module top(rs232_txd, rs232_rxd,
 `ifdef use_vga
    wire vram_vga_req_x;
    
-   vga_display vga (.clk(clk50),
+   vga_display vga (.clk(cpuclk),
 		    .pixclk(pixclk),
 		    .reset(reset),
 
@@ -326,8 +345,56 @@ module top(rs232_txd, rs232_rxd,
    assign vga_hsync = 0;
    assign vga_vsync = 0;
 `endif
+
+`ifdef use_ps2
+   wire   kb_ps2_clk_in;
+   wire   kb_ps2_data_in;
+   wire   ms_ps2_clk_in;
+   wire   ms_ps2_data_in;
+   wire   ms_ps2_clk_out;
+   wire   ms_ps2_data_out;
+   wire   ms_ps2_dir;
+
+   assign kb_ps2_clk_in = ps2_clk;
+   assign kb_ps2_data_in = ps2_data;
+
+   assign ms_ps2_clk_in = ms_ps2_clk;
+   assign ms_ps2_data_in = ms_ps2_data;
+
+   assign ms_ps2_clk = ms_ps2_dir ? ms_ps2_clk_out : 1'bz;
+   assign ms_ps2_data = ms_ps2_dir ? ms_ps2_data_out : 1'bz;
    
-   display show_pc(.clk(clk50), .reset(reset),
+   ps2_support ps2_support(
+			   .clk(cpuclk),
+			   .reset(reset),
+			   .kb_ps2_clk_in(kb_ps2_clk_in),
+			   .kb_ps2_data_in(kb_ps2_data_in),
+			   .ms_ps2_clk_in(ms_ps2_clk_in),
+			   .ms_ps2_data_in(ms_ps2_data_in),
+			   .ms_ps2_clk_out(ms_ps2_clk_out),
+			   .ms_ps2_data_out(ms_ps2_data_out),
+			   .ms_ps2_dir(ms_ps2_dir),
+			   .kb_data(kb_data),
+			   .kb_ready(kb_ready),
+			   .ms_x(ms_x),
+			   .ms_y(ms_y),
+			   .ms_button(ms_button),
+			   .ms_ready(ms_ready)
+			   );
+`else
+   assign ps2_clk = 1'bz;
+   assign ps2_data = 1'bz;
+
+   assign kb_ready = 0;
+   assign kb_data = 0;
+   
+   assign ms_ready = 0;
+   assign ms_x = 0;
+   assign ms_y = 0;
+   assign ms_button = 0;
+`endif
+   
+   display show_pc(.clk(cpuclk), .reset(reset),
 		   .pc(pc), .dots(dots),
 		   .sevenseg(sevenseg), .sevenseg_an(sevenseg_an));
 

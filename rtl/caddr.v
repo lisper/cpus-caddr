@@ -126,7 +126,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	       vram_addr, vram_data_in, vram_data_out,
 	       vram_req, vram_ready, vram_write, vram_done,
 
-	       ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da );
+	       ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
+
+	       kb_data, kb_ready,
+	       ms_x, ms_y, ms_button, ms_ready );
 
    input clk;
    input ext_int;
@@ -177,6 +180,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    output 	 ide_diow;
    output [1:0]  ide_cs;
    output [2:0]  ide_da;
+
+   input [15:0]  kb_data;
+   input 	 kb_ready;
+   
+   input [11:0]  ms_x, ms_y;
+   input [2:0] 	 ms_button;
+   input 	 ms_ready;
 
    // ------------------------------------------------------------
    
@@ -2574,6 +2584,13 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .ide_diow(ide_diow),
 		 .ide_cs(ide_cs),
 		 .ide_da(ide_da),
+
+		 .kb_data(kb_data),
+		 .kb_ready(kb_ready),
+		 .ms_x(ms_x),
+		 .ms_y(ms_y),
+		 .ms_button(ms_button),
+		 .ms_ready(ms_ready),
 
 		 .promdisable(set_promdisable),
 		 .disk_state(disk_state_out),

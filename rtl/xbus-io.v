@@ -254,9 +254,6 @@ dataout = 0;
        else
 	 us_counter <= us_counter + 8'd1;
 
-
-   assign vector = 8'b0;
-
    // keyboard
    always @(posedge clk)
      if (reset)

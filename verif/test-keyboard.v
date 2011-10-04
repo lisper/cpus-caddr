@@ -2,6 +2,8 @@
 
 `timescale 1ns / 1ns
 
+`define debug
+
 `include "../rtl/scancode_rom.v"
 `include "../rtl/scancode_convert.v"
 `include "../rtl/ps2.v"
@@ -121,6 +123,22 @@ module test_keyboard;
 	 sendscan(8'h23);
 	 sendscan(8'hf0);
 	 sendscan(8'h23);
+	 pause;
+
+	 // press "end"
+	 sendscan(8'he0);
+	 sendscan(8'h69);
+
+	 sendscan(8'he0);
+	 sendscan(8'hf0);
+	 sendscan(8'h69);
+	 pause;
+
+	 // press "escape"
+	 sendscan(8'h76);
+
+	 sendscan(8'hf0);
+	 sendscan(8'h76);
 	 pause;
 
 	 $display("end test");

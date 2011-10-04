@@ -29,7 +29,7 @@ module keyboard(clk,
    wire [7:0] 	  kb_scancode;
    
    wire 	  kb_out_rdy;
-   wire [7:0] 	  kb_out_keycode;
+   wire [15:0] 	  kb_out_keycode;
 
 
    ps2 ps2(.clk(clk),
@@ -58,8 +58,13 @@ module keyboard(clk,
        end
      else
        begin
-	  data <= { 8'b0, kb_out_keycode };
+	  data <= kb_out_keycode;
 	  strobe <= kb_out_rdy;
+`ifdef debug
+	  if (kb_scan_rdy)
+	    $display("keyboard: kb_scan_rdy, kb_scancode 0x%x %o",
+		     kb_scancode, kb_scancode);
+`endif
        end
    
 endmodule // keyboard

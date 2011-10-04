@@ -260,7 +260,7 @@ dataout = 0;
        iob_key_scan <= 0;
      else
        if (kb_ready)
-	 iob_key_scan <= { 16'b0, kb_data };
+	 iob_key_scan <= { 8'b0, 5'b11111, 3'b001, kb_data };
 
    assign set_kb_rdy = kb_ready;
 

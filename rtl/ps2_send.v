@@ -1,5 +1,12 @@
 // ps2_send.v
 
+/*
+ * send bytes on ps/2 clock & data lines
+ *
+ * uses counter as a state machine; clocks 11 bits out,
+ * start + data + parity + stop
+ */
+
 module ps2_send(clk,		// main clock
 		reset,		// asynchronous reset
 		ps2_clk,	// clock out
@@ -59,7 +66,7 @@ module ps2_send(clk,		// main clock
    assign busy = state != 0;
    assign rdy = state == 0;
    
-   assign ps2_clk = ~(state & 1);
+   assign ps2_clk = ~state[0];
 
    always @(posedge clk)
      if (reset)

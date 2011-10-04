@@ -10,38 +10,37 @@ module scancode_rom(addr, data);
    output reg [7:0] data;
 
    parameter [7:0]
-		LM_K_ALTMODE	= 8'o033,
-		LM_K_BREAK	= 8'o201,
-		LM_K_CLEAR_INPUT= 8'o202,
-		LM_K_CALL	= 8'o203,
-		LM_K_TERMINAL	= 8'o204,   /* esc? */
-		LM_K_MACRO	= 8'o205, 	/* back? */
-		LM_K_HELP	= 8'o206,
-		LM_K_RUBOUT	= 8'o207,
-		LM_K_OVERSTRIKE	= 8'o210,
-		LM_K_TAB	= 8'o211,
-		LM_K_LINE	= 8'o212,
-		LM_K_DELETE	= 8'o213,
-		LM_K_PAGE	= 8'o214,
-		LM_K_CLEAR_SCREEN=8'o214,
-		LM_K_RETURN	= 8'o215, 	/* cr? */
-		LM_K_QUOTE	= 8'o216,
-		LM_K_HOLD_OUTPUT= 8'o217,
-		LM_K_STOP_OUTPUT= 8'o220,
-		LM_K_ABORT	= 8'o221,
-		LM_K_RESUME	= 8'o222,
-		LM_K_STATUS	= 8'o223,
-		LM_K_END	= 8'o224,
-		LM_K_ROMAN_I	= 8'o225,
-		LM_K_ROMAN_II	= 8'o226,
-		LM_K_ROMAN_III	= 8'o227,
-		LM_K_ROMAN_IV	= 8'o230,
-		LM_K_HAND_UP	= 8'o231,
-		LM_K_HAND_DOWN	= 8'o232,
-		LM_K_HAND_LEFT	= 8'o233,
-		LM_K_HAND_RIGHT	= 8'o234,
-		LM_K_SYSTEM	= 8'o235,
-		LM_K_NETWORK	= 8'o236;
+		LM_K_BREAK	= 8'o167,
+		LM_K_CLEAR_INPUT= 8'o110,
+		LM_K_CALL	= 8'o107,
+		LM_K_TERMINAL	= 8'o040,
+		LM_K_MACRO	= 8'o100,
+		LM_K_HELP	= 8'o116,
+		LM_K_RUBOUT	= 8'o023,
+		LM_K_OVERSTRIKE	= 8'o160,
+		LM_K_TAB	= 8'o022,
+		LM_K_LINE	= 8'o036,
+		LM_K_DELETE	= 8'o157,
+		LM_K_PAGE	= 8'o050,
+		LM_K_CLEAR_SCREEN=8'o050,
+		LM_K_RETURN	= 8'o136,
+		LM_K_QUOTE	= 8'o120,
+		LM_K_HOLD_OUTPUT= 8'o030,
+		LM_K_STOP_OUTPUT= 8'o170,
+		LM_K_ABORT	= 8'o067,
+		LM_K_RESUME	= 8'o047,
+		LM_K_STATUS	= 8'o046,
+		LM_K_END	= 8'o156,
+		LM_K_ROMAN_I	= 8'o101,
+		LM_K_ROMAN_II	= 8'o001,
+		LM_K_ROMAN_III	= 8'o102,
+		LM_K_ROMAN_IV	= 8'o002,
+		LM_K_HAND_UP	= 8'o106,
+		LM_K_HAND_DOWN	= 8'o176,
+		LM_K_HAND_LEFT	= 8'o117,
+		LM_K_HAND_RIGHT	= 8'o017,
+		LM_K_SYSTEM	= 8'o141,
+		LM_K_NETWORK	= 8'o042;
 
    parameter [7:0]
 		LM_SH_LEFT_SHIFT 	= 8'o024,
@@ -163,6 +162,8 @@ module scancode_rom(addr, data);
        9'h041: data <= 8'o034;	/* , */
        9'h049: data <= 8'o074;	/* . */
        9'h04a: data <= 8'o174;	/* / */
+
+       9'h029: data <= 8'o134; /* space */
 
        default: data <=  0;	/* All other keys are undefined */
      endcase

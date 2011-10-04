@@ -17,9 +17,9 @@ module scancode_convert(clk,
    input [7:0] code_in;
 
    output strobe_out;
-   output [7:0] keycode;
 
-   reg [7:0] 	keycode;
+   output [15:0] keycode;
+   reg [15:0] 	keycode;
    
    //
    wire [7:0] 	rom_data;
@@ -36,9 +36,10 @@ module scancode_convert(clk,
 		S_IDLE = 0,
 		S_E0 = 1,
 		S_F0 = 2,
-		S_TOGGLE = 3,
-		S_CONVERT = 4,		
-   		S_STROBE = 5;
+		S_E0F0 = 3,
+		S_CONVERT_DOWN = 4,
+		S_CONVERT_UP = 5,
+   		S_STROBE = 6;
 
 `ifdef debug
    task dumpstate;
@@ -47,8 +48,9 @@ module scancode_convert(clk,
 	 case (state)
 	   S_E0: $display("S_E0");
 	   S_F0: $display("S_F0");
-	   S_TOGGLE: $display("S_TOGGLE");
-	   S_CONVERT: $display("S_CONVERT");
+	   S_E0F0: $display("S_E0F0");
+	   S_CONVERT_UP: $display("S_CONVERT_UP");
+	   S_CONVERT_DOWN: $display("S_CONVERT_DOWN");
    	   S_STROBE: $display("S_STROBE");
 	 endcase
       end
@@ -70,32 +72,28 @@ module scancode_convert(clk,
        end
    
    assign next_state =
-	      (state == S_IDLE && strobe_in && code_in == 8'he0) ? S_E0 :
-	      (state == S_IDLE && strobe_in && code_in == 8'hf0) ? S_F0 :
-	      (state == S_IDLE && strobe_in) ? S_CONVERT :
-	      (state == S_F0 && strobe_in) ? S_TOGGLE :
-	      (state == S_E0 && strobe_in && code_in == 8'hf0) ? S_TOGGLE :
-	      (state == S_E0 && strobe_in && code_in != 8'hf0) ? S_CONVERT :
-	      (state == S_TOGGLE) ? S_IDLE :		      
-	      (state == S_CONVERT) ? S_STROBE :
-	      (state == S_STROBE) ? S_IDLE :
-	      state;
+      (state == S_IDLE && strobe_in && code_in == 8'he0) ? S_E0 :
+      (state == S_IDLE && strobe_in && code_in == 8'hf0) ? S_F0 :
+      (state == S_IDLE && strobe_in) ? S_CONVERT_DOWN :
+      (state == S_F0 && strobe_in) ? S_CONVERT_UP :
+      (state == S_E0 && strobe_in && code_in == 8'hf0) ? S_E0F0 :
+      (state == S_E0 && strobe_in && code_in != 8'hf0) ? S_CONVERT_DOWN :
+      (state == S_E0F0 && strobe_in) ? S_CONVERT_UP :
+      (state == S_CONVERT_DOWN) ? S_STROBE :
+      (state == S_CONVERT_UP) ? S_STROBE : 
+      (state == S_STROBE) ? S_IDLE :
+      state;
 
    assign strobe_out = state == S_STROBE;
 
-   wire   down, up;
-
-   assign down = ~f0_prefix;
-   assign up = f0_prefix;
-   
    // modifier state
    always @(posedge clk)
      if (reset)
        begin
-	  f0_prefix <= 0;
-	  e0_prefix <= 0;
 	  sc <= 0;
 	  keycode <= 0;
+	  f0_prefix <= 0;
+	  e0_prefix <= 0;
        end
      else
        begin
@@ -104,20 +102,22 @@ module scancode_convert(clk,
 	       sc <= code_in;
 	    end
 	  else
-	    begin
-	       case (state)
-		 S_E0:
-		   e0_prefix <= 1;
-		 S_CONVERT:
-		   begin
-		      f0_prefix <= 0;
-		      e0_prefix <= 0;
-		      keycode <= rom_data;
-		   end
-		 S_TOGGLE:
-		   f0_prefix <= 1;
-	       endcase
-	    end
+	    case (state)
+	      S_E0: e0_prefix <= 1;
+	      S_CONVERT_DOWN:
+		begin
+		   keycode <= { 7'b0, 1'b0, rom_data };
+		   f0_prefix <= 0;
+		   e0_prefix <= 0;
+		end
+	      
+	      S_CONVERT_UP:
+		begin
+		   keycode <= { 7'b0, 1'b1, rom_data };
+		   f0_prefix <= 0;
+		   e0_prefix <= 0;
+		end
+	    endcase
        end
 
 endmodule

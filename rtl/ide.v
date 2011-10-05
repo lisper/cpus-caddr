@@ -27,13 +27,15 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    output [2:0]  ide_da;
 
    
-   reg [1:0] ata_state;
+   reg [2:0] ata_state;
 
-   parameter [1:0]
-		s0 = 2'd0,
-		s1 = 2'd1,
-		s2 = 2'd2,
-		s3 = 2'd3;
+   parameter [2:0]
+		s0 = 3'd0,
+		s1 = 3'd1,
+		s2 = 3'd2,
+		s3 = 3'd3,
+   		s4 = 3'd4,
+   		s5 = 3'd5;
 
    parameter [3:0]
 `ifdef SIMULATION
@@ -47,7 +49,7 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    wire      assert_cs;
    wire      assert_rw;
 
-   wire [1:0] ata_state_next;
+   wire [2:0] ata_state_next;
 
    reg [15:0] ide_data_in_reg;
 
@@ -91,7 +93,9 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 			  (ata_state == s0 && (ata_rd || ata_wr)) ? s1 :
 			  (ata_state == s1) ? s2 :
 			  (ata_state == s2 && ata_count == ATA_DELAY) ? s3 :
-			  (ata_state == s3) ? s0 :
+			  (ata_state == s3) ? s4 :
+			  (ata_state == s4) ? s5 :
+			  (ata_state == s5) ? s0 :
 			  ata_state;
    
    always @(posedge clk)

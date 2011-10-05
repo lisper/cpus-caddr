@@ -737,12 +737,13 @@ module pipe_ram_controller(
        sram_state <= sram_state_next;
 
    assign sram_start = (sram_state == 0) && |sram_req;
-   assign sram_end = sram_state == 2;
+   assign sram_end = sram_state == 3;
    
    assign sram_state_next =
 			   (sram_state == 0) && |sram_req ? 1 :
 			   (sram_state == 1) ? 2 :
-			   (sram_state == 2) ? 0 :
+			   (sram_state == 2) ? 3 :
+			   (sram_state == 3) ? 0 :
 			   sram_state;
 
    assign sram_req = {

@@ -53,7 +53,6 @@ module xbus_ram (
    initial
      begin
 	debug = 0;
-//debug = 1;
 	for (i = 0; i < DRAM_SIZE; i = i + 1)
 	  ram[i] = 0;
      end
@@ -82,11 +81,11 @@ module xbus_ram (
          req_delayed <= req & decode & ~|ack_delayed;
          ack_delayed[0] <= req_delayed;
          ack_delayed[1] <= ack_delayed[0];
-         ack_delayed[2] <= ack_delayed[1];
-         ack_delayed[3] <= ack_delayed[2];
-         ack_delayed[4] <= ack_delayed[3];
-         ack_delayed[5] <= ack_delayed[4];
-         ack_delayed[6] <= ack_delayed[5];
+//         ack_delayed[2] <= ack_delayed[1];
+//         ack_delayed[3] <= ack_delayed[2];
+//         ack_delayed[4] <= ack_delayed[3];
+//         ack_delayed[5] <= ack_delayed[4];
+//         ack_delayed[6] <= ack_delayed[5];
 
 `ifdef debug_detail_delay
 	 if (req & decode)
@@ -96,7 +95,7 @@ module xbus_ram (
 	 if (req & decode & ~|ack_delayed)
 	   $display("ddr: req_delayed %b", req & decode & ~|ack_delayed);
 
-	 if (ack_delayed[6])
+	 if (ack_delayed[1])
 	     $display("ddr: ack %b", ack);
 `endif
       end

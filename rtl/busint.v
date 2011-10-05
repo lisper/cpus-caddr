@@ -393,9 +393,11 @@ module busint(mclk, reset,
 				     dram_addr, $time);
 		 BUS_SLAVE: $display("busint: BUS_SLAVE addr %o; %t",
 				     dram_addr, $time);
+		 BUS_SWAIT: $display("busint: BUS_SWAIT addr %o; %t",
+				     dram_addr, $time);
 		 BUS_IDLE:  $display("busint: BUS_IDLE  addr %o; %t",
 				     dram_addr, $time);
-		 default:   $display("busint: ??");
+		 default:   $display("busint: ??; %t", $time);
 	       endcase
 	    end
 

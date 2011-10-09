@@ -194,19 +194,35 @@ module pipe_ram_controller(
  		 
    // ---------------------------
 
-   parameter S_IDLE = 0,
-	       S_VGA_RD = 1,
-	       S_MCR_RD1 = 2,
-	       S_MCR_RD2 = 3,
-	       S_MCR_WR1 = 4,
-	       S_MCR_WR2 = 5,
-	       S_SDRAM_RD = 6,
-	       S_SDRAM_WR = 7,
-	       S_VRAM_RD = 8,
-	       S_VRAM_WR = 9;
+   parameter [10:0]
+		S_INIT     = 11'b0_00000_00000,
+		S_IDLE     = 11'b0_00000_00001,
+		S_VGA_RD   = 11'b0_00000_00010,
+		S_MCR_RD1  = 11'b0_00000_00100,
+		S_MCR_RD2  = 11'b0_00000_01000,
+		S_MCR_WR1  = 11'b0_00000_10000,
+		S_MCR_WR2  = 11'b0_00001_00000,
+		S_SDRAM_RD = 11'b0_00010_00000,
+		S_SDRAM_WR = 11'b0_00100_00000,
+		S_VRAM_RD  = 11'b0_01000_00000,
+		S_VRAM_WR  = 11'b0_10000_00000,
+		S_WAIT     = 11'b1_00000_00000;
    
-   reg [3:0] 	 state;
-   wire [3:0] 	 next_state;
+   parameter [3:0]
+		NS_IDLE     = 0,
+		NS_VGA_RD   = 1,
+		NS_MCR_RD1  = 2,
+		NS_MCR_RD2  = 3,
+		NS_MCR_WR1  = 4,
+		NS_MCR_WR2  = 5,
+		NS_SDRAM_RD = 6,
+		NS_SDRAM_WR = 7,
+		NS_VRAM_RD  = 8,
+		NS_VRAM_WR  = 9,
+		NS_WAIT     = 10;
+   
+   reg [10:0] 	 state;
+   wire [10:0] 	 next_state;
 
    wire sram_idle;
    wire sram_start, sram_end;
@@ -215,33 +231,33 @@ module pipe_ram_controller(
      if (reset)
        state <= S_IDLE;
      else
-       if ((state == S_IDLE && sram_idle) || sram_end)
-	 state <= next_state;
+       state <= next_state;
 
    wire vram_vga_req_sync;
 
    assign sram_idle = ~|sram_busy && ~|sram_done;
    
    assign next_state =
-      (state == S_IDLE && mcr_req && ~mcr_write && ~int_mcr_ready) ? S_MCR_RD1 :
-      (state == S_MCR_RD1) ? S_MCR_RD2 :
-      (state == S_MCR_RD2) ? S_IDLE :
-      (state == S_IDLE && mcr_write && ~int_mcr_done) ? S_MCR_WR1 :
-      (state == S_MCR_WR1) ? S_MCR_WR2 :
-      (state == S_MCR_WR2) ? S_IDLE :
-      (state == S_IDLE && vram_vga_req_sync && ~vram_vga_ready) ? S_VGA_RD :
-      (state == S_VGA_RD) ? S_IDLE :
-      (state == S_IDLE && sdram_req && ~int_sdram_ready) ? S_SDRAM_RD :
-      (state == S_SDRAM_RD) ? S_IDLE :
-      (state == S_IDLE && sdram_write && ~int_sdram_done) ? S_SDRAM_WR :
-      (state == S_SDRAM_WR) ? S_IDLE :
-      (state == S_IDLE && vram_cpu_req && ~int_vram_cpu_ready) ? S_VRAM_RD :
-      (state == S_VRAM_RD) ? S_IDLE :
-      (state == S_IDLE && vram_cpu_write && ~int_vram_cpu_done) ? S_VRAM_WR :
-      (state == S_VRAM_WR) ? S_IDLE :
-      S_IDLE;
+      (state[NS_IDLE] && mcr_req && ~mcr_write && ~int_mcr_ready) ? S_MCR_RD1 :
+      (state[NS_MCR_RD1] && sram_end) ? S_MCR_RD2 :
+      (state[NS_MCR_RD2]) ? S_WAIT :
+      (state[NS_IDLE] && mcr_write && ~int_mcr_done) ? S_MCR_WR1 :
+      (state[NS_MCR_WR1] && sram_end) ? S_MCR_WR2 :
+      (state[NS_MCR_WR2]) ? S_WAIT :
+      (state[NS_IDLE] && vram_vga_req_sync && ~vram_vga_ready) ? S_VGA_RD :
+      (state[NS_VGA_RD]) ? S_WAIT :
+      (state[NS_IDLE] && sdram_req && ~int_sdram_ready && ~int_sdram_ready_e) ? S_SDRAM_RD :
+      (state[NS_SDRAM_RD]) ? S_WAIT :
+      (state[NS_IDLE] && sdram_write && ~int_sdram_done) ? S_SDRAM_WR :
+      (state[NS_SDRAM_WR]) ? S_WAIT :
+      (state[NS_IDLE] && vram_cpu_req && ~int_vram_cpu_ready) ? S_VRAM_RD :
+      (state[NS_VRAM_RD]) ? S_WAIT :
+      (state[NS_IDLE] && vram_cpu_write && ~int_vram_cpu_done) ? S_VRAM_WR :
+      (state[NS_VRAM_WR]) ? S_WAIT :
+      (state[NS_WAIT] && sram_end) ? S_IDLE :
+      state;
    
-   assign state_out = state;
+   assign state_out = state[3:0];
    
    // ---------------------------
 
@@ -285,19 +301,19 @@ module pipe_ram_controller(
    wire sram_a_vram;
 
    assign sram_a_sdram =
-	state == S_SDRAM_RD || state == S_SDRAM_WR;
+	state[NS_SDRAM_RD] || state[NS_SDRAM_WR];
 
    assign sram_a_mcr_h =
-	state == S_MCR_RD1 || state == S_MCR_WR1;
+	state[NS_MCR_RD1] || state[NS_MCR_WR1];
 
    assign sram_a_mcr_l =
-	state == S_MCR_RD2 || state == S_MCR_WR2;
+	state[NS_MCR_RD2] || state[NS_MCR_WR2];
 
    assign sram_a_vga =
-	state == S_VGA_RD;
+	state[NS_VGA_RD];
 
    assign sram_a_vram = 
-	state == S_VRAM_RD || state == S_VRAM_WR;
+	state[NS_VRAM_RD] || state[NS_VRAM_WR];
    
    assign sram_req_a =
 		  sram_a_sdram ? { 1'b0, sdram_addr[16:0] } :
@@ -308,26 +324,26 @@ module pipe_ram_controller(
 		  0;
 
    assign sram_req_oe_n =
-		     ((state == S_VGA_RD) ||
-		      (state == S_MCR_RD1 || state == S_MCR_RD2) ||
-		      (state == S_VRAM_RD) ||
-		      (state == S_SDRAM_RD)) ? 1'b0 :
+		     ((state[NS_VGA_RD]) ||
+		      (state[NS_MCR_RD1] || state[NS_MCR_RD2]) ||
+		      (state[NS_VRAM_RD]) ||
+		      (state[NS_SDRAM_RD])) ? 1'b0 :
 		     1'b1;
 
    assign sram_req_we_n =
-		     ((state == S_MCR_WR1 || state == S_MCR_WR2) ||
-		      (state == S_SDRAM_WR) ||
-		      (state == S_VRAM_WR)) ? 1'b0 :
+		     ((state[NS_MCR_WR1] || state[NS_MCR_WR2]) ||
+		      (state[NS_SDRAM_WR]) ||
+		      (state[NS_VRAM_WR])) ? 1'b0 :
 		     1'b1;
 
-   assign sram1_req_ce_n = state != S_IDLE ? 1'b0 : 1'b1;
-   assign sram2_req_ce_n = state != S_IDLE ? 1'b0 : 1'b1;
+   assign sram1_req_ce_n = ~state[NS_IDLE] ? 1'b0 : 1'b1;
+   assign sram2_req_ce_n = ~state[NS_IDLE] ? 1'b0 : 1'b1;
    
-   assign sram1_req_ub_n = state != S_IDLE ? 1'b0 : 1'b1;
-   assign sram1_req_lb_n = state != S_IDLE ? 1'b0 : 1'b1;
+   assign sram1_req_ub_n = ~state[NS_IDLE] ? 1'b0 : 1'b1;
+   assign sram1_req_lb_n = ~state[NS_IDLE] ? 1'b0 : 1'b1;
 
-   assign sram2_req_ub_n = state != S_IDLE ? 1'b0 : 1'b1;
-   assign sram2_req_lb_n = state != S_IDLE ? 1'b0 : 1'b1;
+   assign sram2_req_ub_n = ~state[NS_IDLE] ? 1'b0 : 1'b1;
+   assign sram2_req_lb_n = ~state[NS_IDLE] ? 1'b0 : 1'b1;
 
    //
    // [48:0]
@@ -350,7 +366,7 @@ module pipe_ram_controller(
 
 `ifdef debug
    always @(posedge clk)
-     if (mcr_write && state == S_MCR_WR1 && debug)
+     if (mcr_write && state[NS_MCR_WR1] && debug)
        $display("mcr: write @%o <- %o",
 		mcr_addr, mcr_addr == 14'o24045 ? 49'h000000001000 : mcr_data_in);
 `endif
@@ -363,17 +379,17 @@ module pipe_ram_controller(
 	 int_mcr_addr <= mcr_addr;
    
    assign sram1_req_out =
-    (state == S_MCR_WR1) ? {15'b0, int_mcr_data_in[48]} :
-    (state == S_MCR_WR2) ? int_mcr_data_in[31:16] :
-    (state == S_VRAM_WR)   ? int_vram_cpu_data_in[31:16] :
-    (state == S_SDRAM_WR) ? sdram_data_in[31:16] :
+    (state[NS_MCR_WR1]) ? {15'b0, int_mcr_data_in[48]} :
+    (state[NS_MCR_WR2]) ? int_mcr_data_in[31:16] :
+    (state[NS_VRAM_WR])   ? int_vram_cpu_data_in[31:16] :
+    (state[NS_SDRAM_WR]) ? sdram_data_in[31:16] :
     16'b0;
 		    
    assign sram2_req_out =
-    (state == S_MCR_WR1) ? int_mcr_data_in[47:32] :
-    (state == S_MCR_WR2) ? int_mcr_data_in[15:0] :
-    (state == S_VRAM_WR) ? int_vram_cpu_data_in[15:0] :
-    (state == S_SDRAM_WR) ? sdram_data_in[15:0] :
+    (state[NS_MCR_WR1]) ? int_mcr_data_in[47:32] :
+    (state[NS_MCR_WR2]) ? int_mcr_data_in[15:0] :
+    (state[NS_VRAM_WR]) ? int_vram_cpu_data_in[15:0] :
+    (state[NS_SDRAM_WR]) ? sdram_data_in[15:0] :
     16'b0;
 
    // ---------------------------
@@ -398,7 +414,7 @@ module pipe_ram_controller(
        int_mcr_ready <= 0;
      else
        begin
-	  if (state == S_MCR_RD2 && ~int_mcr_ready)
+	  if (state[NS_MCR_RD2] && ~int_mcr_ready)
 	    int_mcr_ready <= 1;
 	  else
 	    if (~mcr_req)
@@ -410,7 +426,7 @@ module pipe_ram_controller(
        int_mcr_done <= 0;
      else
        begin
-	  if (state == S_MCR_WR2 && ~int_mcr_done)
+	  if (state[NS_MCR_WR2] && ~int_mcr_done)
 	    int_mcr_done <= 1;
 	  else
 	    if (~mcr_write)
@@ -460,14 +476,14 @@ module pipe_ram_controller(
 	if (mcr_write)
 	  $display("rc: mcr_write state %d", state);
 				
-	if (state == S_MCR_WR1)
+	if (state[NS_MCR_WR1])
 	  $display("rc: mcr_write1 %o -> %o", int_mcr_addr, mcr_data_in);
-	if (state == S_MCR_WR2)
+	if (state[NS_MCR_WR2])
 	  $display("rc: mcr_write2 %o -> %o", int_mcr_addr, mcr_data_in);
 
-	if (state == S_MCR_RD1)
+	if (state[NS_MCR_RD1])
 	  $display("rc: mcr_read1 %o -> %o", int_mcr_addr, { sram1_resp_in, sram2_resp_in });
-	if (state == S_MCR_RD2)
+	if (state[NS_MCR_RD2])
 	  $display("rc: mcr_read2 %o -> %o; %t",
 		   int_mcr_addr, { mcr_data_out[48:32], { sram1_resp_in, sram2_resp_in } },
 		   $time);
@@ -538,7 +554,7 @@ module pipe_ram_controller(
        int_vram_cpu_ready <= 0;
      else
        begin
-	  if (state == S_VRAM_RD && ~int_vram_cpu_ready)
+	  if (state[NS_VRAM_RD] && ~int_vram_cpu_ready)
 	    int_vram_cpu_ready <= 1;
 	  else
 	    if (~vram_cpu_req)
@@ -550,7 +566,7 @@ module pipe_ram_controller(
        int_vram_cpu_done <= 0;
      else
        begin
-	  if (state == S_VRAM_WR && ~int_vram_cpu_done)
+	  if (state[NS_VRAM_WR] && ~int_vram_cpu_done)
 	    int_vram_cpu_done <= 1;
 	  else
 	    if (~vram_cpu_write)
@@ -566,8 +582,8 @@ module pipe_ram_controller(
    wire   latch_vram_addr;
    wire   latch_vram_data;
    
-   assign latch_vram_addr = state == S_IDLE && vram_cpu_req && ~int_vram_cpu_ready;
-   assign latch_vram_data = state == S_IDLE && vram_cpu_write && ~int_vram_cpu_done;
+   assign latch_vram_addr = state[NS_IDLE] && vram_cpu_req && ~int_vram_cpu_ready;
+   assign latch_vram_data = state[NS_IDLE] && vram_cpu_write && ~int_vram_cpu_done;
 
    always @(posedge clk)
      if (reset)
@@ -625,15 +641,15 @@ module pipe_ram_controller(
    //
    reg [31:0] sdram_out; // synthesis attribute keep sdram_out true;
 
-   assign int_sdram_done_e = state == S_SDRAM_WR;
-   assign int_sdram_ready_e = sram_done[3]/*state == S_SDRAM_RD*/;
+   assign int_sdram_done_e = state[NS_SDRAM_WR];
+   assign int_sdram_ready_e = sram_done[3]/*state[NS_SDRAM_RD]*/;
 
    always @(posedge clk)
      if (reset)
        sdram_out <= 0;
      else
        begin
-	  if (sram_done[3]/*state == S_SDRAM_RD*/)
+	  if (sram_done[3]/*state[NS_SDRAM_RD]*/)
 	    begin
 	       sdram_out <= sdram_addr[21:17] == 0 ?
 			    {sram1_resp_in, sram2_resp_in} : 32'hffffffff;
@@ -726,8 +742,8 @@ module pipe_ram_controller(
 
    //----
 
-   reg [1:0] sram_state;
-   wire [1:0] sram_state_next;
+   reg [2:0] sram_state;
+   wire [2:0] sram_state_next;
    wire [7:0] sram_req;
    
    always @(posedge clk)
@@ -736,25 +752,25 @@ module pipe_ram_controller(
      else
        sram_state <= sram_state_next;
 
-   assign sram_start = (sram_state == 0) && |sram_req;
-   assign sram_end = sram_state == 3;
+   assign sram_start = (sram_state == 3'b000) && |sram_req;
+   assign sram_end = sram_state[2];
    
    assign sram_state_next =
-			   (sram_state == 0) && |sram_req ? 1 :
-			   (sram_state == 1) ? 2 :
-			   (sram_state == 2) ? 3 :
-			   (sram_state == 3) ? 0 :
+			   (sram_state == 3'b000) && |sram_req ? 3'b001 :
+			   (sram_state == 3'b001) ? 3'b010 :
+			   (sram_state == 3'b010) ? 3'b100 :
+			   (sram_state == 3'b100) ? 3'b000 :
 			   sram_state;
 
    assign sram_req = {
-		      state == S_MCR_WR1 | state == S_MCR_WR2, // [7]
-		      state == S_VRAM_WR, // [6]
-		      state == S_SDRAM_WR,// [5]
-		      state == S_VRAM_RD, // [4]
-		      state == S_SDRAM_RD,// [3]
-		      state == S_VGA_RD,	// [2]
-		      state == S_MCR_RD2,	// [1]
-		      state == S_MCR_RD1	// [0]
+		      state[NS_MCR_WR1] | state[NS_MCR_WR2], // [7]
+		      state[NS_VRAM_WR], 	// [6]
+		      state[NS_SDRAM_WR],	// [5]
+		      state[NS_VRAM_RD], 	// [4]
+		      state[NS_SDRAM_RD],	// [3]
+		      state[NS_VGA_RD],		// [2]
+		      state[NS_MCR_RD2],	// [1]
+		      state[NS_MCR_RD1]		// [0]
 		      };
 			   
    always @(posedge clk)
@@ -828,4 +844,4 @@ module pipe_ram_controller(
    
 
 endmodule
-  
+

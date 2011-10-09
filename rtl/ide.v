@@ -17,7 +17,6 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    input [15:0]  ata_in;
 
    output [15:0] ata_out;
-   reg [15:0] 	 ata_out;
    output 	 ata_done;
 
    input [15:0]  ide_data_in;
@@ -104,11 +103,7 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
        if (ide_start)
 	 reg_ata_in <= ata_in;
    
-   always @(posedge clk)
-     if (reset)
-       ata_out <= 0;
-     else
-       ata_out <= reg_ide_data_in;
+   assign ata_out = reg_ide_data_in;
 
    always @(posedge clk)
      if (reset)

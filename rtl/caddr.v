@@ -585,8 +585,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign     need_mmu_state = memprepare | wmap | srcmap;
 
    wire       mcr_hold;
+`ifdef use_ucode_ram
+   assign     mcr_hold = 0;
+`else
    assign     mcr_hold = promdisabled && ~mcr_ready;
-
+`endif
    
    assign next_state = 
 		       state == STATE_RESET ? STATE_DECODE :
@@ -2479,17 +2482,22 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			 .wren_a(iwe),
 			 .rden_a(1'b1/*ice*/)
 			 );
+
+   assign fetch_out = 0;
+   assign prefetch_out = 0;
 `else
    // use top level ram controller
    assign mcr_addr = pc;
    assign iram = mcr_data_in;
    assign mcr_data_out = iwr;
    assign mcr_write = iwe;
-`endif
 
    // for externals
-   assign fetch_out = state_fetch;
-   assign prefetch_out = (need_mmu_state ? state_mmu : state_write) || state_prefetch;
+   assign fetch_out = state_fetch && promdisabled;
+   assign prefetch_out = ((need_mmu_state ? state_mmu : state_write) || state_prefetch) &&
+			 promdisabled;
+`endif
+
    assign pc_out = pc;
    assign state_out = state;
    assign machrun_out = machrun;

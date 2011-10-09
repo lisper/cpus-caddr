@@ -57,48 +57,65 @@ module xbus_ram (
 	  ram[i] = 0;
      end
    
-   reg 		 req_delayed;
-   reg [6:0] 	 ack_delayed;
+//   parameter 	 DELAY = 15;
+//   parameter 	 DELAY = 10;
+//   parameter 	 DELAY = 3;
+//   parameter 	 DELAY = 2;
+   parameter 	 DELAY = 1;
 
+   reg [21:0] 	 reg_addr;
+   reg 		 req_delayed;
+   reg [DELAY:0] ack_delayed;
+   wire 	 local_ack;
+   
    // need some dram address space at the end 
    // which is decoded but does not read/write...
    assign 	 decode = addr < 22'o11000000 ? 1'b1: 1'b0;
 
-   assign 	 ack = ack_delayed[1];
-//   assign 	 ack = ack_delayed[6];   
 
-   wire [DRAM_BITS-1:0] addr20;
-   assign addr20 = addr[DRAM_BITS-1:0];
+//
+assign sdram_write = req & decode & write;
+assign sdram_req = req & decode & ~write;
+//assign ack = sdram_done || sdram_ready;
+//assign ack = local_ack;
+assign ack = req_delayed;
+//
+   
+   assign local_ack = ack_delayed[DELAY];
+   
+   always @(posedge clk)
+     if (reset)
+       reg_addr <= 0;
+     else
+       if (req & decode & ~|ack_delayed)
+	 reg_addr <= addr;
+   
+   wire [DRAM_BITS-1:0] reg_addr20;
+   assign reg_addr20 = reg_addr[DRAM_BITS-1:0];
    
    always @(posedge clk)
      if (reset)
        begin
           req_delayed <= 0;
-          ack_delayed <= 7'b0;
+          ack_delayed <= 0;
        end
-    else
-      begin
-         req_delayed <= req & decode & ~|ack_delayed;
-         ack_delayed[0] <= req_delayed;
-         ack_delayed[1] <= ack_delayed[0];
-//         ack_delayed[2] <= ack_delayed[1];
-//         ack_delayed[3] <= ack_delayed[2];
-//         ack_delayed[4] <= ack_delayed[3];
-//         ack_delayed[5] <= ack_delayed[4];
-//         ack_delayed[6] <= ack_delayed[5];
+     else
+       begin
+	  req_delayed <= (sdram_write || sdram_req) & ~|ack_delayed;
+	  ack_delayed <= { ack_delayed[DELAY-1:0], req_delayed };
 
 `ifdef debug_detail_delay
-	 if (req & decode)
-	   $display("ddr: decode %b; %b %b",
-		    req & decode, req_delayed, ack_delayed);
+	  if (req & decode)
+	    $display("ddr: decode %b; %b %b",
+		     req & decode, req_delayed, ack_delayed);
 
-	 if (req & decode & ~|ack_delayed)
-	   $display("ddr: req_delayed %b", req & decode & ~|ack_delayed);
-
-	 if (ack_delayed[1])
-	     $display("ddr: ack %b", ack);
+	  if (req & decode & ~|ack_delayed)
+	    $display("ddr: req_delayed %b", req & decode & ~|ack_delayed);
+	  
+	  if (local_ack)
+	    $display("ddr: ack %b", ack);
 `endif
-      end
+       end
 
    always @(posedge clk)
      begin
@@ -107,21 +124,39 @@ module xbus_ram (
 	    begin
 `ifdef debug
 	       if (debug != 0)
-               $display("sdram: write @%o <- %o", addr20, datain);
+               $display("sdram: write @%o <- %o", reg_addr20, datain);
 `endif
-	       if (addr < DRAM_SIZE)
-		 ram[addr20] <= datain;
+	       if (reg_addr < DRAM_SIZE)
+		 ram[reg_addr20] <= datain;
 	    end
 	  else
 	    begin
 `ifdef debug
 	       if (debug != 0)
                $display("sdram: read @%o -> %o (0x%x) (addr=%o), %t",
-			addr20, ram[addr20], ram[addr20], addr, $time);
+			reg_addr20, ram[reg_addr20], ram[reg_addr20], reg_addr, $time);
 `endif
 	    end
      end
 
-   assign dataout = addr < DRAM_SIZE ? ram[addr20] : 32'hffffffff;
+   assign dataout = reg_addr < DRAM_SIZE ? ram[reg_addr20] : 32'hffffffff;
+
+//
+//`define monitor_ack
+`ifdef monitor_ack
+   integer count;
+   always @(posedge clk)
+       if (req)
+	 begin
+	    if (decode & ~|ack_delayed)
+	      count <= 0;
+	    else
+	      count <= count + 1;
+
+	    if (ack)
+	      $display("ack = %d; addr=%o write=%b", count, reg_addr, write);
+	 end
+`endif   
+//
 
 endmodule

@@ -442,7 +442,7 @@ module busint(mclk, reset,
 		      (state == BUS_WAIT && req) ? BUS_WAIT :
       		      (state == BUS_SLAVE && ack_dram) ? BUS_SWAIT :
 		      (state == BUS_SLAVE && ~ack_dram) ? BUS_SLAVE :
-      		      (state == BUS_SWAIT && disk_busreq2busint) ? BUS_SWAIT :
+      		      (state == BUS_SWAIT && (disk_busreq2busint || ack_dram)) ? BUS_SWAIT :
 		      (state == BUS_SWAIT && ~disk_busreq2busint) ? BUS_IDLE :
 		      BUS_IDLE;
 		      

@@ -1,11 +1,15 @@
 /*
+ * test disk controller
  */
 
 `define debug
+`define debug_state
 `define debug_detail
-
+`define debug_detail_delay
+`define DBG_DLY #1
+  
 `include "../rtl/busint.v"
-`include "../rtl/xbus-ram.v"
+`include "../rtl/xbus-sram.v"
 `include "../rtl/xbus-disk.v"
 `include "../rtl/xbus-tv.v"
 `include "../rtl/xbus-io.v"
@@ -21,7 +25,8 @@ module test_busint;
    reg [21:0] addr;
    reg [31:0] busin;
    wire [31:0] busout;
-   wire [15:0]  spy;
+   wire [15:0]  spyin;
+   wire [15:0]  spyout;
    reg 	       req;
    wire        ack;
    reg 	       write;
@@ -29,6 +34,8 @@ module test_busint;
    wire        interrupt;
 
    wire [15:0] 	ide_data_bus;
+   wire [15:0] 	ide_data_in;
+   wire [15:0] 	ide_data_out;
    wire 	ide_dior;
    wire 	ide_diow;
    wire [1:0] 	ide_cs;
@@ -39,13 +46,16 @@ module test_busint;
 		 .addr(addr),
 		 .busin(busin),
 		 .busout(busout),
-		 .spy(spy), 
+		 .spyin(spyin),
+		 .spyout(spyout), 
 		 .req(req),
 		 .ack(ack),
 		 .write(write), 
 		 .load(load),
 		 .interrupt(interrupt),
-		 .ide_data_bus(ide_data_bus),
+
+		 .ide_data_in(ide_data_in),
+		 .ide_data_out(ide_data_out),
 		 .ide_dior(ide_dior),
 		 .ide_diow(ide_diow),
 		 .ide_cs(ide_cs),
@@ -55,8 +65,8 @@ module test_busint;
 
    task wait_for_bi_done;
       begin
-	 while (ack == 1'b0) #10;
-	 #10;
+	 while (ack == 1'b0) @(posedge clk);
+	 @(posedge clk);
       end
 
    endtask
@@ -73,6 +83,7 @@ module test_busint;
 	 $display("read: addr %o in %x out %x, %t",
 		  addr, busin, busout, $time);
 	 req = 0;
+	 @(posedge clk);
       end
    endtask
 
@@ -90,6 +101,7 @@ module test_busint;
 		  addr, busin, busout, $time);
 	 wait_for_bi_done;
 	 req = 0;
+	 @(posedge clk);
       end
    endtask
 
@@ -102,13 +114,16 @@ module test_busint;
 
    initial
      begin
+	test_busint.busint.disk.debug = 1;
+	test_busint.busint.dram.debug = 1;
+	
 	clk = 0;
 	reset = 0;
 	req = 0;
 	write = 0;
 
 	#1 reset = 1;
-	#100 reset = 0;
+	#500 reset = 0;
 
 	bus_write(22'o22, 32'o1001);
 	#100 bus_write(22'o23, 32'o4000);
@@ -119,15 +134,20 @@ module test_busint;
 	bus_write(22'o17377775, 32'o22);
 	bus_write(22'o17377777, 32'o0);
 
-	#500000 $finish;
+	#1000000 $finish;
      end
 
    always
      begin
-	#10 clk = 0;
-	#10 clk = 1;
+	#20 clk = 0;
+	#20 clk = 1;
      end
 
+   // ide
+   assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
+
+   assign ide_data_in = ide_data_bus;
+     
    always @(posedge clk)
      begin
 	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);

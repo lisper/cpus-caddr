@@ -1,0 +1,69 @@
+[timestart] 105315717
+[size] 1616 600
+[pos] -1 -1
+*-5.000000 105315805 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.v.
+[treeopen] TOP.v.cpu.busint.
+[treeopen] TOP.v.cpu.busint.disk.
+@28
+TOP.v.clk1x
+TOP.v.clk50
+TOP.v.clk100
+@30
+TOP.v.cpu.lpc[13:0]
+@22
+TOP.v.cpu.state[5:0]
+@28
+TOP.v.cpu.promdisabled
+TOP.v.cpu.promdisable
+@22
+TOP.v.cpu.md[31:0]
+@2024
+^2 /home/brad/cpus/caddr/verif/trans.busint
+TOP.v.cpu.busint.state[3:0]
+@2025
+^3 /home/brad/cpus/caddr/verif/trans.disk
+TOP.v.cpu.busint.disk.state[4:0]
+@2022
+^1 /home/brad/cpus/caddr/verif/trans.pipe2
+TOP.v.rc.state[10:0]
+@28
+TOP.v.rc.mcr_req
+TOP.v.rc.mcr_ready
+TOP.v.rc.mcr_write
+TOP.v.rc.mcr_done
+TOP.v.rc.sdram_req
+TOP.v.rc.sdram_ready
+TOP.v.rc.sdram_write
+TOP.v.rc.sdram_done
+@22
+TOP.v.rc.mcr_state[4:0]
+@28
+TOP.v.rc.i_mcr_req
+TOP.v.rc.i_mcr_write
+@22
+TOP.v.rc.sdram_state[4:0]
+@28
+TOP.v.rc.sdram_req
+TOP.v.rc.sdram_ready
+TOP.v.rc.sdram_write
+TOP.v.rc.sdram_done
+@22
+TOP.v.rc.sram_done[7:0]
+@28
+TOP.v.cpu.busint.disk.ide.ide_cs[1:0]
+TOP.v.cpu.busint.disk.ide.ide_da[2:0]
+@22
+TOP.v.cpu.busint.disk.ide.ata_out[15:0]
+@28
+TOP.v.ide_dior
+TOP.v.ide_diow
+TOP.v.sram_oe_n
+TOP.v.sram_we_n
+@22
+TOP.v.rc.sram1_out[15:0]
+TOP.v.rc.sram2_out[15:0]
+TOP.v.rc.sram_a[17:0]
+TOP.v.rc.sram1_in[15:0]
+TOP.v.rc.sram2_in[15:0]

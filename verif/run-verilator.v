@@ -9,6 +9,7 @@
 `define DBG_DLY
 
 `define build_debug
+//`define debug_patch_disk_copy
   
 //`include "defs.v"
 `include "rtl.v"

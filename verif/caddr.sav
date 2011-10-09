@@ -1,0 +1,26 @@
+[size] 1000 600
+[pos] -1 -1
+*-7.000000 27688720 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test.
+@28
+test.cpu.clk
+test.cpu.reset
+@22
+test.cpu.state[4:0]
+@30
+test.cpu.vma[31:0]
+@22
+test.cpu.mapi[23:8]
+@30
+test.cpu.vmo[23:0]
+@28
+test.cpu.lvmo_22
+test.cpu.lvmo_23
+@30
+test.cpu.pma[21:8]
+@28
+test.cpu.memprepare
+test.cpu.memstart
+test.cpu.memrq
+@31
+test.cpu.lpc[13:0]

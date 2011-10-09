@@ -1,0 +1,47 @@
+[timestart] 1943
+[size] 1651 600
+[pos] -1 -1
+*-8.000000 2480 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_busint.
+[treeopen] test_busint.busint.
+[treeopen] test_busint.busint.disk.
+@28
+test_busint.clk
+test_busint.reset
+@22
+test_busint.busint.state[3:0]
+test_busint.busint.disk.state[4:0]
+@28
+test_busint.busint.req
+test_busint.busint.ack
+test_busint.busint.write
+test_busint.busint.load
+test_busint.busint.disk.decode
+@24
+test_busint.busint.disk.state[4:0]
+@200
+-
+@22
+test_busint.busint.disk.ide.ata_in[15:0]
+test_busint.busint.disk.ide.reg_ata_in[15:0]
+@28
+test_busint.busint.disk.ide.ata_rd
+test_busint.busint.disk.ide.ata_wr
+test_busint.busint.disk.ide.ata_done
+test_busint.busint.disk.ide.ide_start
+test_busint.busint.disk.ide.ide_stop
+test_busint.busint.disk.ide.c_dior
+test_busint.busint.disk.ide.c_diow
+@22
+test_busint.ide_data_out[15:0]
+@28
+test_busint.ide_cs[1:0]
+test_busint.ide_da[2:0]
+test_busint.ide_dior
+test_busint.ide_diow
+@200
+-
+@24
+test_busint.busint.disk.ide.ata_state[2:0]
+@22
+test_busint.busint.disk.ide.ata_count[4:0]

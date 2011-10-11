@@ -39,10 +39,11 @@ module ps2(clk,		// main clock
    output 	error;
 
 	   
-   parameter FREQ = 25000; // frequency of the main clock (KHz)
+//   parameter FREQ = 25000; // frequency of the main clock (KHz)
+   parameter FREQ = 12500; // frequency of the main clock (KHz)
    parameter PS2_FREQ = 10;  // keyboard clock frequency (KHz)
    parameter TIMEOUT  = FREQ / PS2_FREQ;  // ps2_clk quiet timeout
-   parameter [7:0] KEY_RELEASE = 8'b11110000;  // sent when key is rel'd
+//   parameter [7:0] KEY_RELEASE = 8'b11110000;  // sent when key is rel'd
 
    reg [13:0]  timer_r;		// time since last PS/2 clock edge
    wire [13:0] timer_c;

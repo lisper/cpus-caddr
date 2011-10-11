@@ -51,7 +51,6 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
    reg [9:0]  hold;
    wire       press_detected;
    wire       pressed;
-   wire       released;
    reg 	      press_history;
 
    assign interrupt = 1'b0;
@@ -137,7 +136,7 @@ module support(sysclk, cpuclk, button_r, button_b, button_h, button_c,
        press_history <= press_detected;
 
    assign pressed = (!press_history && press_detected);
-   assign released = (press_history && ~press_detected);
+   //assign released = (press_history && ~press_detected);
    
 endmodule
 

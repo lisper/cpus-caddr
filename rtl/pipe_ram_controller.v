@@ -337,11 +337,6 @@ module pipe_ram_controller(
    wire   latch_mcr_addr;
    wire   latch_mcr_data;
 
-//   assign latch_mcr_addr = mcr_req || mcr_write;
-//   assign latch_mcr_data = mcr_write;
-   assign latch_mcr_addr = mcr_state[NMC_IDLE] && (mcr_req || mcr_write);
-   assign latch_mcr_data = mcr_state[NMC_IDLE] && mcr_write;
-
    always @(posedge clk)
      if (reset)
        int_mcr_data_in <= 0;
@@ -439,6 +434,11 @@ module pipe_ram_controller(
    
    assign i_mcr_req = mcr_state[NMC_READ];
    assign i_mcr_write = mcr_state[NMC_WRITE];
+
+//   assign latch_mcr_addr = mcr_req || mcr_write;
+//   assign latch_mcr_data = mcr_write;
+   assign latch_mcr_addr = mcr_state[NMC_IDLE] && (mcr_req || mcr_write);
+   assign latch_mcr_data = mcr_state[NMC_IDLE] && mcr_write;
 
    //
    //

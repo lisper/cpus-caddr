@@ -52,11 +52,12 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    wire [2:0] ata_state_next;
 
    parameter [4:0]
-`ifdef SIMULATION
-		ATA_DELAY = 2;
-`else
-		ATA_DELAY = 14;
-`endif
+//`ifdef SIMULATION
+//		ATA_DELAY = 2;
+//`else
+//		ATA_DELAY = 14;
+//`endif
+		ATA_DELAY = 20;
      
    reg [4:0] ata_count;
    
@@ -87,8 +88,9 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 			  (ata_state == s0 && (ata_rd || ata_wr)) ? s1 :
 			  (ata_state == s1) ? s2 :
 			  (ata_state == s2 && ata_count == ATA_DELAY) ? s3 :
-			  (ata_state == s3) ? s4 :
-			  (ata_state == s4) ? s0 :
+			  (ata_state == s3) ? s0 :
+//			  (ata_state == s3) ? s4 :
+//			  (ata_state == s4) ? s0 :
 			  ata_state;
 
    

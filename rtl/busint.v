@@ -137,7 +137,6 @@ module busint(mclk, reset,
 
    reg [3:0] 	state;
    wire [3:0] 	next_state;
-// synthesis attribute keep state true;
 
    reg [4:0] 	timeout_count;
  	

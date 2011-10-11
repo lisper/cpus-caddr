@@ -3,18 +3,18 @@
 #
 NET sysclk PERIOD = 50 MHz HIGH 50 %;
 
-NET "clk1x" TNM_NET = "clk1x";
-TIMESPEC "TS_clk1" = PERIOD "clk1x" 20ns HIGH 50%;
+#NET "clk1x" TNM_NET = "clk1x";
+#TIMESPEC "TS_clk1" = PERIOD "clk1x" 20ns HIGH 50%;
 
 #
 # Time specifications for 50MHz clock
 #
-TIMESPEC TS01 = FROM : FFS : TO : FFS : 20 ns;
+#TIMESPEC TS01 = FROM : FFS : TO : FFS : 20 ns;
 #TIMESPEC TS02 = FROM : RAMS : TO : FFS : 20 ns;
 #TIMESPEC TS03 = FROM : FFS : TO : RAMS : 20 ns;
 #TIMESPEC TS04 = FROM : RAMS : TO : RAMS : 20 ns;
-TIMESPEC TS05 = FROM : FFS : TO : PADS : 20 ns;
-TIMESPEC TS06 = FROM : PADS : TO : FFS : 20 ns;
+#TIMESPEC TS05 = FROM : FFS : TO : PADS : 20 ns;
+#TIMESPEC TS06 = FROM : PADS : TO : FFS : 20 ns;
 #TIMESPEC TS07 = FROM : PADS : TO : RAMS : 20 ns;
 #TIMESPEC TS08 = FROM : RAMS : TO : PADS : 20 ns;
 
@@ -73,8 +73,8 @@ NET "led<7>"  LOC = "P11";
 
 NET "sysclk"  LOC = "T9";
 
-#NET "ps2_clk"  LOC = "M16";
-#NET "ps2_data"  LOC = "M15";
+NET "ps2_clk"  LOC = "M16";
+NET "ps2_data"  LOC = "M15";
 
 NET "vga_red"  LOC = "R12";
 NET "vga_blu"  LOC = "R11";
@@ -262,6 +262,23 @@ NET "ide_da<1>"		IOSTANDARD=LVTTL;
 NET "ide_da<0>"		IOSTANDARD=LVTTL;
 NET "ide_cs<1>"		IOSTANDARD=LVTTL;
 NET "ide_cs<0>"		IOSTANDARD=LVTTL;
+
+NET "ide_data_bus<15>"	PULLUP;
+NET "ide_data_bus<14>"	PULLUP;
+NET "ide_data_bus<13>"	PULLUP;
+NET "ide_data_bus<12>"	PULLUP;
+NET "ide_data_bus<11>"	PULLUP;
+NET "ide_data_bus<10>"	PULLUP;
+NET "ide_data_bus<9>"	PULLUP;
+NET "ide_data_bus<8>"	PULLUP;
+NET "ide_data_bus<7>"	PULLUP;
+NET "ide_data_bus<6>"	PULLUP;
+NET "ide_data_bus<5>"	PULLUP;
+NET "ide_data_bus<4>"	PULLUP;
+NET "ide_data_bus<3>"	PULLUP;
+NET "ide_data_bus<2>"	PULLUP;
+NET "ide_data_bus<1>"	PULLUP;
+NET "ide_data_bus<0>"	PULLUP;
 
 INST "ide_data_bus<0>"	DRIVE=24;
 INST "ide_data_bus<1>"	DRIVE=24;

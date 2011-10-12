@@ -781,6 +781,45 @@ module xbus_disk (
        if (state == s_read2 || state == s_write0)
 	 disk_ma <= { 10'b0, addrout };
 
+   //
+   always @(posedge clk)
+     if (reset)
+   	addrout <= 0;
+     else
+       addrout <=
+		 state_next == s_read_ccw ? { disk_clp } :
+		 state_next == s_read2    ? { disk_ccw, wc } :
+		 state_next == s_write0   ? { disk_ccw, wc } :
+		 addrout;
+
+   //
+   always @(posedge clk)
+     if (reset)
+   	reqout <= 0;
+     else
+   	reqout <=
+		 state_next == s_read_ccw ? 1 :
+		 state_next == s_read2    ? 1 :
+		 state_next == s_write0   ? 1 :
+		 0;
+
+   //
+   always @(posedge clk)
+     if (reset)
+       busreqout <= 0;
+     else
+       busreqout <=
+		   state_next == s_read_ccw ? 1 :
+		   state_next == s_read2    ? 1 :
+		   state_next == s_write0   ? 1 :
+		   0;
+
+   //
+   always @(posedge clk)
+     if (reset)
+       writeout <= 0;
+     else
+       writeout <= state_next == s_read2    ? 1 : 0;
    
    // combinatorial logic based on state
    always @(state or disk_cmd or disk_da or disk_ccw or disk_clp or
@@ -810,10 +849,6 @@ module xbus_disk (
 	ata_addr = 0;
 	ata_in = 0;
 
-	busreqout = 0;
-	reqout = 0;
-	writeout = 0;
-	addrout = 0;
 	dma_dataout = 0;
 
 	case (state)
@@ -854,10 +889,10 @@ module xbus_disk (
 
 	  s_read_ccw:
 	    begin
-	       busreqout = 1;
-	       reqout = 1;
-	       addrout = { disk_clp };
-
+	       /* busreqout = 1; */
+	       /* reqout = 1; */
+	       /* addrout <= disk_clk; */
+	       
 `ifdef debug_disk
 	       $display("disk: dma clp @ %o", disk_clp);
 `endif
@@ -878,7 +913,8 @@ module xbus_disk (
 		   ata_out[IDE_STATUS_DRDY])
 		 state_next = s_init1;
 `ifdef debug_disk
-	       $display("disk: s_init0, status %x", ata_out);
+	       if (ata_done)
+		 $display("disk: s_init0, status %x; %t", ata_out, $time);
 `endif
 	    end
 
@@ -1041,13 +1077,13 @@ module xbus_disk (
 	  s_read2:
 	    begin
 	       // mem write
-	       busreqout = 1;
-	       reqout = 1;
-	       addrout = { disk_ccw, wc };
+	       /* busreqout <= 1; */
+	       /* reqout <= 1; */
+	       /* addrout <= { disk_ccw, wc } */
 
 	       dma_dataout = { ata_out, ata_hold };
 	       
-	       writeout = 1;
+	       /* writeout <= 1; */
 	       
 `ifdef debug_disk
 	       if (busgrantin) $display("s_read2: ata_out %o, dma_addr %o",
@@ -1068,9 +1104,9 @@ module xbus_disk (
 	  s_write0:
 	    begin
 	       //mem read
-	       busreqout = 1;
-	       reqout = 1;
-	       addrout = { disk_ccw, wc };
+	       /* busreqout = 1; */
+	       /* reqout = 1; */
+	       /* addrout <= { disk_ccw, wc }; */
 	       
 	       if (busgrantin && ackin)
 		 state_next = s_write1;

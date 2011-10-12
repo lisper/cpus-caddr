@@ -202,8 +202,8 @@ module xbus_tv(
    assign fb_state_next =
 			 (fb_state == FB_IDLE && start_fb_write) ? FB_WRITE :
 			 (fb_state == FB_IDLE && start_fb_read) ? FB_READ :
-//			 (fb_state == FB_WRITE && vram_done) ? FB_DONE :
- (fb_state == FB_WRITE) ? FB_DONE :
+			 (fb_state == FB_WRITE && vram_done) ? FB_DONE :
+// (fb_state == FB_WRITE) ? FB_DONE :
 			 (fb_state == FB_READ && vram_ready) ? FB_DONE :
 			 (fb_state == FB_DONE && ~req) ? FB_IDLE :
 			 fb_state;

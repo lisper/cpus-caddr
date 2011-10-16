@@ -1,0 +1,33 @@
+serial spy port
+
+   input [15:0] spy_in;
+   output [15:0] spy_out;
+   input 	dbread;
+   input 	dbwrite;
+   input [3:0] 	eadr;
+
+8 bits/byte, 9600 8N1
+
+top 4 bits are op, bottom 4 bits are data
+
+76543210
+oooodddd
+
+op
+
+0 data-h
+1 data-h
+2 data-h
+3 data-h
+4 data-l
+5 data-l
+6 data-l
+7 data-l
+8 read eadr
+9 write eadr
+a
+b
+c
+d
+e
+f

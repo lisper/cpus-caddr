@@ -38,7 +38,6 @@ module xbus_ram (
    assign sdram_write = req & decode & write;
    assign sdram_req = req & decode & ~write;
    
-//   assign ack = sdram_done || sdram_ready;
    assign ack = (sdram_write && sdram_done) || (sdram_req && sdram_ready);
 
    assign sdram_addr = addr;

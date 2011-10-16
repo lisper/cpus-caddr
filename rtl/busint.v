@@ -465,7 +465,7 @@ module busint(mclk, reset,
        timeout_count <= 0;
      else
        if (state == BUS_REQ && ~timed_out)
-	 timeout_count <= timeout_count + 6'd1;
+	 timeout_count <= timeout_count + 6'd000001;
        else
 	 if (state == BUS_WAIT)
 	   timeout_count <= 0;

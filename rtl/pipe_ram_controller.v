@@ -774,6 +774,7 @@ module pipe_ram_controller(
    reg [4:0] sram_state;
    wire [4:0] sram_state_next;
    wire [7:0] sram_req;
+   reg 	      sram_we_n_hold;
    
    always @(posedge clk)
      if (reset)
@@ -848,6 +849,7 @@ module pipe_ram_controller(
 
 	       sram_oe_n <= sram_req_oe_n;
 	       sram_we_n <= sram_req_we_n;
+//	       sram_we_n_hold <= sram_req_we_n;
 	       
 	       sram1_ce_n <= sram1_req_ce_n;
 	       sram1_ub_n <= sram1_req_ub_n;
@@ -858,6 +860,9 @@ module pipe_ram_controller(
 	       sram2_lb_n <= sram2_req_lb_n;
 	    end
 	  else
+//	    if (sram_begin)
+//	      sram_we_n <= sram_we_n_hold;
+//	    else
 	    if (sram_mid2)
 	      sram_we_n <= 1'b1;
 	    else

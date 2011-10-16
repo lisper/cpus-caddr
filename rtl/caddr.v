@@ -1013,7 +1013,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			  .q_a({dr,dp,dn,dpc}),
 			  .data_a(17'b0),
 			  .wren_a(1'b0),
-//			  .rden_a(1'b1),
 			  .rden_a(~state_prefetch && ~dwe),
 
 			  .clk_b(clk),

@@ -187,6 +187,7 @@ module pipe_ram_controller(
 
 `ifdef debug
    reg 		 debug;
+   reg 		 debug_mcr;
 `endif
  		 
    // ---------------------------
@@ -221,7 +222,7 @@ module pipe_ram_controller(
    reg [10:0] 	 state;
    wire [10:0] 	 next_state;
 
-   wire sram_start, sram_end;
+   wire sram_start, sram_begin, sram_mid0, sram_mid1, sram_mid2, sram_end;
 
    always @(posedge clk)
      if (reset)
@@ -359,9 +360,14 @@ module pipe_ram_controller(
    
 `ifdef debug
    always @(posedge clk)
-     if (mcr_write && state[NS_MCR_WR1] && debug)
+     if (mcr_write && mcr_state[NMC_IDLE] && debug_mcr)
        $display("mcr: write @%o <- %o",
 		mcr_addr, mcr_addr == 14'o24045 ? 49'h000000001000 : mcr_data_in);
+
+   always @(posedge clk)
+     if (mcr_state[NMC_READW] && ~mcr_req && debug_mcr)
+       $display("mcr: read @%o -> %o",
+		int_mcr_addr, mcr_data_out);
 `endif
    
    assign sram1_req_out =
@@ -435,8 +441,6 @@ module pipe_ram_controller(
    assign i_mcr_req = mcr_state[NMC_READ];
    assign i_mcr_write = mcr_state[NMC_WRITE];
 
-//   assign latch_mcr_addr = mcr_req || mcr_write;
-//   assign latch_mcr_data = mcr_write;
    assign latch_mcr_addr = mcr_state[NMC_IDLE] && (mcr_req || mcr_write);
    assign latch_mcr_data = mcr_state[NMC_IDLE] && mcr_write;
 
@@ -537,7 +541,7 @@ module pipe_ram_controller(
 	  if (sram_done[2]/*state == S_VGA_RD*/)
 	    vram_vga_ready <= 1;
 	  else
-	    if (~vram_vga_req_sync)
+	    if (~vram_vga_req_sync && ~sram_busy[2])
 	      vram_vga_ready <= 0;
        end
 
@@ -607,8 +611,6 @@ module pipe_ram_controller(
    wire   latch_vram_addr;
    wire   latch_vram_data;
    
-//   assign latch_vram_addr = vram_state[NV_READ] || vram_state[NV_WRITE];
-//   assign latch_vram_data = vram_state[NV_WRITE];
    assign latch_vram_addr = vram_state[NV_IDLE] && (vram_cpu_req || vram_cpu_write);
    assign latch_vram_data = vram_state[NV_IDLE] && vram_cpu_write;
 
@@ -753,21 +755,24 @@ module pipe_ram_controller(
 `ifdef debug
    always @(posedge clk)
      begin
-	if (sdram_state[NSD_IDLE] && sdram_req && debug)
+	if (sdram_state[NSD_READW] && ~sdram_req && debug)
 	  $display("rc: sdram read %o -> %o; %t", sdram_addr, sdram_out, $time);
-	if (sdram_state[NSD_IDLE] && sdram_write && debug)
-	  $display("rc: sdram write %o <- %o; %t", sdram_addr, sdram_data_in, $time);
      end
+   
+   always @(posedge clk)
+     begin
+	if (sdram_write && sdram_state[NSD_IDLE] && debug)
+	  $display("rc: sdram write %o <- %o; %t", sdram_addr, sdram_data_in, $time);
 
-   always @(posedge cpu_clk)
-     if (sdram_done == 0 && int_sdram_done && debug)
-       $display("rc: sdram write done %o <- %o; %t", sdram_addr, sdram_data_in, $time);
+	if (~sdram_write && sdram_state[NSD_WRITEW] && debug)
+	  $display("rc: sdram write done %o <- %o; %t", sdram_addr, sdram_data_in, $time);
+     end
 `endif
 
    //----
 
-   reg [2:0] sram_state;
-   wire [2:0] sram_state_next;
+   reg [4:0] sram_state;
+   wire [4:0] sram_state_next;
    wire [7:0] sram_req;
    
    always @(posedge clk)
@@ -776,14 +781,21 @@ module pipe_ram_controller(
      else
        sram_state <= sram_state_next;
 
-   assign sram_start = (sram_state == 3'b000) && |sram_req;
-   assign sram_end = sram_state[2];
+   assign sram_start = (sram_state == 5'b00000) && |sram_req;
+   assign sram_begin = sram_state[0];
+   assign sram_mid0 = sram_state[1];
+   assign sram_mid1 = sram_state[2];
+   assign sram_mid2 = sram_state[3];
+   assign sram_end = sram_state[4];
    
    assign sram_state_next =
-			   (sram_state == 3'b000) && |sram_req ? 3'b001 :
-			   (sram_state == 3'b001) ? 3'b010 :
-			   (sram_state == 3'b010) ? 3'b100 :
-			   (sram_state == 3'b100) ? 3'b000 :
+			   (sram_state == 5'b00000) && |sram_req ? 5'b00001 :
+			   (sram_state == 5'b00001) ? 5'b00010 :
+			   (sram_state == 5'b00010) ? 5'b00100 :
+			   (sram_state == 5'b00100 && sram_we_n == 1'b1) ? 5'b10000 :
+			   (sram_state == 5'b00100 && sram_we_n == 1'b0) ? 5'b01000 :
+			   (sram_state == 5'b01000) ? 5'b10000 :
+			   (sram_state == 5'b10000) ? 5'b00000 :
 			   sram_state;
 
    assign sram_req = {
@@ -820,6 +832,8 @@ module pipe_ram_controller(
 	  sram2_ce_n <= 1;
 	  sram2_ub_n <= 1;
 	  sram2_lb_n <= 1;
+
+	  sram_done <= 0;
        end
      else
        begin
@@ -844,6 +858,9 @@ module pipe_ram_controller(
 	       sram2_lb_n <= sram2_req_lb_n;
 	    end
 	  else
+	    if (sram_mid2)
+	      sram_we_n <= 1'b1;
+	    else
 	    if (sram_end)
 	      begin
 		 sram1_resp_in <= sram1_in;

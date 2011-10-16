@@ -138,7 +138,7 @@ module busint(mclk, reset,
    reg [3:0] 	state;
    wire [3:0] 	next_state;
 
-   reg [4:0] 	timeout_count;
+   reg [5:0] 	timeout_count;
  	
    //
    wire 	decode_ok;
@@ -465,12 +465,12 @@ module busint(mclk, reset,
        timeout_count <= 0;
      else
        if (state == BUS_REQ && ~timed_out)
-	 timeout_count <= timeout_count + 5'd1;
+	 timeout_count <= timeout_count + 6'd1;
        else
 	 if (state == BUS_WAIT)
 	   timeout_count <= 0;
 
-   assign timed_out = timeout_count == 5'b11111;
+   assign timed_out = timeout_count == 6'b111111;
 
 `ifdef debug
    always @(posedge mclk)

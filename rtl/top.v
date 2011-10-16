@@ -6,7 +6,6 @@
 `define use_spyport
 `define use_vga
 `define use_ps2
-//`define show_kb
 
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
@@ -225,7 +224,7 @@ module top(rs232_txd, rs232_rxd,
 
 `ifdef use_spyport
    spy_port spy_port(
-		     .sysclk(clk50/*sysclk_buf*/),
+		     .sysclk(clk50),
 		     .clk(cpuclk),
 		     .reset(reset),
 		     .rs232_rxd(rs232_rxd),
@@ -325,15 +324,13 @@ module top(rs232_txd, rs232_rxd,
 `endif
 
 `ifdef use_vga
-//   wire vram_vga_req_x;
-   
-   vga_display vga (.clk(clk50/*cpuclk*/),
+   vga_display vga (.clk(clk50),
 		    .pixclk(pixclk),
 		    .reset(reset),
 
 		    .vram_addr(vram_vga_addr),
 		    .vram_data(vram_vga_data_out),
-		    .vram_req(vram_vga_req/*_x*/),
+		    .vram_req(vram_vga_req),
 		    .vram_ready(vram_vga_ready),
       
 		    .vga_red(vga_red),
@@ -342,8 +339,6 @@ module top(rs232_txd, rs232_rxd,
 		    .vga_hsync(vga_hsync),
 		    .vga_vsync(vga_vsync)
 		    );
-
-//   assign vram_vga_req = switches[7] ? vram_vga_req_x : 0;
 `else
    assign vram_vga_req = 0;
    assign vga_red = 0;
@@ -401,33 +396,6 @@ module top(rs232_txd, rs232_rxd,
    assign ms_button = 0;
 `endif
    
-`ifdef show_kb
-
-   reg [15:0] kd;
-   reg 	      kg;
-   
-   always @(posedge sysclk_buf)
-     if (reset)
-       begin
-	  kd <= 0;
-	  kg <= 0;
-       end
-     else
-       begin
-       if (kb_ready)
-	 begin
-	    kd <= kb_data;
-	    kg <= 1;
-	 end
-       end
-   
-   display show_pc(.clk(cpuclk), .reset(reset),
-		   .pc({5'b0, kd[7:0]}), .dots(dots),
-		   .sevenseg(sevenseg), .sevenseg_an(sevenseg_an));
-
-   assign led = kd[15:8];
-   assign dots[3:0] = { 1'b1, ps2_clk, ps2_data, kg };
-`else
    display show_pc(.clk(cpuclk), .reset(reset),
 		   .pc(pc), .dots(dots),
 		   .sevenseg(sevenseg), .sevenseg_an(sevenseg_an));
@@ -437,9 +405,8 @@ module top(rs232_txd, rs232_rxd,
    assign led[1] = ~ide_diow;
    assign led[0] = ~ide_dior;
 
-//   assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
-   assign dots[3:0] = rc_state;
-`endif
+   assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
+//   assign dots[3:0] = rc_state;
    
    assign sram1_io = ~sram_we_n ? sram1_out : 16'bz;
    assign sram1_in = sram1_io;

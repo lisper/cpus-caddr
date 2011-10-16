@@ -46,6 +46,7 @@ module ide_disk(ide_data_in, ide_data_out,
    
    integer fifo_depth, fifo_rd, fifo_wr;
    integer lba;
+   integer i;
    
    assign addr = { ide_cs, ide_da };
 
@@ -55,6 +56,9 @@ module ide_disk(ide_data_in, ide_data_out,
 	fifo_depth = 0;
 	fifo_rd = 0;
 	fifo_wr = 0;
+
+	for (i = 0; i < 512; i = i + 1)
+	  fifo[i] = 0;
      end
 
    task do_ide_read;
@@ -64,7 +68,7 @@ module ide_disk(ide_data_in, ide_data_out,
 		 reg_cyllow[7:0],
 		 reg_secnum[7:0] };
 
-	 $display("ide: lba %08x (%d), seccnt %d (read)",
+	 $display("ide: lba %x (%d), seccnt %d (read)",
 		  lba, lba*512, reg_seccnt);
 
 	 // read
@@ -171,7 +175,7 @@ module ide_disk(ide_data_in, ide_data_out,
       output [15:0] data;
       begin
 	 data = fifo[fifo_rd];
-	 if (1) $display("ide: read fifo data [%d/%d] %04o",
+	 if (1) $display("ide: read fifo data [%d/%d] %o",
 			 fifo_rd, fifo_depth, data);
 	 if (fifo_rd < fifo_depth)
 	   fifo_rd = fifo_rd + 1;
@@ -210,7 +214,7 @@ module ide_disk(ide_data_in, ide_data_out,
 
           ATA_COMMAND:
 	    begin
-               $display("ide: command %04x", ide_data_in);
+               $display("ide: command %x", ide_data_in);
                case (ide_data_in)
 		 16'h0020:
 		   begin

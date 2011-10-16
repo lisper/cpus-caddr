@@ -365,13 +365,16 @@ module test;
 	max_cycles = 0;
 
 `ifdef __CVER__
-	n = $scan$plusargs("w=", arg);
-	if (n > 0)
+	if ($test$plusargs("w"))
 	  begin
-	     $dumpfile("caddr.vcd");
-	     n = $sscanf(arg, "%d", varg);
-	     if (varg > 0)
-	       dumping = 1;
+	     n = $scan$plusargs("w=", arg);
+	     if (n > 0)
+	       begin
+		  $dumpfile("caddr.vcd");
+		  n = $sscanf(arg, "%d", varg);
+		  if (varg > 0)
+		    dumping = 1;
+	       end
 	  end
 `endif
 	

@@ -307,7 +307,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			     .data(u_checker_out)
 			     );
 
-`ifdef debug
+`ifdef debug_mcr
    always @(posedge clk)
      if ((u_state == U_START) || state_fetch)
        $display("cpu_test_mcr: addr=%x data=%x", mcr_addr, u_checker_out);
@@ -475,7 +475,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			       .data(checker_out)
 			       );
    
-`ifdef debug
+`ifdef debug_checker
    always @(posedge clk)
      if ((m_state != M_DO_R && m_state_next == M_DO_R) ||
 	 (m_state != M_DO_W && m_state_next == M_DO_W))
@@ -517,7 +517,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // **************
 
    //
-   // assume disk has know data on sector 0
+   // assume disk has known data on sector 0
    // read sector 0 into memory @ 128k
    //   write disk controller registers
    //     write mem 0x10001 <- 0x11000
@@ -749,8 +749,57 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        $display("d_fault: dc_addr=0x%x dc_data=%x dc_check_data=%x %t",
 		dc_addr, dc_data, dc_check_data, $time);
 `endif
+`endif
+   
+`ifdef exercise_disk_rw
 
-`else
+   reg [1:0] dd_state;
+   wire [1:0] dd_state_next;
+
+   always @(posedge clk)
+     if (reset)
+       dd_state <= 0;
+     else
+       dd_state <= dd_state_next;
+
+   parameter [2:0]
+		DDS_IDLE = 0,
+		DDS_START = 1,
+		DDS_DONE  = 2,
+		DDS_FAULT = 3;
+  
+   wire d_fault;
+
+   assign dd_state_next =
+			 dd_state == DDS_IDLE  ? DDS_START :
+			 dd_state == DDS_START ? DDS_DONE :
+			 (dd_state == DDS_DONE && d_fault) ? DDS_FAULT :
+			 dd_state;
+
+   assign dd_fault = dd_state == DDS_FAULT;
+   
+   // everything is done by the test computer
+   cpu_test_cpu cpu_test_cpu(.clk(clk),
+			     .reset(reset),
+			     .start(),
+			     .fault(d_fault),
+			     .busint_memrq(dw_memrq),
+			     .busint_memwr(dw_memwr),
+			     .busint_memack(busint_memack),
+			     .busint_memdone(busint_memdone),
+			     .busint_addr(dw_busint_addr),
+			     .busint_busin(busint_busout),
+			     .busint_busout(dw_busint_busin));
+   
+`endif
+
+`ifndef exercise_disk_rw
+ `ifndef exercise_disk
+  `define no_disk
+ `endif
+`endif
+   
+`ifdef no_disk
    assign dd_fault = 0;
 
    assign dw_busint_addr = 0;

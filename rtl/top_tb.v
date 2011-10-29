@@ -9,9 +9,10 @@
 `define use_ps2
 //`define show_kb
 
-`define exercise_mcr
-`define exercise_memory
-`define exercise_disk
+//`define exercise_mcr
+//`define exercise_memory
+//`define exercise_disk
+`define exercise_disk_rw
 
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,

@@ -826,6 +826,10 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			     .busint_busin(busint_busout),
 			     .busint_busout(dw_busint_busin));
    
+
+   assign dc_busint_addr = 0;
+   assign dc_memrq = 0;
+   assign dc_memwr = 0;
 `endif
 
 `ifndef exercise_disk_rw
@@ -863,31 +867,17 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
    always @(posedge clk)
      if (reset)
-       busowner <= 0;
+       busowner <= 3'b0;
      else
-       if (busowner == 3'b000)
-	 begin
-	    if (md_memrq)
-	      busowner <= 3'b001;
-	    else
-	      if (dw_memrq)
-		busowner <= 3'b010;
-	      else
-		if (dc_memrq)
-		  busowner <= 3'b100;
-		else
-		  busowner <= busowner;
-	 end
-       else
-	 begin
-	  case (busowner)
-	    3'b001: if (~md_memrq) busowner <= 0;
-	    3'b010: if (~dw_memrq) busowner <= 0;
-	    3'b100: if (~dc_memrq) busowner <= 0;
-	    default: busowner <= busowner;
-	  endcase
-	 end
-	   
+       busowner <=
+		  (busowner == 3'b000 && dc_memrq) ? 3'b100 :
+		  (busowner == 3'b000 && dw_memrq) ? 3'b010 :
+		  (busowner == 3'b000 && md_memrq) ? 3'b001 :
+		  (busowner == 3'b100 && ~dc_memrq) ? 3'b000 :
+		  (busowner == 3'b010 && ~dw_memrq) ? 3'b000 :
+		  (busowner == 3'b001 && ~md_memrq) ? 3'b000 :
+		  busowner;
+   
    always @(posedge clk)
      if (reset)
        begin

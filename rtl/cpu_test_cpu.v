@@ -43,7 +43,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
      else
        case (addr)
 	 // fill
-	 8'h00: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h0 };  // a = 0
+	 8'h00: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h11000 };  // a = 0x11000
 	 8'h01: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };  // b = 0 (count)
 	 8'h02: data <= { OP_ADD,   R_D,    R_DD,   N_NOP, D_NONE }; // d<-data
 	 8'h03: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE }; // write m[a]<-d
@@ -108,10 +108,10 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h2e: data <= { OP_TST,   R_D,    R_I,    6'h2d, 32'h00000001 };
 
 	 // compare
-	 8'h2f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h0 };        // a++
-	 8'h30: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };        // b++
-	 8'h31: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };       // read
-	 8'h32: data <= { OP_CMP,   R_D,    R_DD,   6'h34, D_NONE };       // check
+	 8'h2f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h11000 }; // a = 0x11000
+	 8'h30: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };     // b = 0 (count)
+	 8'h31: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };    // read
+	 8'h32: data <= { OP_CMP,   R_D,    R_DD,   6'h34, D_NONE };    // check
 	 8'h33: data <= { OP_FAULT, R_NONE, R_NONE, N_NOP, D_NONE };
 	 8'h34: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00000001 }; // a++
 	 8'h35: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h00000001 }; // b++

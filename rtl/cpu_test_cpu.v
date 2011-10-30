@@ -52,6 +52,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h06: data <= { OP_CMP,   R_B,    R_I,    6'h08, 32'h000000ff };
 	 8'h07: data <= { OP_JMP,   R_NONE, R_NONE, 6'h02, D_NONE }; // loop
 
+`ifdef never
 	 // write block
 	 8'h08: data <= { OP_NOP,   R_NONE, R_NONE, N_NOP, D_NONE };
 	 8'h09: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00010001 };
@@ -123,12 +124,13 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h3a: data <= { OP_JMP,   R_NONE, R_NONE, 6'h21, D_NONE };   // loop reading
 	 8'h3b: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
 	 8'h3c: data <= { OP_JMP,   R_NONE, R_NONE, 6'h32, 32'h00000000 }; // restart
+`endif
 	 
 	 default: data <= { OP_JMP, R_NONE, R_NONE, 6'h00, D_NONE };
        endcase
 endmodule
 
-module cpu_test_cpu(clk, reset, start, fault,
+module cpu_test_cpu(clk, reset, start, fault, pc_out,
 		    busint_memrq,
 		    busint_memwr,
 		    busint_memack,
@@ -141,6 +143,8 @@ module cpu_test_cpu(clk, reset, start, fault,
    input reset;
    input start;
    output fault;
+   output [7:0] pc_out;
+   
    output busint_memrq;
    output  busint_memwr;
    input busint_memack;
@@ -186,6 +190,8 @@ module cpu_test_cpu(clk, reset, start, fault,
        else
 	 pc <= npc;
 
+   assign pc_out = pc;
+   
    wire [7:0] rom_pc;
    assign rom_pc = stall_pc ? pc : npc;
    
@@ -307,6 +313,7 @@ module cpu_test_cpu(clk, reset, start, fault,
 `endif
    
    assign stall_pc =
+		    ~start ||
 		    (ir_op == OP_WRITE && ~busint_memack) ||
 		    (ir_op == OP_READ && ~busint_memdone);
 

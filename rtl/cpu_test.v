@@ -3,7 +3,12 @@
 // in a cpu-like manner
 //
 
-module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
+`define exercise_mcr
+`define exercise_memory
+//`define exercise_disk
+`define exercise_disk_rw
+
+module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
 	       spy_in, spy_out, dbread, dbwrite, eadr,
 
@@ -30,6 +35,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    input ext_reset;
    input ext_boot;
    input ext_halt;
+   input [7:0] ext_switches;
 
    input [15:0] spy_in;
    output [15:0] spy_out;
@@ -83,6 +89,19 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    input 	 ms_ready;
 
    // --------------------------------------------------------------------------
+   wire       state_decode, state_read, state_alu, state_write, state_fetch;
+   wire       state_mmu, state_prefetch;
+
+   wire        busint_memack, busint_memdone;
+   wire [31:0] busint_busout;
+
+   wire        en_mem, en_mcr, en_dsk;
+
+   assign en_mem = ext_switches[0];
+   assign en_mcr = ext_switches[1];
+   assign en_dsk = ext_switches[2];
+   
+   // --------------------------------------------------------------------------
    wire       mcr_hold;
    wire       reset;
 
@@ -111,8 +130,6 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    reg [5:0] state;
    wire [5:0] next_state;
-   wire       state_decode, state_read, state_alu, state_write, state_fetch;
-   wire       state_mmu, state_prefetch;
    
    always @(posedge clk)
      if (reset)
@@ -146,25 +163,38 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    //
    //
    //
-   reg [7:0] mem_count, dsk_count;
-   wire      m_done, dd_done;
+   reg [7:0] mem_count, mcr_count, dsk_count;
+   wire      m_done, ud_done, dd_done;
+   wire [7:0] d_pc;
    
+   assign pc_out = 
+		   en_mem ? { 6'b0, mem_count } :
+		   en_mcr ? { 6'b0, mcr_count } :
+		   en_dsk ? { 6'b0, d_pc/*dsk_count*/ } :
+		   0;
+      
    always @(posedge clk)
      if (reset)
        begin
 	  mem_count <= 0;
+	  mcr_count <= 0;
 	  dsk_count <= 0;
        end
      else
        begin
 	  if (m_done)
 	    mem_count <= mem_count + 1;
+	  if (ud_done)
+	    mcr_count <= mcr_count + 1;
 	  if (dd_done)
 	    dsk_count <= dsk_count + 1;
 `ifdef debug
 	  if (m_done)
 	    $display("******** mem_count %d ********", mem_count);
 	  
+	  if (ud_done)
+	    $display("******** mcr_count %d ********", mcr_count);
+
 	  if (dd_done)
 	    $display("******** dsk_count %d ********", dsk_count);
 
@@ -210,18 +240,20 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		UDS_FILL0 = 1,
 		UDS_FILL1 = 2,
 		UDS_CHECK = 3,
+		UDS_DONE  = 4,
 		UDS_FAULT = 5;
 
    wire u_done, u_fault;
    
    assign    ud_state_next =
-			    ud_state == UDS_IDLE ? UDS_FILL0 :
+			    (ud_state == UDS_IDLE && en_mcr) ? UDS_FILL0 :
 			    ud_state == UDS_FILL0 ? UDS_FILL1 :
 			    (ud_state == UDS_FILL1 & u_done) ? UDS_CHECK :
 			    (ud_state == UDS_CHECK & u_fault) ? UDS_FAULT :
 			    ud_state;
 
-   assign    ud_fault = ud_state == UDS_FAULT;
+   assign ud_fault = ud_state == UDS_FAULT;
+//   assign ud_done = ud_state == UDS_DONE;
    
    //
    //
@@ -251,7 +283,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign u_done = u_state == U_DONE;
    assign u_clr = (u_state == U_START) || (u_state == U_HOLD);
-   assign u_incr = u_state == U_NEXT || (u_state == U_IDLE && fetch_out);
+   assign u_incr = u_state == U_NEXT || (u_state == /*U_IDLE*/U_DONE && fetch_out);
+
+   assign ud_done = u_full;
 
    assign u_state_next =
 			(u_state == U_IDLE && u_start_w) ? U_START :
@@ -265,7 +299,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			(u_state == U_NEXT && ~u_full) ? U_DO_W :
 
 			(u_state == U_HOLD && fetch_out) ? U_DONE :
-			u_state == U_DONE ? U_IDLE :
+//			u_state == U_DONE ? U_IDLE :
 			u_state;
 
    reg [13:0] u_addr;
@@ -370,7 +404,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    wire m_fault;
    
    assign    md_state_next =
-			    md_state == MDS_IDLE                ? MDS_WRITE0 :
+			    (md_state == MDS_IDLE && en_mem)    ? MDS_WRITE0 :
 			    md_state == MDS_WRITE0              ? MDS_WRITE1 :
 			    (md_state == MDS_WRITE1 && m_done)  ? MDS_READ0 :
 			    (md_state == MDS_WRITE1 && m_fault) ? MDS_FAULT :
@@ -777,12 +811,13 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			 dd_state;
 
    assign dd_fault = dd_state == DDS_FAULT;
-   
+
    // everything is done by the test computer
    cpu_test_cpu cpu_test_cpu(.clk(clk),
 			     .reset(reset),
-			     .start(),
+			     .start(en_dsk),
 			     .fault(d_fault),
+			     .pc_out(d_pc),
 			     .busint_memrq(dw_memrq),
 			     .busint_memwr(dw_memwr),
 			     .busint_memack(busint_memack),
@@ -821,8 +856,6 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    reg 	      busint_memrq;
    reg 	      busint_memwr;
    
-   wire [31:0] busint_busout;
-   wire        busint_memack, busint_memdone;
    wire        bus_interrupt;
    wire        set_promdisable;
 

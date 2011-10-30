@@ -9,11 +9,6 @@
 `define use_ps2
 //`define show_kb
 
-//`define exercise_mcr
-//`define exercise_memory
-//`define exercise_disk
-`define exercise_disk_rw
-
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
 	   ps2_clk, ps2_data,
@@ -174,6 +169,7 @@ module top(rs232_txd, rs232_rxd,
 	      .ext_reset(reset),
 	      .ext_boot(boot),
 	      .ext_halt(halt),
+	      .ext_switches(switches),
 
 	      .spy_in(spy_in),
 	      .spy_out(spy_out),

@@ -100,6 +100,8 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign en_mem = ext_switches[0];
    assign en_mcr = ext_switches[1];
    assign en_dsk = ext_switches[2];
+
+   reg [2:0]   busowner;
    
    // --------------------------------------------------------------------------
    wire       mcr_hold;
@@ -291,8 +293,8 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			(u_state == U_IDLE && u_start_w) ? U_START :
 			u_state == U_START ? U_DO_W :
 
-			(u_state == U_DO_W && mcr_done) ? U_DO_W1 :
-			u_state == U_DO_W1 ? U_DO_W2 :
+			u_state == U_DO_W ? U_DO_W1 :
+			(u_state == U_DO_W1 && mcr_done) ? U_DO_W2 :
 			u_state == U_DO_W2 ? U_NEXT :
 
 			(u_state == U_NEXT && u_full) ? U_HOLD :
@@ -315,17 +317,17 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 	   u_addr <= u_addr + 1;
 
 `ifdef short_test
-   assign     u_full = u_addr == 16'h0003;
+   assign     u_full = (u_addr == 16'h0003) && u_state == U_NEXT;
 `else
-   assign     u_full = u_addr == 16'h3fff;
+   assign     u_full = (u_addr == 16'h3fff) && u_state == U_NEXT;
 `endif
    
-   assign mcr_write = u_state == U_DO_W;
+   assign mcr_write = u_state == U_DO_W1;
    assign mcr_addr = u_addr;
 
    reg [48:0] u_data;
-   reg [48:0] u_check_data;
    wire [48:0] u_checker_out;
+   reg [13:0]  u_last_addr;
    
    always @(posedge clk)
      if (reset)
@@ -338,7 +340,8 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			     .clk(clk),
 			     .reset(reset),
 			     .addr(mcr_addr),
-			     .data(u_checker_out)
+			     .data(u_checker_out),
+			     .ena((u_state == U_DO_W) || state_fetch)
 			     );
 
 `ifdef debug_mcr
@@ -349,23 +352,35 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
    always @(posedge clk)
      if (reset)
-       u_check_data <= 0;
+       begin
+	  u_last_addr <= 0;
+       end
      else
-       if ((u_state == U_START) || state_fetch)
-	 u_check_data <= u_checker_out;
+       if ((u_state == U_DO_W1) || state_fetch)
+	 begin
+	    u_last_addr <= mcr_addr;
+	 end
 
-   assign mcr_data_out = u_check_data;
+   assign mcr_data_out = u_checker_out;
 
    wire ud_ok;
-   assign ud_ok = (u_data == u_check_data);
+   assign ud_ok = (u_data == u_checker_out);
 
    assign u_fault = (ud_state == UDS_CHECK) && state_decode && ~ud_ok;
 
-`ifdef debug
+`ifdef debug_mcr
+   always @(posedge clk)
+     if (ud_state == UDS_CHECK && state_decode)
+       $display("ud: u_last_addr=0x%x u_data=%o u_checker_out=%o %t",
+		u_last_addr, u_data, u_checker_out, $time);
+
    always @(posedge clk)
      if (u_fault)
-       $display("u_fault: u_addr=0x%x u_data=%x u_check_data=%x %t",
-		u_addr, u_data, u_check_data, $time);
+       begin
+	  $display("u_fault: u_last_addr=0x%x u_data=%o u_checker_out=%o %t",
+		   u_last_addr, u_data, u_checker_out, $time);
+	  $finish;
+       end
 `endif
    
 `else
@@ -436,7 +451,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		M_DO_W1 = 6,
 		M_DO_W2 = 7,
 		M_NEXT = 8,
-		M_DONE = 9;
+		M_DONE = 9,
+		M_DONE1 = 10,
+		M_DONE2 = 11;
 
    wire m_start, m_start_w, m_start_r;
    wire m_full, m_clr, m_incr;
@@ -449,16 +466,19 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign m_clr = m_state == M_START;
    assign m_incr = m_state == M_NEXT;
 
+   wire   m_memack;
+   assign m_memack = busint_memack && (busowner == 3'b001);
+   
    assign m_state_next =
 			(m_state == M_IDLE && m_start) ? M_START :
 			(m_state == M_START && m_start_r) ? M_DO_R :
 			(m_state == M_START && m_start_w) ? M_DO_W :
 
-			(m_state == M_DO_W && busint_memack) ? M_DO_W1 :
+			(m_state == M_DO_W && m_memack) ? M_DO_W1 :
 			m_state == M_DO_W1 ? M_DO_W2 :
 			m_state == M_DO_W2 ? M_NEXT :
 
-			(m_state == M_DO_R && busint_memack) ? M_DO_R1 :
+			(m_state == M_DO_R && m_memack) ? M_DO_R1 :
 			m_state == M_DO_R1 ? M_DO_R2 :
 			m_state == M_DO_R2 ? M_NEXT :
 
@@ -466,7 +486,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			(m_state == M_NEXT && m_start_r) ? M_DO_R :
 			(m_state == M_NEXT && m_start_w) ? M_DO_W :
 
-			m_state == M_DONE ? M_IDLE :
+			m_state == M_DONE  ? M_DONE1 :
+			m_state == M_DONE1 ? M_DONE2 :
+			m_state == M_DONE2 ? M_IDLE :
 			m_state;
 
    reg [15:0] m_addr;
@@ -506,7 +528,8 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			       .clk(clk),
 			       .reset(reset),
 			       .addr(md_busint_addr),
-			       .data(checker_out)
+			       .data(checker_out),
+			       .ena(1'b1)
 			       );
    
 `ifdef debug_checker
@@ -533,8 +556,15 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 `ifdef debug
    always @(posedge clk)
      if (m_fault)
-       $display("m_fault: m_addr=0x%x data=%x check_data=%x %t",
-		m_addr, data, check_data, $time);
+       begin
+	  $display("m_fault: m_addr=0x%x data=%x check_data=%x %t",
+		   m_addr, data, check_data, $time);
+	  $finish;
+       end
+
+   always @(posedge clk)
+     if (m_incr && m_addr[7:0] == 0)
+       $display("mem: m_addr=0x%x %t", m_addr, $time);
 `endif
    
 `else
@@ -664,10 +694,13 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		      dr_state == DR_DO_W5 ||
    		      dr_state == DR_WAIT);
 
+   wire   dw_memack;
+   assign dw_memack = (busint_memack || busint_memdone) && (busowner == 3'b100);
+   
    assign dw_state_next =
 		(dw_state == DW_IDLE && dw_start) ? DW_START :
 		 dw_state == DW_START ? DW_WAIT :
-		 (dw_state == DW_WAIT && (busint_memack || busint_memdone)) ? DW_DONE :
+		 (dw_state == DW_WAIT && dw_memack) ? DW_DONE :
 		 dw_state == DW_DONE ? DW_IDLE :			 
 		 dw_state;
 
@@ -780,8 +813,11 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 `ifdef debug
    always @(posedge clk)
      if (d_fault)
-       $display("d_fault: dc_addr=0x%x dc_data=%x dc_check_data=%x %t",
-		dc_addr, dc_data, dc_check_data, $time);
+       begin
+	  $display("d_fault: dc_addr=0x%x dc_data=%x dc_check_data=%x %t",
+		   dc_addr, dc_data, dc_check_data, $time);
+	  $finish;
+       end
 `endif
 `endif
    
@@ -812,6 +848,10 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
    assign dd_fault = dd_state == DDS_FAULT;
 
+   wire dd_memack, dd_memdone;
+   assign dd_memack = busint_memack && (busowner == 3'b010);
+   assign dd_memdone = busint_memdone && (busowner == 3'b010);
+   
    // everything is done by the test computer
    cpu_test_cpu cpu_test_cpu(.clk(clk),
 			     .reset(reset),
@@ -820,12 +860,22 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			     .pc_out(d_pc),
 			     .busint_memrq(dw_memrq),
 			     .busint_memwr(dw_memwr),
-			     .busint_memack(busint_memack),
-			     .busint_memdone(busint_memdone),
+			     .busint_memack(dd_memack),
+			     .busint_memdone(dd_memdone),
 			     .busint_addr(dw_busint_addr),
 			     .busint_busin(busint_busout),
 			     .busint_busout(dw_busint_busin));
    
+
+`ifdef debug
+   always @(posedge clk)
+     if (d_fault)
+       begin
+	  $display("d_fault: d_pc=0x%x %t",
+		   d_pc, $time);
+	  $finish;
+       end
+`endif
 
    assign dc_busint_addr = 0;
    assign dc_memrq = 0;
@@ -863,12 +913,19 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    wire        bus_interrupt;
    wire        set_promdisable;
 
-   reg [2:0]   busowner;
-
    always @(posedge clk)
      if (reset)
        busowner <= 3'b0;
      else
+       begin
+`ifdef debug_busowner
+	  if (busowner == 3'b000 && dc_memwr)
+	    $display("busowner: dc");
+	  if (busowner == 3'b000 && dw_memwr)
+	    $display("busowner: dw");
+	  if (busowner == 3'b000 && md_memwr)
+	    $display("busowner: md");
+`endif
        busowner <=
 		  (busowner == 3'b000 && dc_memrq) ? 3'b100 :
 		  (busowner == 3'b000 && dw_memrq) ? 3'b010 :
@@ -877,6 +934,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		  (busowner == 3'b010 && ~dw_memrq) ? 3'b000 :
 		  (busowner == 3'b001 && ~md_memrq) ? 3'b000 :
 		  busowner;
+       end
    
    always @(posedge clk)
      if (reset)

@@ -49,7 +49,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h03: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE }; // write m[a]<-d
 	 8'h04: data <= { OP_ADD,   R_A,    R_A,    N_NOP, 32'h00000001 }; // a++
 	 8'h05: data <= { OP_ADD,   R_B,    R_B,    N_NOP, 32'h00000001 }; // b++
-	 8'h06: data <= { OP_CMP,   R_B,    R_I,    6'h08, 32'h000000ff };
+	 8'h06: data <= { OP_CMP,   R_B,    R_I,    6'h08, 32'h00000100 };
 	 8'h07: data <= { OP_JMP,   R_NONE, R_NONE, 6'h02, D_NONE }; // loop
 
 `ifdef never
@@ -106,24 +106,29 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
  	 8'h2c: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377770 };
 	 8'h2d: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };
 	 8'h2e: data <= { OP_TST,   R_D,    R_I,    6'h2d, 32'h00000001 };
-
+`else
+	 8'h08: data <= { OP_JMP,   R_NONE, R_NONE, 6'h2f, 32'h00000000 }; // skip
+`endif
+	 
 	 // compare
 	 8'h2f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h11000 }; // a = 0x11000
 	 8'h30: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };     // b = 0 (count)
 	 8'h31: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };    // read
 	 8'h32: data <= { OP_CMP,   R_D,    R_DD,   6'h34, D_NONE };    // check
 	 8'h33: data <= { OP_FAULT, R_NONE, R_NONE, N_NOP, D_NONE };
-	 8'h34: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00000001 }; // a++
-	 8'h35: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h00000001 }; // b++
-	 8'h36: data <= { OP_CMP,   R_B,    R_I,    6'h31, 32'h000000ff }; // if (b < )
-
+	 8'h34: data <= { OP_ADD,   R_A,    R_A,    N_NOP, 32'h00000001 }; // a++
+	 8'h35: data <= { OP_ADD,   R_B,    R_B,    N_NOP, 32'h00000001 }; // b++
+	 8'h36: data <= { OP_CMP,   R_B,    R_I,    6'h38, 32'h00000100 }; // if (b == )
+	 8'h37: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // loop
+	 
+`ifdef never
 	 // loop
-	 8'h37: data <= { OP_ADD,   R_C,    R_NONE, N_NOP, 32'h00000001 }; // c++
-	 8'h38: data <= { OP_CMP,   R_C,    R_I,    6'h00, 32'd100 };  // if (c < 100)
-	 8'h39: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
-	 8'h3a: data <= { OP_JMP,   R_NONE, R_NONE, 6'h21, D_NONE };   // loop reading
-	 8'h3b: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
-	 8'h3c: data <= { OP_JMP,   R_NONE, R_NONE, 6'h32, 32'h00000000 }; // restart
+	 8'h38: data <= { OP_ADD,   R_C,    R_NONE, N_NOP, 32'h00000001 }; // c++
+	 8'h39: data <= { OP_CMP,   R_C,    R_I,    6'h00, 32'd100 };  // if (c == 100)
+	 8'h3a: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
+	 8'h3b: data <= { OP_JMP,   R_NONE, R_NONE, 6'h21, D_NONE };   // loop reading
+	 8'h3c: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
+	 8'h3d: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
 `endif
 	 
 	 default: data <= { OP_JMP, R_NONE, R_NONE, 6'h00, D_NONE };
@@ -183,7 +188,7 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
    
    always @(posedge clk)
      if (reset)
-       pc <= 0;
+       pc <= 8'hff;
      else
        if (stall_pc)
 	 pc <= pc;
@@ -279,6 +284,16 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
 	  endcase
        end
 
+`ifdef debug
+   always @(posedge clk)
+     begin
+	if (~stall_pc && ir_op == OP_WRITE && addr[3:0] == 0)
+	  $display("dsk: write addr=0x%x %t", addr, $time);
+	if (~stall_pc && ir_op == OP_READ && addr[3:0] == 0)
+	  $display("dsk: read addr=0x%x %t", addr, $time);
+     end
+`endif
+   
    always @(posedge clk)
      if (reset)
        data <= 0;
@@ -334,12 +349,12 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
 	  busint_memwr <= ir_op == OP_WRITE;
        end
 
-`ifdef debug_code
+`ifdef debug_op
    always @(posedge clk)
      if (~stall_pc)
      case (ir_op)
        OP_NOP: $display("%x: NOP ir=%x", pc, ir);
-       OP_WRITE: $display("%x: WRITE ir=%x", pc, ir);
+       OP_WRITE: $display("%x: WRITE ir=%x, addr=%x (0%o)", pc, ir, addr, addr);
        OP_READ: $display("%x: READ ir=%x", pc, ir);
        OP_ADD: $display("%x: ADD ir=%x", pc, ir);
        OP_SUB: $display("%x: SUB ir=%x", pc, ir);

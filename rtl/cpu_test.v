@@ -200,7 +200,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 	  if (dd_done)
 	    $display("******** dsk_count %d ********", dsk_count);
 
-	  if (mem_count >= 10 || dsk_count >= 10) $finish;
+//	  if (mem_count >= 10 || dsk_count >= 10) $finish;
 `endif
        end
 	     
@@ -561,7 +561,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		   m_addr, data, check_data, $time);
 	  $finish;
        end
+`endif
 
+`ifdef debug_activity
    always @(posedge clk)
      if (m_incr && m_addr[7:0] == 0)
        $display("mem: m_addr=0x%x %t", m_addr, $time);
@@ -856,6 +858,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    cpu_test_cpu cpu_test_cpu(.clk(clk),
 			     .reset(reset),
 			     .start(en_dsk),
+			     .done(dd_done),
 			     .fault(d_fault),
 			     .pc_out(d_pc),
 			     .busint_memrq(dw_memrq),

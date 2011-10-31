@@ -20,6 +20,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 		OP_TST = 5,
 		OP_CMP = 6,
 		OP_JMP = 7,
+		OP_DONE = 8,
 		OP_FAULT = 15;
 
    parameter [2:0] 
@@ -128,14 +129,17 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h3a: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
 	 8'h3b: data <= { OP_JMP,   R_NONE, R_NONE, 6'h21, D_NONE };   // loop reading
 	 8'h3c: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
-	 8'h3d: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
+	 8'h3d: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE };   // done
+	 8'h3e: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
+`else
+	 8'h38: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE }; 
 `endif
 	 
 	 default: data <= { OP_JMP, R_NONE, R_NONE, 6'h00, D_NONE };
        endcase
 endmodule
 
-module cpu_test_cpu(clk, reset, start, fault, pc_out,
+module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 		    busint_memrq,
 		    busint_memwr,
 		    busint_memack,
@@ -147,6 +151,7 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
    input clk;
    input reset;
    input start;
+   output done;
    output fault;
    output [7:0] pc_out;
    
@@ -220,6 +225,7 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
 		OP_TST = 5,
 		OP_CMP = 6,
 		OP_JMP = 7,
+		OP_DONE = 8,
 		OP_FAULT = 15;
 
    parameter [2:0] 
@@ -284,7 +290,7 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
 	  endcase
        end
 
-`ifdef debug
+`ifdef debug_activity
    always @(posedge clk)
      begin
 	if (~stall_pc && ir_op == OP_WRITE && addr[3:0] == 0)
@@ -313,6 +319,7 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
        end
 
    assign fault = ir_op == OP_FAULT;
+   assign done = ir_op == OP_DONE;
    
    wire tst_result, cmp_result;
    
@@ -355,13 +362,14 @@ module cpu_test_cpu(clk, reset, start, fault, pc_out,
      case (ir_op)
        OP_NOP: $display("%x: NOP ir=%x", pc, ir);
        OP_WRITE: $display("%x: WRITE ir=%x, addr=%x (0%o)", pc, ir, addr, addr);
-       OP_READ: $display("%x: READ ir=%x", pc, ir);
-       OP_ADD: $display("%x: ADD ir=%x", pc, ir);
-       OP_SUB: $display("%x: SUB ir=%x", pc, ir);
-       OP_TST: $display("%x: TST ir=%x, load_pc=%b", pc, ir, load_pc);
-       OP_CMP: $display("%x: CMP ir=%x, load_pc=%b", pc, ir, load_pc);
-       OP_JMP: $display("%x: JMP ir=%x, load_pc=%b", pc, ir, load_pc);
-       OP_FAULT: $display("%x: FAULT ", pc, ir);
+       OP_READ:  $display("%x: READ  ir=%x", pc, ir);
+       OP_ADD:   $display("%x: ADD   ir=%x", pc, ir);
+       OP_SUB:   $display("%x: SUB   ir=%x", pc, ir);
+       OP_TST:   $display("%x: TST   ir=%x, load_pc=%b", pc, ir, load_pc);
+       OP_CMP:   $display("%x: CMP   ir=%x, load_pc=%b", pc, ir, load_pc);
+       OP_JMP:   $display("%x: JMP   ir=%x, load_pc=%b", pc, ir, load_pc);
+       OP_DONE:  $display("%x: DONE  ir=%x", pc, ir);
+       OP_FAULT: $display("%x: FAULT", pc);
      endcase
 `endif
    

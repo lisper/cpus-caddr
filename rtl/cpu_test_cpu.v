@@ -21,6 +21,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 		OP_CMP = 6,
 		OP_JMP = 7,
 		OP_DONE = 8,
+		OP_WAIT = 9,
 		OP_FAULT = 15;
 
    parameter [2:0] 
@@ -53,7 +54,6 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h06: data <= { OP_CMP,   R_B,    R_I,    6'h08, 32'h00000100 };
 	 8'h07: data <= { OP_JMP,   R_NONE, R_NONE, 6'h02, D_NONE }; // loop
 
-`ifdef never
 	 // write block
 	 8'h08: data <= { OP_NOP,   R_NONE, R_NONE, N_NOP, D_NONE };
 	 8'h09: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00010001 };
@@ -76,17 +76,22 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h16: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
 	 8'h17: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write go
 
- 	 8'h18: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377770 };
-	 8'h19: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };
-	 8'h1a: data <= { OP_TST,   R_D,     R_I,    6'h19, 32'h00000001 }; // wait
+ 	 8'h18: data <= { OP_WAIT,  R_NONE, R_NONE, N_NOP, D_NONE };
+	 8'h19: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377770 };
+	 8'h1a: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };
+	 8'h1b: data <= { OP_TST,   R_D,    R_I,    6'h18, 32'h00000001 }; // wait
 
 	 // loop
-	 8'h1b: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 };  // c++
-	 8'h1c: data <= { OP_CMP,   R_C,    R_I,    6'h1f, 32'd100 };  // if (c == 100)
-	 8'h1d: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
-	 8'h1e: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
-	 8'h1f: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
+	 8'h1c: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 };  // c++
+	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd100 };  // if (c == 100)
+	 8'h1e: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
+	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
+	 8'h20: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
 
+	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h2f, 32'h00000000 }; // skip
+//	 8'h08: data <= { OP_JMP,   R_NONE, R_NONE, 6'h2f, 32'h00000000 }; // skip
+	 
+`ifdef never
 	 // read block
 	 8'h20: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
  	 8'h21: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377776 };
@@ -107,10 +112,8 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
  	 8'h2c: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377770 };
 	 8'h2d: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };
 	 8'h2e: data <= { OP_TST,   R_D,    R_I,    6'h2d, 32'h00000001 };
-`else
-	 8'h08: data <= { OP_JMP,   R_NONE, R_NONE, 6'h2f, 32'h00000000 }; // skip
 `endif
-	 
+
 	 // compare
 	 8'h2f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h11000 }; // a = 0x11000
 	 8'h30: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };     // b = 0 (count)
@@ -226,6 +229,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 		OP_CMP = 6,
 		OP_JMP = 7,
 		OP_DONE = 8,
+		OP_WAIT = 9,
 		OP_FAULT = 15;
 
    parameter [2:0] 
@@ -333,9 +337,24 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 	   $display("TST: dst=%o, src=%o, tst_result=%b",
 		    data, src, tst_result);
 `endif
+
+   reg [3:0] wait_count;
+   wire	wait_done;
+
+   always @(posedge clk)
+     if (reset)
+       wait_count <= 0;
+     else
+       if (ir_op == OP_WAIT)
+	 wait_count <= wait_count + 1;
+       else
+	 wait_count <= 0;
+   
+   assign wait_done = wait_done == 4'f;
    
    assign stall_pc =
 		    ~start ||
+		    (ir_op == OP_WAIT && ~wait_done) ||
 		    (ir_op == OP_WRITE && ~busint_memack) ||
 		    (ir_op == OP_READ && ~busint_memdone);
 
@@ -369,6 +388,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
        OP_CMP:   $display("%x: CMP   ir=%x, load_pc=%b", pc, ir, load_pc);
        OP_JMP:   $display("%x: JMP   ir=%x, load_pc=%b", pc, ir, load_pc);
        OP_DONE:  $display("%x: DONE  ir=%x", pc, ir);
+       OP_WAIT:  $display("%x: WAIT  ir=%x", pc, ir);
        OP_FAULT: $display("%x: FAULT", pc);
      endcase
 `endif

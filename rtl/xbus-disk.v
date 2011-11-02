@@ -324,39 +324,44 @@ module xbus_disk (
    wire [31:0] 	 disk_status;
 
    // disk state
-   parameter s_idle = 0,
-	       s_busy = 1,
-	       s_read_ccw = 2,
-	       s_read_ccw_done = 3,
-	       s_init0 = 4,
-	       s_init1 = 5,
-	       s_wait0 = 6,
-	       s_init2 = 7,
-	       s_init3 = 8,
-	       s_init4 = 9,
-	       s_init5 = 10,
-	       s_init6 = 11,
-	       s_init7 = 12,
-	       s_init8 = 13,
-	       s_init9 = 14,
-	       s_wait1 = 15,
-	       s_init10 = 16,
-	       s_init11 = 17,
-	       s_read0 = 18,
-	       s_read1 = 19,
-	       s_read2 = 20,
-	       s_write0 = 21,
-	       s_write1 = 22,
-      	       s_write2 = 23,
-      	       s_last0 = 24,
-      	       s_last1 = 25,
-	       s_last2 = 26,
-      	       s_done0 = 27,
-      	       s_done1 = 28,
-      	       s_debug_wait = 29;
+   parameter [5:0]
+		s_idle = 0,
+		s_busy = 1,
+		s_read_ccw = 2,
+		s_read_ccw_done = 3,
+		s_init0 = 4,
+		s_init1 = 5,
+		s_wait0 = 6,
+		s_init2 = 7,
+		s_init3 = 8,
+		s_init4 = 9,
+		s_init5 = 10,
+		s_init6 = 11,
+		s_init7 = 12,
+		s_init8 = 13,
+		s_init9 = 14,
+		s_wait1 = 15,
+		s_init10 = 16,
+		s_init11 = 17,
+		s_read0 = 18,
+		s_read1 = 19,
+		s_read2 = 20,
+		s_write0 = 21,
+		s_write1 = 22,
+      		s_write2 = 23,
+      		s_last0 = 24,
+      		s_last1 = 25,
+		s_last2 = 26,
+      		s_done0 = 27,
+      		s_done1 = 28,
+      		s_debug_wait = 29,
+		s_reset = 32,
+		s_reset1 = 33,
+		s_reset2 = 34,
+		s_reset3 = 35;
 		      
-   reg [4:0] state;
-   reg [4:0] state_next;
+   reg [5:0] state;
+   reg [5:0] state_next;
 
 // synthesis attribute keep state true;
 // synthesis attribute keep reqin true;
@@ -432,7 +437,7 @@ module xbus_disk (
    integer debug/* verilator public_flat */;
 
    initial
-     debug = 0;
+     debug = 1;
 `endif
    
    // -----------------------------------------------------------------
@@ -498,15 +503,21 @@ module xbus_disk (
 	    begin
 	       if (addrin[5:3] == 3'o7)
 	      case (addrin[2:0])
-		3'o0: reg_dataout = disk_status;
+		3'o0:
+		  begin
+		     reg_dataout = disk_status;
+`ifdef debug
+		     if (debug != 0) $display("disk: read status %o", disk_status);
+`endif
+		  end
 		3'o1: reg_dataout = disk_ma;
 		3'o2: reg_dataout = disk_da;
 		3'o3: reg_dataout = 0;
 		3'o4:
 		  begin
 		     reg_dataout = disk_status;
-`ifdef debug_state
-		     $display("disk: read status %o", disk_status);
+`ifdef debug
+		     if (debug != 0) $display("disk: read status %o", disk_status);
 `endif
 		  end
 		3'o5: reg_dataout = { 8'b0, 2'b00, disk_clp };
@@ -705,7 +716,7 @@ module xbus_disk (
    // disk state machine
    always @(posedge clk)
      if (reset)
-       state <= s_idle;
+       state <= /*s_idle*/s_reset;
      else
        begin
 	  state <= state_next;
@@ -715,7 +726,7 @@ module xbus_disk (
 `endif
        end
 
-   assign disk_state = state;
+   assign disk_state = state[4:0];
    
    always @(posedge clk)
      if (reset)
@@ -863,7 +874,7 @@ module xbus_disk (
 			  state_next = s_read_ccw;
 		       end
 		   DISK_CMD_RECAL:
-		     state_next = s_busy;
+		     state_next = s_reset;
 		   DISK_CMD_CLEAR:
 		     state_next = s_busy;
 		   default:
@@ -882,11 +893,47 @@ module xbus_disk (
 	      end
 
 	  s_busy:
+	    begin
 `ifdef debug_with_usim_delay
 	    if (busy_cycles >= 2)
 `endif
 	    state_next = s_idle;
+	    end
+	  
+	  s_reset:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_DEVCTRL;
+	       ata_in = 16'h0006;
+	       if (ata_done)
+		 state_next = s_reset1;
+	    end
 
+	  s_reset1:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = ATA_STATUS;
+	       if (ata_done && ata_out[IDE_STATUS_BSY])
+		 state_next = s_reset2;
+	    end
+	  
+	  s_reset2:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_DEVCTRL;
+	       ata_in = 16'h0002;
+	       if (ata_done)
+		 state_next = s_reset3;
+	    end
+	  
+	  s_reset3:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = ATA_STATUS;
+	       if (ata_done && ~ata_out[IDE_STATUS_BSY])
+		 state_next = s_busy;
+	    end
+	  
 	  s_read_ccw:
 	    begin
 	       /* busreqout = 1; */
@@ -1028,7 +1075,6 @@ module xbus_disk (
 	  
 	  s_init10:
 	    begin
-	       //$display("disk: s_init10");
 	       ata_rd = 1;
 	       ata_addr = ATA_ALTER;
 	       if (ata_done)

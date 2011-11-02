@@ -73,7 +73,6 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 
  	 8'h12: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377774 };
 //	 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0011 };
-// 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0405 };
  8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0000 };
 	 8'h14: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write cmd
 
@@ -344,7 +343,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 
    assign cmp_result = dst == src;
 
-`ifdef debug_tst
+`ifdef debug/*_tst*/
    always @(posedge clk)
      if (ir_op == OP_TST)
 	   $display("TST: dst=%o, src=%o, tst_result=%b",

@@ -101,7 +101,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign en_mcr = ext_switches[1];
    assign en_dsk = ext_switches[2];
 
-   reg [2:0]   busowner;
+   reg [4:0]   busowner;
    
    // --------------------------------------------------------------------------
    wire       mcr_hold;
@@ -467,7 +467,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign m_incr = m_state == M_NEXT;
 
    wire   m_memack;
-   assign m_memack = busint_memack && (busowner == 3'b001);
+   assign m_memack = busint_memack && (busowner == 5'b0001);
    
    assign m_state_next =
 			(m_state == M_IDLE && m_start) ? M_START :
@@ -697,7 +697,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    		      dr_state == DR_WAIT);
 
    wire   dw_memack;
-   assign dw_memack = (busint_memack || busint_memdone) && (busowner == 3'b100);
+   assign dw_memack = (busint_memack || busint_memdone) && (busowner == 5'b0100);
    
    assign dw_state_next =
 		(dw_state == DW_IDLE && dw_start) ? DW_START :
@@ -851,8 +851,8 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign dd_fault = dd_state == DDS_FAULT;
 
    wire dd_memack, dd_memdone;
-   assign dd_memack = busint_memack && (busowner == 3'b010);
-   assign dd_memdone = busint_memdone && (busowner == 3'b010);
+   assign dd_memack = busint_memack && (busowner == 5'b0010);
+   assign dd_memdone = busint_memdone && (busowner == 5'b0010);
    
    // everything is done by the test computer
    cpu_test_cpu cpu_test_cpu(.clk(clk),
@@ -918,24 +918,27 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
    always @(posedge clk)
      if (reset)
-       busowner <= 3'b0;
+       busowner <= 5'b0;
      else
        begin
 `ifdef debug_busowner
-	  if (busowner == 3'b000 && dc_memwr)
+	  if (busowner == 5'b0000 && dc_memwr)
 	    $display("busowner: dc");
-	  if (busowner == 3'b000 && dw_memwr)
+	  if (busowner == 5'b0000 && dw_memwr)
 	    $display("busowner: dw");
-	  if (busowner == 3'b000 && md_memwr)
+	  if (busowner == 5'b0000 && md_memwr)
 	    $display("busowner: md");
 `endif
        busowner <=
-		  (busowner == 3'b000 && dc_memrq) ? 3'b100 :
-		  (busowner == 3'b000 && dw_memrq) ? 3'b010 :
-		  (busowner == 3'b000 && md_memrq) ? 3'b001 :
-		  (busowner == 3'b100 && ~dc_memrq) ? 3'b000 :
-		  (busowner == 3'b010 && ~dw_memrq) ? 3'b000 :
-		  (busowner == 3'b001 && ~md_memrq) ? 3'b000 :
+		  (busowner == 5'b00000 && dc_memrq)  ? 5'b00100 :
+		  (busowner == 5'b00000 && dw_memrq)  ? 5'b00010 :
+		  (busowner == 5'b00000 && md_memrq)  ? 5'b00001 :
+		  (busowner == 5'b00100 && ~dc_memrq) ? 5'b01000 :
+		  (busowner == 5'b00010 && ~dw_memrq) ? 5'b01000 :
+		  (busowner == 5'b00001 && ~md_memrq) ? 5'b01000 :
+		  (busowner == 5'b01000)              ? 5'b10000 :
+		  (busowner == 5'b10000)              ? 5'b11000 :
+		  (busowner == 5'b11000)              ? 5'b00000 :
 		  busowner;
        end
    

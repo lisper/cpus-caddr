@@ -56,10 +56,8 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 
 	 // write block
 	 8'h08: data <= { OP_NOP,   R_NONE, R_NONE, N_NOP, D_NONE };
-//	 8'h09: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00010001 };
-//	 8'h0a: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00011000 };
- 8'h09: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00011000 };
- 8'h0a: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00012000 };
+	 8'h09: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h00010100 };
+	 8'h0a: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00011000 };
 	 8'h0b: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write mem
 
 	 8'h0c: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
@@ -67,13 +65,11 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h0e: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write da
 
  	 8'h0f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377775 };
-//	 8'h10: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010001 };
- 8'h10: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00011000 };
+	 8'h10: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010100 };
 	 8'h11: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write clp
 
  	 8'h12: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377774 };
-//	 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0011 };
- 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0000 };
+	 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0011 };
 	 8'h14: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write cmd
 
  	 8'h15: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377777 };
@@ -89,7 +85,8 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h1c: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 };  // c++
 	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd100 };  // if (c == 100)
 	 8'h1e: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
-	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
+//	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
+ 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, D_NONE };   // loop back
 	 8'h20: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
 
 	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip

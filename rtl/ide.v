@@ -47,7 +47,9 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 		s2 = 3'd2,
 		s3 = 3'd3,
    		s4 = 3'd4,
-   		s5 = 3'd5;
+   		s5 = 3'd5,
+   		s6 = 3'd6,
+   		s7 = 3'd7;
 
    wire [2:0] ata_state_next;
 
@@ -57,7 +59,7 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 //`else
 //		ATA_DELAY = 14;
 //`endif
-		ATA_DELAY = 20;
+		ATA_DELAY = 8;
      
    reg [4:0] ata_count;
    
@@ -88,9 +90,11 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 			  (ata_state == s0 && (ata_rd || ata_wr)) ? s1 :
 			  (ata_state == s1) ? s2 :
 			  (ata_state == s2 && ata_count == ATA_DELAY) ? s3 :
-			  (ata_state == s3) ? s0 :
-//			  (ata_state == s3) ? s4 :
-//			  (ata_state == s4) ? s0 :
+			  (ata_state == s3) ? s4 :
+			  (ata_state == s4) ? s5 :
+			  (ata_state == s5) ? s6 :
+			  (ata_state == s6) ? s7 :
+			  (ata_state == s7) ? s0 :
 			  ata_state;
 
    
@@ -134,6 +138,8 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 	    ide_cs <= c_cs;
 	    ide_da <= c_da;
 	    ide_data_out <= ata_in;
+ ide_dior <= c_dior;
+ ide_diow <= c_diow;
 	 end
        else
 	 if (ide_stop)
@@ -146,11 +152,11 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 	 else
 	   if (ide_busy)
 	     begin
-		if (ata_count == 0)
-		  begin
-		     ide_dior <= c_dior;
-		     ide_diow <= c_diow;
-		  end
+//		if (ata_count == 0)
+//		  begin
+//		     ide_dior <= c_dior;
+//		     ide_diow <= c_diow;
+//		  end
 		
 		reg_ide_data_in <= ide_data_in;
 	     end

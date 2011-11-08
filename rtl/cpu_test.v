@@ -3,8 +3,8 @@
 // in a cpu-like manner
 //
 
-`define exercise_mcr
-`define exercise_memory
+//`define exercise_mcr
+//`define exercise_memory
 //`define exercise_disk
 `define exercise_disk_rw
 
@@ -467,7 +467,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign m_incr = m_state == M_NEXT;
 
    wire   m_memack;
-   assign m_memack = busint_memack && (busowner == 5'b0001);
+   assign m_memack = busint_memack && (busowner == 5'b00001);
    
    assign m_state_next =
 			(m_state == M_IDLE && m_start) ? M_START :
@@ -697,7 +697,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    		      dr_state == DR_WAIT);
 
    wire   dw_memack;
-   assign dw_memack = (busint_memack || busint_memdone) && (busowner == 5'b0100);
+   assign dw_memack = (busint_memack || busint_memdone) && (busowner == 5'b00010);
    
    assign dw_state_next =
 		(dw_state == DW_IDLE && dw_start) ? DW_START :
@@ -754,10 +754,13 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign dc_clr = dc_state == DC_START;
    assign dc_incr = dc_state == DC_NEXT;
 
+   wire   dc_memack;
+   assign dc_memack = busint_memack && (busowner == 5'b00100);
+
    assign dc_state_next =
 			 (dc_state == DC_IDLE && dc_start) ? DC_START :
 			 dc_state == DC_START ? DC_READ :
-			 (dc_state == DC_READ && busint_memdone) ? DC_CHECK :
+			 (dc_state == DC_READ && dc_memack) ? DC_CHECK :
 			 dc_state == DC_CHECK ? DC_NEXT :
 			 (dc_state == DC_NEXT && dc_end) ? DC_DONE :
 			 (dc_state == DC_NEXT && ~dc_end) ? DC_READ :
@@ -821,6 +824,11 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 	  $finish;
        end
 `endif
+
+`else
+   assign dc_busint_addr = 0;
+   assign dc_memrq = 0;
+   assign dc_memwr = 0;
 `endif
    
 `ifdef exercise_disk_rw
@@ -851,8 +859,8 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign dd_fault = dd_state == DDS_FAULT;
 
    wire dd_memack, dd_memdone;
-   assign dd_memack = busint_memack && (busowner == 5'b0010);
-   assign dd_memdone = busint_memdone && (busowner == 5'b0010);
+   assign dd_memack = busint_memack && (busowner == 5'b00010);
+   assign dd_memdone = busint_memdone && (busowner == 5'b00010);
    
    // everything is done by the test computer
    cpu_test_cpu cpu_test_cpu(.clk(clk),
@@ -879,10 +887,6 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 	  $finish;
        end
 `endif
-
-   assign dc_busint_addr = 0;
-   assign dc_memrq = 0;
-   assign dc_memwr = 0;
 `endif
 
 `ifndef exercise_disk_rw
@@ -916,6 +920,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    wire        bus_interrupt;
    wire        set_promdisable;
 
+   wire        busint_done;
+   assign      busint_done = busint_memack || busint_memdone;
+   
    always @(posedge clk)
      if (reset)
        busowner <= 5'b0;
@@ -933,9 +940,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		  (busowner == 5'b00000 && dc_memrq)  ? 5'b00100 :
 		  (busowner == 5'b00000 && dw_memrq)  ? 5'b00010 :
 		  (busowner == 5'b00000 && md_memrq)  ? 5'b00001 :
-		  (busowner == 5'b00100 && ~dc_memrq) ? 5'b01000 :
-		  (busowner == 5'b00010 && ~dw_memrq) ? 5'b01000 :
-		  (busowner == 5'b00001 && ~md_memrq) ? 5'b01000 :
+		  (busowner == 5'b00100 && (~dc_memrq || busint_done)) ? 5'b01000 :
+		  (busowner == 5'b00010 && (~dw_memrq || busint_done)) ? 5'b01000 :
+		  (busowner == 5'b00001 && (~md_memrq || busint_done)) ? 5'b01000 :
 		  (busowner == 5'b01000)              ? 5'b10000 :
 		  (busowner == 5'b10000)              ? 5'b11000 :
 		  (busowner == 5'b11000)              ? 5'b00000 :
@@ -953,29 +960,29 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
      else
        begin
 	  case (busowner)
-	    3'b001: busint_memrq <= md_memrq;
-	    3'b010: busint_memrq <= dw_memrq;
-	    3'b100: busint_memrq <= dc_memrq;
+	    5'b00001: busint_memrq <= md_memrq;
+	    5'b00010: busint_memrq <= dw_memrq;
+	    5'b00100: busint_memrq <= dc_memrq;
 	    default: busint_memrq <= 0;
 	  endcase
 
 	  case (busowner)
-	    3'b001: busint_memwr <= md_memwr;
-	    3'b010: busint_memwr <= dw_memwr;
-	    3'b100: busint_memwr <= dc_memwr;
+	    5'b00001: busint_memwr <= md_memwr;
+	    5'b00010: busint_memwr <= dw_memwr;
+	    5'b00100: busint_memwr <= dc_memwr;
 	    default: busint_memwr <= 0;
 	  endcase
 
 	  case (busowner)
-	    3'b001: busint_addr <= md_busint_addr;
-	    3'b010: busint_addr <= dw_busint_addr;
-	    3'b100: busint_addr <= dc_busint_addr;
+	    5'b00001: busint_addr <= md_busint_addr;
+	    5'b00010: busint_addr <= dw_busint_addr;
+	    5'b00100: busint_addr <= dc_busint_addr;
 	    default: busint_addr <= 0;
 	  endcase
    
 	  case (busowner)
-	    3'b001: busint_busin <= md_busint_busin;
-	    3'b010: busint_busin <= dw_busint_busin;
+	    5'b00001: busint_busin <= md_busint_busin;
+	    5'b00010: busint_busin <= dw_busint_busin;
 	    default: busint_busin <= 0;
 	  endcase
        end

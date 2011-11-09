@@ -92,7 +92,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    wire       state_decode, state_read, state_alu, state_write, state_fetch;
    wire       state_mmu, state_prefetch;
 
-   wire        busint_memack, busint_memdone;
+   wire        busint_memack, busint_memload;
    wire [31:0] busint_busout;
 
    wire        en_mem, en_mcr, en_dsk;
@@ -521,7 +521,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
      if (reset)
        data <= 0;
      else
-       if (busint_memdone)
+       if (busint_memload)
 	 data <= busint_busout;
 
    cpu_test_data cpu_test_data(
@@ -697,7 +697,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    		      dr_state == DR_WAIT);
 
    wire   dw_memack;
-   assign dw_memack = (busint_memack || busint_memdone) && (busowner == 5'b00010);
+   assign dw_memack = busint_memack && (busowner == 5'b00010);
    
    assign dw_state_next =
 		(dw_state == DW_IDLE && dw_start) ? DW_START :
@@ -793,7 +793,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
      if (reset)
        dc_data <= 0;
      else
-       if (busint_memdone)
+       if (busint_memload)
 	 dc_data <= busint_busout;
 
    cpu_test_disk cpu_test_disk(
@@ -860,7 +860,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
    wire dd_memack, dd_memdone;
    assign dd_memack = busint_memack && (busowner == 5'b00010);
-   assign dd_memdone = busint_memdone && (busowner == 5'b00010);
+   assign dd_memdone = busint_memload && (busowner == 5'b00010);
    
    // everything is done by the test computer
    cpu_test_cpu cpu_test_cpu(.clk(clk),
@@ -920,9 +920,6 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    wire        bus_interrupt;
    wire        set_promdisable;
 
-   wire        busint_done;
-   assign      busint_done = busint_memack || busint_memdone;
-   
    always @(posedge clk)
      if (reset)
        busowner <= 5'b0;
@@ -940,9 +937,9 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		  (busowner == 5'b00000 && dc_memrq)  ? 5'b00100 :
 		  (busowner == 5'b00000 && dw_memrq)  ? 5'b00010 :
 		  (busowner == 5'b00000 && md_memrq)  ? 5'b00001 :
-		  (busowner == 5'b00100 && (~dc_memrq || busint_done)) ? 5'b01000 :
-		  (busowner == 5'b00010 && (~dw_memrq || busint_done)) ? 5'b01000 :
-		  (busowner == 5'b00001 && (~md_memrq || busint_done)) ? 5'b01000 :
+		  (busowner == 5'b00100 && ~dc_memrq) ? 5'b01000 :
+		  (busowner == 5'b00010 && ~dw_memrq) ? 5'b01000 :
+		  (busowner == 5'b00001 && ~md_memrq) ? 5'b01000 :
 		  (busowner == 5'b01000)              ? 5'b10000 :
 		  (busowner == 5'b10000)              ? 5'b11000 :
 		  (busowner == 5'b11000)              ? 5'b00000 :

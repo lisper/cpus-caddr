@@ -311,8 +311,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
    	if (ir_op == OP_ADD && ir_dreg == R_C)
 	  $display("dsk: c <- 0x%x (%d) %t", c, c, $time);
 `endif
-   
-   
+
    always @(posedge clk)
      if (reset)
        data <= 0;
@@ -366,12 +365,38 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
      if (ir_op == OP_WAIT)
        $display("WAIT: count %x", wait_count);
 `endif
+
+   // small state machine to manage req/ack protocol to busint
+   parameter [1:0]
+		M_IDLE = 0,
+		M_REQ = 1,
+		M_WAIT = 2,
+		M_DONE = 3;
+   
+   reg [1:0] mem_state;
+   wire [1:0] mem_state_next;
+   wire mem_done;
+
+   always @(posedge clk)
+     if (reset)
+       mem_state <= 0;
+     else
+       mem_state <= mem_state_next;
+
+   assign mem_state_next =
+      (mem_state == M_IDLE && (ir_op == OP_WRITE || ir_op == OP_READ)) ? M_REQ :
+      (mem_state == M_REQ && busint_memack) ? M_WAIT :
+      (mem_state == M_WAIT && ~busint_memack) ? M_DONE :
+      (mem_state == M_DONE) ? M_IDLE :
+      mem_state;
+
+   assign mem_done = mem_state == M_DONE;
    
    assign stall_pc =
 		    ~start ||
 		    (ir_op == OP_WAIT && ~wait_done) ||
-		    (ir_op == OP_WRITE && ~busint_memack) ||
-		    (ir_op == OP_READ && ~busint_memdone);
+		    (ir_op == OP_WRITE && ~mem_done) ||
+		    (ir_op == OP_READ && ~mem_done);
 
    assign load_pc =
 		   ((ir_op == OP_TST) && tst_result) ||
@@ -386,8 +411,8 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
        end
      else
        begin
-	  busint_memrq <= ir_op == OP_WRITE || ir_op == OP_READ;
-	  busint_memwr <= ir_op == OP_WRITE;
+	  busint_memrq <= mem_state == M_REQ;
+	  busint_memwr <= mem_state == M_REQ && ir_op == OP_WRITE;
        end
 
 `ifdef debug_op

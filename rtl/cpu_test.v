@@ -3,10 +3,11 @@
 // in a cpu-like manner
 //
 
-//`define exercise_mcr
-//`define exercise_memory
+`define exercise_mcr
+`define exercise_memory
 //`define exercise_disk
 `define exercise_disk_rw
+`define normal
 
 module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 
@@ -859,9 +860,14 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    assign dd_fault = dd_state == DDS_FAULT;
 
    wire dd_memack, dd_memdone;
+ `ifdef normal
    assign dd_memack = busint_memack && (busowner == 5'b00010);
    assign dd_memdone = busint_memload && (busowner == 5'b00010);
-   
+ `else
+   assign dd_memack = busint_memack;
+   assign dd_memdone = busint_memload;
+ `endif
+     
    // everything is done by the test computer
    cpu_test_cpu cpu_test_cpu(.clk(clk),
 			     .reset(reset),
@@ -912,6 +918,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    // Bus Interface
    // *************
 
+ `ifdef normal
    reg [31:0] busint_busin;
    reg [21:0] busint_addr;
    reg 	      busint_memrq;
@@ -983,7 +990,20 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 	    default: busint_busin <= 0;
 	  endcase
        end
-	    
+`else // !`ifdef normal
+   wire [31:0] busint_busin;
+   wire [21:0]  busint_addr;
+   wire 	busint_memrq;
+   wire 	busint_memwr;
+   
+   wire        bus_interrupt;
+   wire        set_promdisable;
+
+   assign busint_memrq = dw_memrq;
+   assign busint_memwr = dw_memwr;
+   assign busint_addr  = dw_busint_addr;
+   assign busint_busin = dw_busint_busin;
+`endif	    
    
 
    busint busint(
@@ -998,7 +1018,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 		 .req(busint_memrq),
 		 .ack(busint_memack),
 		 .write(busint_memwr),
-		 .load(busint_memdone),
+		 .load(busint_memload),
 		 
 		 .interrupt(bus_interrupt),
 

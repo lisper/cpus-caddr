@@ -31,6 +31,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 		R_C = 3,
 		R_D = 4,
 		R_I = 5,
+		R_DA = 6,
 		R_DD = 7;
 
    parameter [5:0]
@@ -60,9 +61,9 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h0a: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00011000 };
 	 8'h0b: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write mem
 
-	 8'h0c: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
+	 8'h0c: data <= { OP_ADD,   R_D,    R_DA,   N_NOP, 32'h0 };	// d = da
  	 8'h0d: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377776 };
-	 8'h0e: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write da
+	 8'h0e: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, 32'h0001 };   // write da
 
  	 8'h0f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377775 };
 	 8'h10: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010100 };
@@ -82,22 +83,20 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h1b: data <= { OP_TST,   R_D,    R_I,    6'h18, 32'h00000001 }; // wait
 
 	 // loop
-	 8'h1c: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 };  // c++
-	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd5000 };  // if (c == 100)
-	 8'h1e: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
-	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
-// 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, D_NONE };   // loop back
+	 8'h1c: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 }; // c++
+	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd1000 };     // if (c == 100)
+	 8'h1e: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000001 }; // da = da + 1
+	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0c, D_NONE };       // loop back
 	 8'h20: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
 
 //	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip
- 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // skip
-//	 8'h08: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip
+	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // skip
 	 
 `ifdef never
 	 // read block
 	 8'h21: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
  	 8'h22: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377776 };
-	 8'h23: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };
+	 8'h23: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, 32'h0001 };
 
  	 8'h24: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377775 };
 	 8'h25: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010100 };
@@ -125,7 +124,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h35: data <= { OP_FAULT, R_NONE, R_NONE, N_NOP, D_NONE };
 	 8'h36: data <= { OP_ADD,   R_A,    R_A,    N_NOP, 32'h00000001 }; // a++
 	 8'h37: data <= { OP_ADD,   R_B,    R_B,    N_NOP, 32'h00000001 }; // b++
-	 8'h38: data <= { OP_CMP,   R_B,    R_I,    6'h3a, 32'h00000100 }; // if (b == )
+	 8'h38: data <= { OP_CMP,   R_B,    R_I,    6'h3a, 32'h00000100 }; // if (b == 100)
 	 8'h39: data <= { OP_JMP,   R_NONE, R_NONE, 6'h33, 32'h00000000 }; // loop
 	 
 `ifdef never
@@ -136,7 +135,9 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h3d: data <= { OP_JMP,   R_NONE, R_NONE, 6'h22, D_NONE };   // loop reading
 	 8'h3e: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
 	 8'h3f: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE };   // done
-	 8'h40: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
+
+	 8'h40: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000000 }; // da = 0
+	 8'h41: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
 `else
 	 8'h3a: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE }; 
 `endif
@@ -180,6 +181,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
    reg [21:0] 	addr;
    reg [31:0] 	b;
    reg [31:0] 	c;
+   reg [31:0] 	da;
    reg [31:0] 	data;
 	
    wire 	load_pc;
@@ -242,6 +244,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 		R_C = 3,
 		R_D = 4,
 		R_I = 5,
+		R_DA = 6,
 		R_DD = 7;
 
    wire [31:0] 	   checker_out;
@@ -260,6 +263,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 		ir_sreg == R_C ? c :
 		ir_sreg == R_D ? data :
 		ir_sreg == R_I ? ir_data :
+		ir_sreg == R_DA ? da :
 		ir_sreg == R_DD ? checker_out :
 		0;
 
@@ -267,8 +271,37 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 		ir_dreg == R_B ? b :
 		ir_dreg == R_C ? c :
 		ir_dreg == R_D ? data :
+		ir_dreg == R_DA ? da :
 		0;
 
+   // da is magic (da = disk addr)
+   wire da_blk_oflo  = da[4:0] == 5'd16;	// 17 sectors/track
+   wire da_head_oflo = da[12:8] == 5'd18;	// 19 heads
+   wire da_cyl_oflo  = da[27:16] == 12'd814;	// 815 cyls
+
+   wire [4:0] da_blk_new  = da_blk_oflo  ? 5'b0  : da[4:0]   + 5'b00001;
+   wire [4:0] da_head_new = da_head_oflo ? 5'b0  : da[12:8]  + 5'b00001;
+   wire [11:0] da_cyl_new = da_cyl_oflo  ? 12'b0 : da[27:16] + 12'h001;
+   
+   always @(posedge clk)
+     if (reset)
+       da <= 0;
+     else
+       if (ir_op == OP_ADD && ir_dreg == R_DA)
+	 begin
+	    // clear
+	    if (ir_data == 0)
+	      da <= 0;
+	    else
+	      begin
+		 // increment
+		 da[4:0] <= da_blk_new;
+		 da[12:8] <= da_blk_oflo ? da_head_new : da[12:8];
+		 da[27:16] <= (da_head_oflo && da_blk_oflo) ? da_cyl_new : da[27:16];
+	      end
+	 end
+
+   // normal registers
    always @(posedge clk)
      if (reset)
        begin
@@ -340,7 +373,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 
    assign cmp_result = dst == src;
 
-`ifdef debug/*_tst*/
+`ifdef debug_tst
    always @(posedge clk)
      if (ir_op == OP_TST)
 	   $display("TST: dst=%o, src=%o, tst_result=%b",

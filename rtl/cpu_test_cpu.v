@@ -69,7 +69,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h11: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write clp
 
  	 8'h12: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377774 };
-	 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0011 };
+	 8'h13: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'o0011 }; // write
 	 8'h14: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };   // write cmd
 
  	 8'h15: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377777 };
@@ -83,13 +83,14 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 
 	 // loop
 	 8'h1c: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 };  // c++
-	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd100 };  // if (c == 100)
+	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd5000 };  // if (c == 100)
 	 8'h1e: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
-//	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
- 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, D_NONE };   // loop back
+	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0d, D_NONE };   // loop back
+// 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, D_NONE };   // loop back
 	 8'h20: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
 
-	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip
+//	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip
+ 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // skip
 //	 8'h08: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip
 	 
 `ifdef never
@@ -99,7 +100,7 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 	 8'h23: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };
 
  	 8'h24: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377775 };
-	 8'h25: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010001 };
+	 8'h25: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010100 };
 	 8'h26: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };
 
  	 8'h27: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377774 };
@@ -346,7 +347,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 		    data, src, tst_result);
 `endif
 
-   reg [3:0] wait_count;
+   reg [4:0] wait_count;
    wire	wait_done;
 
    always @(posedge clk)
@@ -358,7 +359,7 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
        else
 	 wait_count <= 0;
    
-   assign wait_done = wait_count == 4'hf;
+   assign wait_done = wait_count == 4'h1f;
 
 `ifdef debug_wait
    always @(posedge clk)

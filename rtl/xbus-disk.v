@@ -716,7 +716,8 @@ module xbus_disk (
    // disk state machine
    always @(posedge clk)
      if (reset)
-       state <= /*s_idle*/s_reset;
+//       state <= /*s_idle*/s_reset;
+       state <= s_idle;
      else
        begin
 	  state <= state_next;
@@ -874,7 +875,8 @@ module xbus_disk (
 			  state_next = s_read_ccw;
 		       end
 		   DISK_CMD_RECAL:
-		     state_next = s_reset;
+//		     state_next = s_reset;
+		     state_next = s_busy;
 		   DISK_CMD_CLEAR:
 		     state_next = s_busy;
 		   default:
@@ -1086,6 +1088,12 @@ module xbus_disk (
 	       ata_rd = 1;
 	       ata_addr = ATA_STATUS;
 
+	       if (ata_done && ata_out[IDE_STATUS_ERR])
+		 begin
+		    set_err = 1;
+//state_next = s_reset;
+		 end
+	       
 	       if (ata_done && ~ata_out[IDE_STATUS_BSY])
 		 begin
 		    clear_wc = 1;
@@ -1097,9 +1105,6 @@ module xbus_disk (
 			 disk_cmd == DISK_CMD_RDCMP) && ata_out[IDE_STATUS_DRQ])
 		      state_next = s_read0;
 		 end
-
-	       if (ata_out[IDE_STATUS_ERR])
-		    set_err = 1;
 	    end
 
 	  s_read0:
@@ -1153,7 +1158,7 @@ module xbus_disk (
 	       /* busreqout = 1; */
 	       /* reqout = 1; */
 	       /* addrout <= { disk_ccw, wc }; */
-	       
+
 	       if (busgrantin && ackin)
 		 state_next = s_write1;
 	    end

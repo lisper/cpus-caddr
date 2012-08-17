@@ -39,9 +39,9 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    wire [1:0] 	 c_cs;
    wire [2:0] 	 c_da;
 
-   reg [2:0] ata_state;
+   reg [3:0] ata_state;
 
-   parameter [2:0]
+   parameter [3:0]
 		s0 = 3'd0,
 		s1 = 3'd1,
 		s2 = 3'd2,
@@ -49,19 +49,20 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    		s4 = 3'd4,
    		s5 = 3'd5,
    		s6 = 3'd6,
-   		s7 = 3'd7;
+   		s7 = 3'd7,
+   		s8 = 3'd8,
+   		s9 = 3'd9;
 
-   wire [2:0] ata_state_next;
+   wire [3:0] ata_state_next;
 
-   parameter [4:0]
+   parameter [5:0]
 //`ifdef SIMULATION
 //		ATA_DELAY = 2;
 //`else
-//		ATA_DELAY = 14;
+		ATA_DELAY = 13;
 //`endif
-		ATA_DELAY = 8;
      
-   reg [4:0] ata_count;
+   reg [5:0] ata_count;
    
    wire      assert_cs;
    wire      assert_rw;
@@ -77,9 +78,6 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    assign c_dior = ata_rd ? 1'b0 : 1'b1;
    assign c_diow = ata_wr ? 1'b0 : 1'b1;
 
-   // send back done pulse at end
-   assign ata_done = ata_state == s3;
-   
    always @(posedge clk)
      if (reset)
        ata_state <= s0;
@@ -94,19 +92,23 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 			  (ata_state == s4) ? s5 :
 			  (ata_state == s5) ? s6 :
 			  (ata_state == s6) ? s7 :
-			  (ata_state == s7) ? s0 :
+			  (ata_state == s7) ? s8 :
+			  (ata_state == s8) ? s9 :
+			  (ata_state == s9) ? s0 :
 			  ata_state;
-
    
    assign ide_start = ata_state == s1;
    assign ide_busy = ata_state == s2;
    assign ide_stop = ata_state == s3;
    
+   // send back done pulse at end
+   assign ata_done = ata_state == s9/*s3*/;
+   
    always @(posedge clk)
      if (reset)
        reg_ata_in <= 0;
      else
-       if (ide_start)
+       if (ata_state == s0 && (ata_rd || ata_wr))
 	 reg_ata_in <= ata_in;
    
    assign ata_out = reg_ide_data_in;
@@ -133,15 +135,21 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 	  reg_ide_data_in <= 0;
        end
      else
-       if (ide_start)
+       if (ata_state == s0 && (ata_rd || ata_wr)/*ide_start*/)
 	 begin
 	    ide_cs <= c_cs;
 	    ide_da <= c_da;
 	    ide_data_out <= ata_in;
- ide_dior <= c_dior;
- ide_diow <= c_diow;
+// ide_dior <= c_dior;
+// ide_diow <= c_diow;
 	 end
        else
+	 if (ide_start)
+	   begin
+	      ide_dior <= c_dior;
+	      ide_diow <= c_diow;
+	   end
+	 else
 	 if (ide_stop)
 	   begin
 	      ide_dior <= 1'b1;

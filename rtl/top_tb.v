@@ -12,7 +12,7 @@
 module top(rs232_txd, rs232_rxd,
 	   button, led, sysclk,
 	   ps2_clk, ps2_data,
-	   ms_ps2_clk, ms_ps2_data,
+//	   ms_ps2_clk, ms_ps2_data,
 	   vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync,
 	   sevenseg, sevenseg_an,
 	   slideswitch,
@@ -32,8 +32,10 @@ module top(rs232_txd, rs232_rxd,
    input	ps2_clk;
    input 	ps2_data;
    
-   inout	ms_ps2_clk;
-   inout 	ms_ps2_data;
+//   inout	ms_ps2_clk;
+//   inout 	ms_ps2_data;
+   wire	ms_ps2_clk;
+   wire ms_ps2_data;
    
    output 	vga_red;
    output 	vga_blu;
@@ -339,8 +341,8 @@ module top(rs232_txd, rs232_rxd,
    assign ms_ps2_clk_in = ms_ps2_clk;
    assign ms_ps2_data_in = ms_ps2_data;
 
-   assign ms_ps2_clk = ms_ps2_dir ? ms_ps2_clk_out : 1'bz;
-   assign ms_ps2_data = ms_ps2_dir ? ms_ps2_data_out : 1'bz;
+//   assign ms_ps2_clk = ms_ps2_dir ? ms_ps2_clk_out : 1'bz;
+//   assign ms_ps2_data = ms_ps2_dir ? ms_ps2_data_out : 1'bz;
    
    ps2_support ps2_support(
 			   .clk(cpuclk),

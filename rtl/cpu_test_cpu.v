@@ -84,69 +84,68 @@ module cpu_test_cpu_rom(clk, reset, addr, data);
 
 	 // loop
 	 8'h1c: data <= { OP_ADD,   R_C,    R_C,    N_NOP, 32'h00000001 }; // c++
-	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h21, 32'd1000 };     // if (c == 100)
+	 8'h1d: data <= { OP_CMP,   R_C,    R_I,    6'h20, 32'd2000 };     // if (c == 100)
 	 8'h1e: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000001 }; // da = da + 1
 	 8'h1f: data <= { OP_JMP,   R_NONE, R_NONE, 6'h0c, D_NONE };       // loop back
 	 8'h20: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
+	 8'h21: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000000 }; // da = 0
 
-//	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h31, 32'h00000000 }; // skip
-	 8'h21: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // skip
-	 
 `ifdef never
 	 // read block
-	 8'h21: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
- 	 8'h22: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377776 };
-	 8'h23: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, 32'h0001 };
+	 8'h22: data <= { OP_ADD,   R_D,    R_DA,   N_NOP, 32'h0 };	// d = da
+ 	 8'h23: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377776 };
+	 8'h24: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, 32'h0001 };  // write da
 
- 	 8'h24: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377775 };
-	 8'h25: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010100 };
-	 8'h26: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };
+ 	 8'h25: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377775 };
+	 8'h26: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h00010100 };
+	 8'h27: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };    // write clp
 
- 	 8'h27: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377774 };
-	 8'h28: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
-	 8'h29: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };
+ 	 8'h29: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377774 };
+	 8'h29: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
+	 8'h2a: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };	// write cmd
 
- 	 8'h2a: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377777 };
-	 8'h2b: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
-	 8'h2c: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };
+ 	 8'h2b: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377777 };
+	 8'h2c: data <= { OP_ADD,   R_D,    R_NONE, N_NOP, 32'h0 };
+	 8'h2d: data <= { OP_WRITE, R_NONE, R_NONE, N_NOP, D_NONE };	// write go
 
- 	 8'h2d: data <= { OP_WAIT,  R_NONE, R_NONE, N_NOP, D_NONE };
- 	 8'h2e: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377770 };
-	 8'h2f: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };
-	 8'h30: data <= { OP_TST,   R_D,    R_I,    6'h2d, 32'h00000001 };
-`endif
-
-	 // compare
-	 8'h31: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h11000 }; // a = 0x11000
-	 8'h32: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };     // b = 0 (count)
-	 8'h33: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };    // read
-	 8'h34: data <= { OP_CMP,   R_D,    R_DD,   6'h36, D_NONE };    // check
-	 8'h35: data <= { OP_FAULT, R_NONE, R_NONE, N_NOP, D_NONE };
-	 8'h36: data <= { OP_ADD,   R_A,    R_A,    N_NOP, 32'h00000001 }; // a++
-	 8'h37: data <= { OP_ADD,   R_B,    R_B,    N_NOP, 32'h00000001 }; // b++
-	 8'h38: data <= { OP_CMP,   R_B,    R_I,    6'h3a, 32'h00000100 }; // if (b == 100)
-	 8'h39: data <= { OP_JMP,   R_NONE, R_NONE, 6'h33, 32'h00000000 }; // loop
-	 
-`ifdef never
-	 // loop
-	 8'h3a: data <= { OP_ADD,   R_C,    R_NONE, N_NOP, 32'h00000001 }; // c++
-	 8'h3b: data <= { OP_CMP,   R_C,    R_I,    6'h00, 32'd100 };  // if (c == 100)
-	 8'h3c: data <= { OP_ADD,   R_D,    R_C,    N_NOP, D_NONE };   // d = c
-	 8'h3d: data <= { OP_JMP,   R_NONE, R_NONE, 6'h22, D_NONE };   // loop reading
-	 8'h3e: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
-	 8'h3f: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE };   // done
-
-	 8'h40: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000000 }; // da = 0
-	 8'h41: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
+ 	 8'h2e: data <= { OP_WAIT,  R_NONE, R_NONE, N_NOP, D_NONE };
+ 	 8'h2f: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'o17377770 };
+	 8'h30: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };
+	 8'h31: data <= { OP_TST,   R_D,    R_I,    6'h2e, 32'h00000001 }; // wait
 `else
-	 8'h3a: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE }; 
+	 8'h22: data <= { OP_JMP,   R_NONE, R_NONE, 6'h32, 32'h00000000 }; // skip
 `endif
+
+`ifdef never
+	 // compare
+	 8'h32: data <= { OP_ADD,   R_A,    R_NONE, N_NOP, 32'h11000 }; // a = 0x11000
+	 8'h33: data <= { OP_ADD,   R_B,    R_NONE, N_NOP, 32'h0 };     // b = 0 (count)
+	 8'h34: data <= { OP_READ,  R_NONE, R_NONE, N_NOP, D_NONE };    // read
+	 8'h35: data <= { OP_CMP,   R_D,    R_DD,   6'h37, D_NONE };    // check
+	 8'h36: data <= { OP_FAULT, R_NONE, R_NONE, N_NOP, D_NONE };
+	 8'h37: data <= { OP_ADD,   R_A,    R_A,    N_NOP, 32'h00000001 }; // a++
+	 8'h38: data <= { OP_ADD,   R_B,    R_B,    N_NOP, 32'h00000001 }; // b++
+	 8'h39: data <= { OP_CMP,   R_B,    R_I,    6'h3b, 32'h00000100 }; // if (b == 100)
+	 8'h3a: data <= { OP_JMP,   R_NONE, R_NONE, 6'h34, 32'h00000000 }; // loop
+`else
+	 8'h32: data <= { OP_JMP,   R_NONE, R_NONE, 6'h3b, 32'h00000000 }; // skip
+`endif
+	 
+	 // loop
+	 8'h3b: data <= { OP_ADD,   R_C,    R_NONE, N_NOP, 32'h00000001 }; // c++
+	 8'h3c: data <= { OP_CMP,   R_C,    R_I,    6'h3f, 32'd1000 };     // if (c == 100)
+	 8'h3d: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000001 }; // da = da + 1
+	 8'h3e: data <= { OP_JMP,   R_NONE, R_NONE, 6'h22, D_NONE };       // loop reading
+	 8'h3f: data <= { OP_ADD,   R_C,    R_I,    N_NOP, 32'h00000000 }; // c = 0
+	 8'h40: data <= { OP_ADD,   R_DA,   R_NONE, N_NOP, 32'h00000000 }; // da = 0
+	 8'h41: data <= { OP_DONE,  R_NONE, R_NONE, N_NOP, D_NONE };       // done
+	 8'h42: data <= { OP_JMP,   R_NONE, R_NONE, 6'h00, 32'h00000000 }; // restart
 	 
 	 default: data <= { OP_JMP, R_NONE, R_NONE, 6'h00, D_NONE };
        endcase
 endmodule
 
-module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
+module cpu_test_cpu(clk, reset, start, done, fault, pc_out, dsk_out,
 		    busint_memrq,
 		    busint_memwr,
 		    busint_memack,
@@ -161,6 +160,8 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
    output done;
    output fault;
    output [7:0] pc_out;
+   output [11:0] dsk_out;
+   reg [11:0] 	 dsk_out;
    
    output busint_memrq;
    output  busint_memwr;
@@ -209,6 +210,12 @@ module cpu_test_cpu(clk, reset, start, done, fault, pc_out,
 	 pc <= npc;
 
    assign pc_out = pc;
+
+   always @(posedge clk)
+     if (reset)
+       dsk_out <= 0;
+     else
+       dsk_out <= c[13:2];
    
    wire [7:0] rom_pc;
    assign rom_pc = stall_pc ? pc : npc;

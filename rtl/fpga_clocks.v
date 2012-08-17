@@ -23,12 +23,16 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
    IBUFG sysclk_buffer (.I(sysclk), 
 			.O(sysclk_buf));
 
-`define pixclk_dcm
+   always @(posedge clk100)
+     switches <= slideswitch;
+   
+//`define pixclk_dcm
 //`define fixed_dcm
 //`define clk100_dcm
-//`define no_dcm
+`define no_dcm
 //`define slow_dcm
-`define med_dcm
+//`define med_dcm
+`define switch_clock
    
 `ifdef pixclk_dcm
    // DCM - pixclk
@@ -81,7 +85,7 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 	      .RST(dcm_reset),
 	      .CLKFB(clk50/*_dcm*/),
 	      .CLK0(clk50_dcm),
-	      .CLK2X(clk100_dcm));  // synthesis attribute loc of dcm100 is "DCM_X1Y0";
+	      .CLK2X(clk100_dcm));
    defparam dcm100.CLKIN_PERIOD = 20.0;
 
    BUFG buf100(.I(clk100_dcm), .O(clk100));
@@ -90,8 +94,9 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 `endif
 
 `ifdef no_dcm
-   assign clk100 = sysclk_buf;
-   assign pixclk = sysclk_buf;
+   BUFG buf100(.I(sysclk_buf), .O(clk100));
+//   assign clk100 = sysclk_buf;
+//   assign pixclk = sysclk_buf;
    
    reg 	clk50;
    always @(posedge clk100)
@@ -102,9 +107,6 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
    //----
    reg [22:0] slow;
 
-   always @(posedge clk100)
-     switches <= slideswitch;
-   
    always @(posedge clk50)
        slow <= slow + 1;
 
@@ -132,7 +134,7 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 	      .CLKFB(clk50/*_dcm*/),
 	      .CLKDV(clk1x_dcm),
 	      .CLK0(clk50_dcm),
-	      .CLK2X(clk100_dcm));  // synthesis attribute loc of dcm100 is "DCM_X1Y0";
+	      .CLK2X(clk100_dcm));
    defparam dcm100.CLKIN_PERIOD = 20.0;
 //   defparam dcm100.CLKDV_DIVIDE = 32;
 //   defparam dcm100.CLKDV_DIVIDE = 16;
@@ -158,7 +160,6 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 	      .CLKDV(clk1x_dcm),
 	      .CLK0(clk50_dcm)
 	      );
-//	      ,.CLK2X(clk100_dcm));  // synthesis attribute loc of dcm100 is "DCM_X1Y0";
    defparam dcm100.CLKIN_PERIOD = 20.0;
    defparam dcm100.CLKDV_DIVIDE = 4;
    defparam dcm100.FACTORY_JF = 16'h8080;

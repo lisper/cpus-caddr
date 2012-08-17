@@ -302,7 +302,8 @@ module busint(mclk, reset,
    assign device_ack = ack_dram | ack_disk | ack_tv | ack_io | ack_unibus |
 		       timed_out;
    
-   assign ack = state == BUS_REQ && device_ack;
+//   assign ack = state == BUS_REQ && device_ack;
+   assign ack = (load || state == BUS_WAIT)/* && device_ack*/;
 
    // disk - xbus
    // iob, 60hz clock - xbus
@@ -465,7 +466,7 @@ module busint(mclk, reset,
        timeout_count <= 0;
      else
        if (state == BUS_REQ && ~timed_out)
-	 timeout_count <= timeout_count + 6'd000001;
+	 timeout_count <= timeout_count + 6'b000001;
        else
 	 if (state == BUS_WAIT)
 	   timeout_count <= 0;

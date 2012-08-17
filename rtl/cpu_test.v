@@ -97,10 +97,13 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    wire [31:0] busint_busout;
 
    wire        en_mem, en_mcr, en_dsk;
+   wire        en_dk1, en_dk2;
 
    assign en_mem = ext_switches[0];
    assign en_mcr = ext_switches[1];
    assign en_dsk = ext_switches[2];
+   assign en_dk1 = ext_switches[3];
+   assign en_dk2 = ext_switches[4];
 
    reg [4:0]   busowner;
    
@@ -169,11 +172,14 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
    reg [7:0] mem_count, mcr_count, dsk_count;
    wire      m_done, ud_done, dd_done;
    wire [7:0] d_pc;
+   wire [11:0] dsk_lba;
    
    assign pc_out = 
+		   en_dk1 ? { 2'b0, dsk_lba } :
+		   en_dk2 ? { 6'b0, dsk_count } :
 		   en_mem ? { 6'b0, mem_count } :
 		   en_mcr ? { 6'b0, mcr_count } :
-		   en_dsk ? { 6'b0, d_pc/*dsk_count*/ } :
+		   en_dsk ? { 6'b0, d_pc } :
 		   0;
       
    always @(posedge clk)
@@ -826,7 +832,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
        end
 `endif
 
-`else
+`else // !`ifdef exercise_disk
    assign dc_busint_addr = 0;
    assign dc_memrq = 0;
    assign dc_memwr = 0;
@@ -875,6 +881,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			     .done(dd_done),
 			     .fault(d_fault),
 			     .pc_out(d_pc),
+			     .dsk_out(dsk_lba),
 			     .busint_memrq(dw_memrq),
 			     .busint_memwr(dw_memwr),
 			     .busint_memack(dd_memack),
@@ -883,7 +890,6 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 			     .busint_busin(busint_busout),
 			     .busint_busout(dw_busint_busin));
    
-
 `ifdef debug
    always @(posedge clk)
      if (d_fault)
@@ -893,6 +899,7 @@ module cpu_test ( clk, ext_int, ext_reset, ext_boot, ext_halt, ext_switches,
 	  $finish;
        end
 `endif
+
 `endif
 
 `ifndef exercise_disk_rw

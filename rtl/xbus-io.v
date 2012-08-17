@@ -202,7 +202,8 @@ dataout = 0;
    wire ms_int, kb_int, clk_int;
    
    assign ms_int = iob_rdy[0] & iob_csr[1];
-   assign kb_int = iob_rdy[1] & iob_csr[2];
+//temp
+   assign kb_int = iob_rdy[1]/* & iob_csr[2]*/;
    assign clk_int = iob_rdy[2] & iob_csr[3];
    
    assign interrupt = 
@@ -210,8 +211,8 @@ dataout = 0;
 		      kb_int | ms_int | clk_int;
 
    assign vector =
-		  (ms_int || kb_int) ? 8'o0260 :
-		  clk_int ? 8'o0274 :
+		  (ms_int || kb_int) ? 8'o260 :
+		  clk_int ? 8'o274 :
 		  0;
    
    // 60hz clock

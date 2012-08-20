@@ -1,0 +1,28 @@
+The Symbolics Zetalisp character set includes the following
+characters not present in other Lisps (^ means control):
+   ^]      >=      greater than or equal to
+   ^\      <=      less than or equal to
+   ^Z      !=      not equal to
+   ^^      ==      equivalent to 
+   ^E      not
+   ^G      pi
+   ^L      +/-     plus/minus
+   ^H      lambda
+   ^F      epsilon
+   ^W      <-->    left/right arrow
+   ^X      <--     left arrow
+   ^Y      -->     right arrow
+   ^A              down arrow
+   ^K              up arrow
+   ^D              up caret
+   ^_              down caret
+   ^T              forall
+   ^U              there exists
+   ^B              alpha
+   ^C              beta
+   ^I              gamma
+   ^J              delta
+   ^O              partial delta  
+   ^N              infinity
+   ^M              circle +
+   ^V              circle x

@@ -26,10 +26,11 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
    always @(posedge clk100)
      switches <= slideswitch;
    
-//`define pixclk_dcm
+`define pixclk_dcm
+`define clk100_dcm
+
 //`define fixed_dcm
-//`define clk100_dcm
-`define no_dcm
+//`define no_dcm
 //`define slow_dcm
 //`define med_dcm
 `define switch_clock
@@ -90,7 +91,6 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 
    BUFG buf100(.I(clk100_dcm), .O(clk100));
    BUFG buf50(.I(clk50_dcm), .O(clk50));
-
 `endif
 
 `ifdef no_dcm
@@ -111,12 +111,12 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
        slow <= slow + 1;
 
    assign clk1x =
-		 switches[6] ? slow[20] :
-		 switches[5] ? slow[19] :
-		 switches[4] ? slow[8] :
-		 switches[3] ? slow[6] : // 128
-		 switches[2] ? slow[4] : // 32
-		 switches[1] ? slow[2] : // 8
+		 switches[6] ? slow[10] :
+		 switches[5] ? slow[8] :
+		 switches[4] ? slow[4] : // 32
+		 switches[3] ? slow[3] : // 16
+		 switches[2] ? slow[2] : // 8
+		 switches[1] ? slow[1] : // 4
 		 switches[0] ? slow[0] : // 2
 		 clk50;
 `else

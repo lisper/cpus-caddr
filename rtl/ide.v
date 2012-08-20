@@ -42,16 +42,16 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    reg [3:0] ata_state;
 
    parameter [3:0]
-		s0 = 3'd0,
-		s1 = 3'd1,
-		s2 = 3'd2,
-		s3 = 3'd3,
-   		s4 = 3'd4,
-   		s5 = 3'd5,
-   		s6 = 3'd6,
-   		s7 = 3'd7,
-   		s8 = 3'd8,
-   		s9 = 3'd9;
+		s0 = 4'd0,
+		s1 = 4'd1,
+		s2 = 4'd2,
+		s3 = 4'd3,
+   		s4 = 4'd4,
+   		s5 = 4'd5,
+   		s6 = 4'd6,
+   		s7 = 4'd7,
+   		s8 = 4'd8,
+   		s9 = 4'd9;
 
    wire [3:0] ata_state_next;
 
@@ -59,7 +59,7 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 //`ifdef SIMULATION
 //		ATA_DELAY = 2;
 //`else
-		ATA_DELAY = 13;
+		ATA_DELAY = 10;
 //`endif
      
    reg [5:0] ata_count;
@@ -67,7 +67,7 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
    wire      assert_cs;
    wire      assert_rw;
 
-   wire      ide_start, ide_busy, ide_stop;
+   wire      ide_begin, ide_start, ide_busy, ide_stop, ide_end;
 
    // register ide data from drive
    reg [15:0] reg_ide_data_in;
@@ -97,12 +97,14 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 			  (ata_state == s9) ? s0 :
 			  ata_state;
    
+   assign ide_begin = ata_state == s0 && (ata_rd || ata_wr);
    assign ide_start = ata_state == s1;
-   assign ide_busy = ata_state == s2;
-   assign ide_stop = ata_state == s3;
+   assign ide_busy  = ata_state == s2;
+   assign ide_stop  = ata_state == s3;
+   assign ide_end   = ata_state == s4;
    
-   // send back done pulse at end
-   assign ata_done = ata_state == s9/*s3*/;
+   // send back done pulse when data valid
+   assign ata_done = ata_state == s3;
    
    always @(posedge clk)
      if (reset)
@@ -135,13 +137,11 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 	  reg_ide_data_in <= 0;
        end
      else
-       if (ata_state == s0 && (ata_rd || ata_wr)/*ide_start*/)
+       if (ide_begin)
 	 begin
 	    ide_cs <= c_cs;
 	    ide_da <= c_da;
 	    ide_data_out <= ata_in;
-// ide_dior <= c_dior;
-// ide_diow <= c_diow;
 	 end
        else
 	 if (ide_start)
@@ -154,19 +154,17 @@ module ide(clk, reset, ata_rd, ata_wr, ata_addr, ata_in, ata_out, ata_done,
 	   begin
 	      ide_dior <= 1'b1;
 	      ide_diow <= 1'b1;
-	      ide_cs <= 2'b11;
-	      ide_da <= 3'b111;
 	   end
 	 else
-	   if (ide_busy)
+	   if (ide_end)
 	     begin
-//		if (ata_count == 0)
-//		  begin
-//		     ide_dior <= c_dior;
-//		     ide_diow <= c_diow;
-//		  end
-		
-		reg_ide_data_in <= ide_data_in;
+		ide_cs <= 2'b11;
+		ide_da <= 3'b111;
 	     end
+	   else
+	     if (ide_busy)
+	       begin
+		  reg_ide_data_in <= ide_data_in;
+	       end
 
 endmodule // ide

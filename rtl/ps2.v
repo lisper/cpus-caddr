@@ -38,9 +38,10 @@ module ps2(clk,		// main clock
    output 	rdy;
    output 	error;
 
-	   
+
+   parameter FREQ = 50000; // frequency of the main clock (KHz)
 //   parameter FREQ = 25000; // frequency of the main clock (KHz)
-   parameter FREQ = 12500; // frequency of the main clock (KHz)
+//   parameter FREQ = 12500; // frequency of the main clock (KHz)
    parameter PS2_FREQ = 10;  // keyboard clock frequency (KHz)
    parameter TIMEOUT  = FREQ / PS2_FREQ;  // ps2_clk quiet timeout
 //   parameter [7:0] KEY_RELEASE = 8'b11110000;  // sent when key is rel'd
@@ -102,7 +103,8 @@ module ps2(clk,		// main clock
    // detect error - clock low too long or idle during scancode rx
    assign error_c = (timer_r == TIMEOUT && ps2_clk_r[1] == 0) ||
 		    (ps2_clk_quiet && bitcnt_r != 4'd11 && bitcnt_r != 4'd0) ?
-		    1 : error_r;
+//		    1 : error_r;
+		    1 : (ps2_clk_quiet ? 0 : error_r);
 
    // outputs
    assign code     = sc_r[7:0];		// scancode

@@ -8,7 +8,7 @@ module part_512x49prom( clk, addr, q );
    reg [48:0] 	 q;
 
 //`define no_rom
-`define debug_patch_rom
+//`define debug_patch_rom
 
 `ifdef no_rom
    always @(posedge clk)

@@ -29,11 +29,13 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 `define pixclk_dcm
 `define clk100_dcm
 
-//`define fixed_dcm
+//`define fixed_dcm_12Mhz
 //`define no_dcm
-//`define slow_dcm
-//`define med_dcm
-`define switch_clock
+
+//`define switch_clock
+//`define fixed_clock_12mhz
+`define fixed_clock_25mhz
+//`define fixed_clock_50mhz
    
 `ifdef pixclk_dcm
    // DCM - pixclk
@@ -95,8 +97,6 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 
 `ifdef no_dcm
    BUFG buf100(.I(sysclk_buf), .O(clk100));
-//   assign clk100 = sysclk_buf;
-//   assign pixclk = sysclk_buf;
    
    reg 	clk50;
    always @(posedge clk100)
@@ -124,7 +124,32 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
      switches <= slideswitch;
 `endif
 
-`ifdef fixed_dcm
+`ifdef fixed_clock_50mhz
+   BUFG CLK1X_BUFGT (.I(clk50), .O(clk1x));
+`endif
+
+`ifdef fixed_clock_25mhz
+   reg clk25, clk12;
+
+   always @(posedge clk50)
+     clk25 = ~clk25;
+
+   BUFG CLK1X_BUFGT (.I(clk25), .O(clk1x));
+`endif
+
+`ifdef fixed_clock_12mhz
+   reg clk25, clk12;
+
+   always @(posedge clk50)
+     clk25 = ~clk25;
+
+   always @(posedge clk25)
+     clk12 = ~clk12;
+
+   BUFG CLK1X_BUFGT (.I(clk12), .O(clk1x));
+`endif
+
+`ifdef fixed_dcm_12Mhz
    wire clk100_dcm;
    wire clk50_dcm;
    wire clk1x_dcm;
@@ -136,67 +161,14 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 	      .CLK0(clk50_dcm),
 	      .CLK2X(clk100_dcm));
    defparam dcm100.CLKIN_PERIOD = 20.0;
-//   defparam dcm100.CLKDV_DIVIDE = 32;
-//   defparam dcm100.CLKDV_DIVIDE = 16;
-//   defparam dcm100.CLKDV_DIVIDE = 8;
    defparam dcm100.CLKDV_DIVIDE = 4;
-//   defparam dcm100.CLKDV_DIVIDE = 2;
    defparam dcm100.FACTORY_JF = 16'h8080;
 
    BUFG buf100(.I(clk100_dcm), .O(clk100));
    BUFG buf50(.I(clk50_dcm), .O(clk50));
    BUFG buf1x(.I(clk1x_dcm), .O(clk1x));
-
 `endif
    
-`ifdef med_dcm
-   wire clk100_dcm;
-   wire clk50_dcm;
-   wire clk1x_dcm;
-   
-   DCM dcm100(.CLKIN(sysclk_buf),
-	      .RST(dcm_reset),
-	      .CLKFB(clk50/*_dcm*/),
-	      .CLKDV(clk1x_dcm),
-	      .CLK0(clk50_dcm)
-	      );
-   defparam dcm100.CLKIN_PERIOD = 20.0;
-   defparam dcm100.CLKDV_DIVIDE = 4;
-   defparam dcm100.FACTORY_JF = 16'h8080;
-
-//   BUFG buf100(.I(clk100_dcm), .O(clk100));
-   assign clk100 = clk50;
-   BUFG buf50(.I(clk50_dcm), .O(clk50));
-   BUFG buf1x(.I(clk1x_dcm), .O(clk1x));
-
-`endif
-   
-`ifdef slow_dcm
-   wire clk100_dcm;
-   wire clk50_dcm;
-   wire clk1x_dcm;
-   wire clkfb;
-   
-   DCM dcm100(.CLKIN(sysclk_buf),
-	      .RST(dcm_reset),
-	      .CLKFB(clkfb/*_dcm*/),
-	      .CLKDV(clk1x_dcm),
-	      .CLK0(clk50_dcm)
-	      );
-   defparam dcm100.CLKIN_PERIOD = 20.0;
-//   defparam dcm100.CLKDV_DIVIDE = 4;
-   defparam dcm100.CLKDV_DIVIDE = 2;
-   defparam dcm100.FACTORY_JF = 16'h8080;
-
-   BUFG buffb(.I(clk50_dcm), .O(clkfb));
-
-   BUFG buf1x(.I(clk1x_dcm), .O(clk1x));
-   BUFG buf100(.I(clk1x_dcm), .O(clk100));
-//   BUFG buf50(.I(clk1x_dcm), .O(clk50));
-   assign clk50 = sysclk_buf;
-
-`endif
-
 `ifndef pixclk_dcm
    assign pixclk = 0;
 `endif

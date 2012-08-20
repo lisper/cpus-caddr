@@ -157,8 +157,8 @@ module xbus_io(
 
 		 22'o17772050: /* USEC CLK */
 		   begin
-//		      dataout = { 16'b0, us_clock[15:0] };
-dataout = 0;
+		      dataout = { 16'b0, us_clock[15:0] };
+//		      dataout = 0;
 
 `ifdef debug
 		      $display("io: usec lo %o", { 16'b0, us_clock[15:0] });
@@ -167,8 +167,8 @@ dataout = 0;
 
 		 22'o17772051: /* USEC CLK */
 		   begin
-//		      dataout = { 16'b0, us_clock[31:16] };
-dataout = 0;
+		      dataout = { 16'b0, us_clock[31:16] };
+//		      dataout = 0;
 		      
 `ifdef debug
 		      $display("io: usec hi %o", { 16'b0, us_clock[31:16] });

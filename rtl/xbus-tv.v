@@ -246,7 +246,7 @@ module xbus_tv(
 	  if (hz60_counter == hz60_clk_div[19:0])
 	    begin
 	       hz60_counter <= 0;
-//	       set_tv_int = 1;
+	       set_tv_int = 1;
 	    end
 	  else
 	    hz60_counter <= hz60_counter + 20'd1;

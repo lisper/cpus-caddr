@@ -34,6 +34,12 @@ module xbus_ram (
    // which is decoded but does not read/write...
    assign 	 decode = addr < 22'o11000000 ? 1'b1: 1'b0;
 
+`ifdef debug_decode
+   always @(posedge clk)
+     if (decode)
+       $display("xbus-ram: decode addr=%o; %t", addr, $time);
+`endif
+   
    /* connect to top level ram controller */
    assign sdram_write = req & decode & write;
    assign sdram_req = req & decode & ~write;

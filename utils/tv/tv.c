@@ -13,6 +13,8 @@ u32 fb[32768/*(HH/32)*VV*/];
 
 static SDL_Surface *screen;
 
+int debug;
+
 int sdl_init(void)
 {
 	int flags, rows, cols;
@@ -92,6 +94,7 @@ main(int argc, char *argv[])
 			case 'v': do_vram = 1; do_tv = 0; break;
 			case 'x': do_set = 0; break;
 			case 'e': do_extract = 1; do_tv = 0; break;
+			case 'd': debug++; break;
 			}
 	}
 
@@ -101,7 +104,10 @@ main(int argc, char *argv[])
 	ps = screen ? screen->pixels : NULL;
 
 	while (fgets(line, sizeof(line), stdin)) {
-		
+
+		if (do_show)
+			printf("%s", line);
+
 		if (do_vram) {
 			if (line[0] == 'v' && line[1] == 'r' && line[2] == 'a')
 				;
@@ -119,6 +125,11 @@ main(int argc, char *argv[])
 			if (line[0] == 't' && line[1] == 'v')
 				;
 			else
+				continue;
+
+			if (debug) printf("%s", line);
+
+			if (line[4] == 'r')
 				continue;
 
 			if (line[4] == 'w') {
@@ -156,12 +167,15 @@ main(int argc, char *argv[])
 
 		if (do_show) show = 1;
 
-		if (show) printf("addr=%o, offset=%o v=%o, h=%o bits=%o\n",
-				 addr, aoffset, v, h, bits);
+		if (show) {
+			printf("addr=%o, offset=%o v=%o, h=%o bits=%o\n",
+			       addr, aoffset, v, h, bits);
+			//printf("line: %s\n", line);
+		}
 
 		if (!ps)
 			continue;
-
+		
 		for (i = 0; i < 32; i++) {
 			if (do_set)
 				ps[offset + i] = (bits & 1) ? 0xff : 0;

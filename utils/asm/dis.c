@@ -4,7 +4,10 @@
  *
  */
 
-//#include "usim.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 typedef unsigned long long u64;
 #define NOP_MASK 03777777777767777LL
 
@@ -61,96 +64,96 @@ char *alu_arith_op[] = {
 #define ucw_t u64
 
 void
-disassemble_m_src(ucw_t u, int m_src)
+disassemble_m_src(ucw_t u, int m_src, FILE *out)
 {
 	if (m_src & 040) {
 		switch (m_src & 037) {
 		case 0:
-			printf("dispatch-constant "); break;
+			fprintf(out, "dispatch-constant "); break;
 		case 1:
-			printf("SPC-ptr, spc-data ");
+			fprintf(out, "SPC-ptr, spc-data ");
 			break;
 		case 2:
-			printf("PDL-ptr %o ", (int)u & 01777);
+			fprintf(out, "PDL-ptr %o ", (int)u & 01777);
 			break;
 		case 3:
-			printf("PDL-index %o ", (int)u & 01777);
+			fprintf(out, "PDL-index %o ", (int)u & 01777);
 			break;
 		case 5:
-			printf("PDL-buffer ");
+			fprintf(out, "PDL-buffer ");
 			break;
 		case 6:
-			printf("OPC register %o ",
-			       (int)u & 017777);
+			fprintf(out, "OPC register %o ",
+				(int)u & 017777);
 			break;
 		case 7:
-			printf("Q ");
+			fprintf(out, "Q ");
 			break;
 		case 010:
-			printf("VMA ");
+			fprintf(out, "VMA ");
 			break;
 		case 011:
-			printf("MAP[MD] ");
+			fprintf(out, "MAP[MD] ");
 			break;
 		case 012:
-			printf("MD ");
+			fprintf(out, "MD ");
 			break; 
 		case 013:
-			printf("LC ");
+			fprintf(out, "LC ");
 			break; 
 		case 014:
-			printf("SPC pointer and data, pop ");
+			fprintf(out, "SPC pointer and data, pop ");
 			break; 
 		case 024:
-			printf("PDL[Pointer], pop ");
+			fprintf(out, "PDL[Pointer], pop ");
 			break;
 		case 025:
-			printf("PDL[Pointer] ");
+			fprintf(out, "PDL[Pointer] ");
 			break; 
 		}
 	} else {
-		printf("m[%o] ", m_src);
+		fprintf(out, "m[%o] ", m_src);
 	}
 }
 
 void
-disassemble_dest(int dest)
+disassemble_dest(int dest, FILE *out)
 {
 	if (dest & 04000) {
-		printf("->a_mem[%o] ", dest & 01777);
+		fprintf(out, "->a_mem[%o] ", dest & 01777);
 	} else {
 		switch (dest >> 5) {
-		case 0: printf("-><none>"); break;
-		case 1: printf("->LC "); break;
-		case 2: printf("->IC "); break;
-		case 010: printf("->PDL[ptr] "); break;
-		case 011: printf("->PDL[ptr],push "); break;
-		case 012: printf("->PDL[index] "); break;
-		case 013: printf("->PDL index "); break;
-		case 014: printf("->PDL ptr "); break;
+		case 0: fprintf(out, "-><none>"); break;
+		case 1: fprintf(out, "->LC "); break;
+		case 2: fprintf(out, "->IC "); break;
+		case 010: fprintf(out, "->PDL[ptr] "); break;
+		case 011: fprintf(out, "->PDL[ptr],push "); break;
+		case 012: fprintf(out, "->PDL[index] "); break;
+		case 013: fprintf(out, "->PDL index "); break;
+		case 014: fprintf(out, "->PDL ptr "); break;
 
-		case 015: printf("->SPC data,push "); break;
+		case 015: fprintf(out, "->SPC data,push "); break;
 
-		case 016: printf("->OA-reg-lo "); break;
-		case 017: printf("->OA-reg-hi "); break;
+		case 016: fprintf(out, "->OA-reg-lo "); break;
+		case 017: fprintf(out, "->OA-reg-hi "); break;
 
-		case 020: printf("->VMA "); break;
-		case 021: printf("->VMA,start-read "); break;
-		case 022: printf("->VMA,start-write "); break;
-		case 023: printf("->VMA,write-map "); break;
+		case 020: fprintf(out, "->VMA "); break;
+		case 021: fprintf(out, "->VMA,start-read "); break;
+		case 022: fprintf(out, "->VMA,start-write "); break;
+		case 023: fprintf(out, "->VMA,write-map "); break;
 
-		case 030: printf("->MD "); break;
-		case 031: printf("->MD,start-read "); break;
-		case 032: printf("->MD,start-write "); break;
-		case 033: printf("->MD,write-map "); break;
+		case 030: fprintf(out, "->MD "); break;
+		case 031: fprintf(out, "->MD,start-read "); break;
+		case 032: fprintf(out, "->MD,start-write "); break;
+		case 033: fprintf(out, "->MD,write-map "); break;
 		}
 
-		printf(",m[%o] ", dest & 037);
+		fprintf(out, ",m[%o] ", dest & 037);
 	}
 }
 
 void
-disassemble_ucode_loc(int loc, ucw_t u)
+disassemble_ucode_loc(int loc, ucw_t u, FILE *out)
 {
 	int a_src, m_src, new_pc, dest, alu_op;
 	int r_bit, p_bit, n_bit, ir8, ir7;
@@ -162,15 +165,22 @@ disassemble_ucode_loc(int loc, ucw_t u)
 	int map, len, rot;
 	int out_bus;
 
+	if (out == NULL)
+		return;
+
 	if ((u >> 42) & 1)
-		printf("popj; ");
+		fprintf(out, "popj; ");
+
+	if ((u >> 10) & 3) {
+		fprintf(out, "misc=%d; ", (int)((u >> 10) & 3));
+	}
 
 	switch ((u >> 43) & 03) {
 	case 0: /* alu */
-		printf("(alu) ");
+		fprintf(out, "(alu) ");
 
 		if ((u & NOP_MASK) == 0) {
-			printf("no-op");
+			fprintf(out, "no-op");
 			goto done;
 		}
 
@@ -184,43 +194,43 @@ disassemble_ucode_loc(int loc, ucw_t u)
 		alu_op = (u >> 3) & 017;
 		if (ir8 == 0) {
 			if (ir7 == 0) {
-				printf("%s ", alu_bool_op[alu_op]);
+				fprintf(out, "%s ", alu_bool_op[alu_op]);
 			} else {
-				printf("%s ", alu_arith_op[alu_op]);
+				fprintf(out, "%s ", alu_arith_op[alu_op]);
 			}
 		} else {
 			switch (alu_op) {
-			case 0: printf("mult-step "); break;
-			case 1: printf("div-step "); break;
-			case 5: printf("rem-corr "); break;
-			case 011: printf("init-div-step "); break;
+			case 0: fprintf(out, "mult-step "); break;
+			case 1: fprintf(out, "div-step "); break;
+			case 5: fprintf(out, "rem-corr "); break;
+			case 011: fprintf(out, "init-div-step "); break;
 			}
 		}
 
-		printf("a=%o m=%o ", a_src, m_src);
-		disassemble_m_src(u, m_src);
+		fprintf(out, "a=%o m=%o ", a_src, m_src);
+		disassemble_m_src(u, m_src, out);
 
 		if ((u >> 2) & 1)
-			printf("C=1 ");
+			fprintf(out, "C=1 ");
 		else
-			printf("C=0 ");
+			fprintf(out, "C=0 ");
 
 		switch (out_bus) {
-		case 1: printf("alu-> "); break;
-		case 2: printf("alu>>+s "); break;
-		case 3: printf("alu<<+q31 "); break;
+		case 1: fprintf(out, "alu-> "); break;
+		case 2: fprintf(out, "alu>>+s "); break;
+		case 3: fprintf(out, "alu<<+q31 "); break;
 		}
 
 		switch (u & 3) {
-		case 1: printf("<<Q "); break;
-		case 2: printf(">>Q "); break;
-		case 3: printf("Q-R "); break;
+		case 1: fprintf(out, "<<Q "); break;
+		case 2: fprintf(out, ">>Q "); break;
+		case 3: fprintf(out, "Q-R "); break;
 		}
 
-		disassemble_dest(dest);
+		disassemble_dest(dest, out);
 		break;
 	case 1: /* jump */
-		printf("(jump) ");
+		fprintf(out, "(jump) ");
 
 		a_src = (u >> 32) & 01777;
 		m_src = (u >> 26) & 077;
@@ -228,71 +238,71 @@ disassemble_ucode_loc(int loc, ucw_t u)
 
 		jump_op = (u >> 14) & 3;
 
-		printf("a=%o m=", a_src);
-		disassemble_m_src(u, m_src);
+		fprintf(out, "a=%o m=", a_src);
+		disassemble_m_src(u, m_src, out);
 
 		r_bit = (u >> 9) & 1;
 		p_bit = (u >> 8) & 1;
 		n_bit = (u >> 7) & 1;
 
-		printf("pc %o, %s%s",
+		fprintf(out, "pc %o, %s%s",
 		       new_pc,
 		       r_bit ? "R " : "",
 		       p_bit ? "P " : "");
 
 		if (n_bit)
 			/* INHIBIT-XCT-NEXT */
-			printf("!next ");
+			fprintf(out, "!next ");
 		if (u & (1<<6))
 			/* INVERT-JUMP-SENSE */
-			printf("!jump ");
+			fprintf(out, "!jump ");
 
 		if (u & (1<<5)) {
 			switch (u & 017) {
 			case 0:
-			case 1: printf("M-src < A-src "); break;
-			case 2: printf("M-src <= A-src "); break;
-			case 3: printf("M-src = A-src "); break;
-			case 4: printf("pf "); break;
-			case 5: printf("pf/int "); break;
-			case 6: printf("pf/int/seq "); break;
+			case 1: fprintf(out, "M-src < A-src "); break;
+			case 2: fprintf(out, "M-src <= A-src "); break;
+			case 3: fprintf(out, "M-src = A-src "); break;
+			case 4: fprintf(out, "pf "); break;
+			case 5: fprintf(out, "pf/int "); break;
+			case 6: fprintf(out, "pf/int/seq "); break;
 			case 7:
-				printf("jump-always "); break;
+				fprintf(out, "jump-always "); break;
 			}
 		} else {
-			printf("m-rot<< %o", (int)u & 037);
+			fprintf(out, "m-rot<< %o", (int)u & 037);
 		}
 
 /*
   switch (jump_op) {
-  case 0: printf("jump-xct-next "); break;
-  case 1: printf("jump "); break;
-  case 2: printf("call-xct-next "); break;
-  case 3: printf("call "); break;
+  case 0: fprintf(out, "jump-xct-next "); break;
+  case 1: fprintf(out, "jump "); break;
+  case 2: fprintf(out, "call-xct-next "); break;
+  case 3: fprintf(out, "call "); break;
   }
 */
 		break;
 	case 2: /* dispatch */
-		printf("(dispatch) ");
+		fprintf(out, "(dispatch) ");
 
 		disp_cont = (u >> 32) & 01777;
 		m_src = (u >> 26) & 077;
 
-		if ((u >> 25) & 1) printf("!N+1 ");
-		if ((u >> 24) & 1) printf("ISH ");
+		if ((u >> 25) & 1) fprintf(out, "!N+1 ");
+		if ((u >> 24) & 1) fprintf(out, "ISH ");
 		disp_addr = (u >> 12) & 03777;
 		map = (u >> 8) & 3;
 		len = (u >> 5) & 07;
 		rot = u & 037;
 
-		printf("m=%o ", m_src);
-		disassemble_m_src(u, m_src);
+		fprintf(out, "m=%o ", m_src);
+		disassemble_m_src(u, m_src, out);
 
-		printf("disp-const %o, disp-addr %o, map %o, len %o, rot %o ",
+		fprintf(out, "disp-const=%o, disp-addr=%o, map=%o, len=%o, rot=%o ",
 		       disp_cont, disp_addr, map, len, rot);
 		break;
 	case 3: /* byte */
-		printf("(byte) ");
+		fprintf(out, "(byte) ");
 
 		a_src = (u >> 32) & 01777;
 		m_src = (u >> 26) & 077;
@@ -302,32 +312,32 @@ disassemble_ucode_loc(int loc, ucw_t u)
 		widthm1 = (u >> 5) & 037;
 		pos = u & 037;
 
-		printf("a=%o m=", a_src);
-		disassemble_m_src(u, m_src);
+		fprintf(out, "a=%o m=", a_src);
+		disassemble_m_src(u, m_src, out);
 
 		switch (mr_sr_bits) {
 		case 0:
 			break;
 		case 1: /* ldb */
-			printf("ldb pos=%o, width=%o ",
+			fprintf(out, "ldb pos=%o, width=%o ",
 			       pos, widthm1+1);
 			break;
 		case 2:
-			printf("sel dep (a<-m&mask) pos=%o, width=%o ",
+			fprintf(out, "sel dep (a<-m&mask) pos=%o, width=%o ",
 			       pos, widthm1+1);
 			break;
 		case 3: /* dpb */
-			printf("dpb pos=%o, width=%o ",
+			fprintf(out, "dpb pos=%o, width=%o ",
 			       pos, widthm1+1);
 			break;
 		}
 
-		disassemble_dest(dest);
+		disassemble_dest(dest, out);
 		break;
 	}
 
  done:
-	printf("\n");
+	fprintf(out, "\n");
 }
 
 

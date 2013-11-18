@@ -1,5 +1,13 @@
 # patch_rw_test dram
 
+.ammem 10 1
+.ammem 21 1234
+
+.amem 436 2
+
+# create mapping for virt address 0
+.map 0 +
+
 .org 0
 
     byte a=21 m=21 ->md

@@ -1,0 +1,44 @@
+//`define patch_vram_test
+`ifdef patch_vram_test
+	cpu.i_AMEM.ram[10'o65] = 32'o77051763;
+	cpu.i_AMEM.ram[10'o66] = 32'o77051764;
+
+	cpu.i_MMEM.ram[10'o02] = 32'o01234567;
+	cpu.i_MMEM.ram[10'o03] = 32'hffffffff;
+
+	cpu.i_VMEM0.ram[11'o3742] = 5'o00;
+	cpu.i_VMEM1.ram[10'o0023] = 24'o60036123;
+`endif
+
+//`define patch_rw_test	
+`ifdef patch_rw_test
+
+	cpu.i_AMEM.ram[10'o2] = 32'o400000;
+	cpu.i_AMEM.ram[10'o4] = 32'o401000;
+	cpu.i_AMEM.ram[10'o6] = 32'o402000;
+	cpu.i_AMEM.ram[10'o10] = 32'o403000;
+	cpu.i_AMEM.ram[10'o436] = 32'o403447;
+
+	cpu.i_MMEM.ram[10'o2] = 32'o400000;
+	cpu.i_MMEM.ram[10'o4] = 32'o401000;
+	cpu.i_MMEM.ram[10'o6] = 32'o402000;
+	cpu.i_MMEM.ram[10'o10] = 32'o403000;
+	cpu.i_MMEM.ram[10'o436] = 32'o403447;
+
+	cpu.i_AMEM.ram[10'o20] = 32'o00000001;
+	cpu.i_MMEM.ram[10'o20] = 32'o00000001;
+	
+	cpu.i_AMEM.ram[10'o21] = 32'o01234567;
+	cpu.i_MMEM.ram[10'o21] = 32'o01234567;
+	
+	cpu.i_AMEM.ram[10'o22] = 32'hffffffff;
+	cpu.i_MMEM.ram[10'o22] = 32'hffffffff;
+
+	cpu.i_VMEM0.ram[11'o20] = 5'o31;
+	cpu.i_VMEM1.ram[10'o1447] = 24'o63200254;
+
+	cpu.i_VMEM1.ram[10'o1440] = 24'o03200254;
+	cpu.i_VMEM1.ram[10'o1442] = 24'o23200254;
+	cpu.i_VMEM1.ram[10'o1444] = 24'o43200254;
+	cpu.i_VMEM1.ram[10'o1446] = 24'o63200254;
+`endif

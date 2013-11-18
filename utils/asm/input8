@@ -1,0 +1,9 @@
+
+.org 0
+     alu seta a=1 alu-> ->md
+     alu seta a=3 alu-> ->vma+write
+     alu seta a=2 alu-> ->md
+     alu seta a=4 alu-> ->vma+write
+     alu seta a=5 alu-> ->vma+write
+     alu seta a=3 alu-> ->vma+read
+

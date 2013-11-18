@@ -1,7 +1,7 @@
 
 all: asm
 
-asm: asm.c
+asm: asm.c dis.c
 	cc -o asm -g asm.c dis.c
 
 clean:

@@ -17,7 +17,7 @@ module DCM(
     input PSINCDEC,
     output reg CLKDV,
     output CLKFX,
-    output CLK2X,
+    output reg CLK2X,
     output CLK0,
     output LOCKED);
 
@@ -51,6 +51,13 @@ module DCM(
      CLKDV = ~CLKDV;
 `endif
 
+   // 100mhz clock
+   always
+     begin
+	#5 CLK2X = 0;
+	#5 CLK2X = 1;
+     end
+   
    reg [1:0] div;
    initial
      div = 0;
@@ -58,7 +65,8 @@ module DCM(
    always @(posedge CLKIN)
      begin
 	div <= div + 1;
-	if (div[0])
+//	if (div[0])
+	if (div == 2'b11)
 	  CLKDV = ~CLKDV;
      end
    

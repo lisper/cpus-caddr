@@ -21,8 +21,9 @@ module ide_disk(ide_data_in, ide_data_out,
    reg [15:0] 	 reg_cylhigh;
    reg [15:0] 	 reg_drvhead;
    
-   parameter ATA_ALTER = 5'h0e,
-	       ATA_DEVCTRL  = 5'h1e,
+   parameter [4:0]
+	       ATA_ALTER    = 5'h0e,
+	       ATA_DEVCTRL  = 5'h0e,
 	       ATA_DATA     = 5'h10,
 	       ATA_ERROR    = 5'h11,
 	       ATA_FEATURE  = 5'h11,
@@ -47,6 +48,7 @@ module ide_disk(ide_data_in, ide_data_out,
    integer fifo_depth, fifo_rd, fifo_wr;
    integer lba;
    integer i;
+   integer bsy_count;
    
    assign addr = { ide_cs, ide_da };
 
@@ -68,8 +70,8 @@ module ide_disk(ide_data_in, ide_data_out,
 		 reg_cyllow[7:0],
 		 reg_secnum[7:0] };
 
-	 $display("ide: lba %x (%d), seccnt %d (read)",
-		  lba, lba*512, reg_seccnt);
+	 $display("ide: lba 0x%x (%d), seccnt %d (read)",
+		  lba, lba, reg_seccnt);
 
 	 // read
 	 fifo[0] = 16'h414c;
@@ -137,12 +139,14 @@ module ide_disk(ide_data_in, ide_data_out,
 	 fifo_wr = 0;
 
 	 status = IDE_STATUS_DRDY | IDE_STATUS_DSC | IDE_STATUS_DRQ;
+	 bsy_count = 5;
       end
    endtask
 
    task do_ide_read_done;
       begin
          status = IDE_STATUS_DRDY | IDE_STATUS_DSC;
+	 bsy_count = 0;
 	 $display("ide: fifo empty");
       end
    endtask
@@ -154,19 +158,21 @@ module ide_disk(ide_data_in, ide_data_out,
 		 reg_cyllow[7:0],
 		 reg_secnum[7:0] };
 
-	 $display("ide: write prep\n");
+	 $display("ide: write prep; lba 0x%x (%d)\n", lba, lba);
 
 	 fifo_depth = (512 * reg_seccnt) / 2;
 	 fifo_rd = 0;
 	 fifo_wr = 0;
 	 
 	 status = IDE_STATUS_DRDY | IDE_STATUS_DSC | IDE_STATUS_DRQ;
+	 bsy_count = 0;
       end
    endtask
 
    task do_ide_write_done;
       begin
          status = IDE_STATUS_DRDY | IDE_STATUS_DSC;
+	 bsy_count = 5;
 	 $display("ide: fifo empty");
       end
    endtask
@@ -196,13 +202,22 @@ module ide_disk(ide_data_in, ide_data_out,
 	   do_ide_write_done;
       end
    endtask
-   
+
    always @(negedge ide_diow)
      #1 begin
 	case (addr)
-          ATA_ALTER: ;
-          ATA_DEVCTRL: ;
-          ATA_FEATURE: ;
+          ATA_DEVCTRL:
+	    begin
+               $display("ide: devctrl %x", ide_data_in);
+	       if (ide_data_in[2])
+		 begin
+		    status = IDE_STATUS_BSY | IDE_STATUS_DRDY | IDE_STATUS_DSC;
+		    bsy_count = 10;
+		 end
+	    end
+
+//          ATA_ALTER: ;
+//          ATA_FEATURE: ;
 	  
           ATA_SECCNT: reg_seccnt = ide_data_in;
           ATA_SECNUM: reg_secnum = ide_data_in;
@@ -239,6 +254,15 @@ module ide_disk(ide_data_in, ide_data_out,
 	    begin
 	       $display("ide: read status %x", status);
 	       ide_data_out <= status;
+
+	       if (status[7])
+		 begin
+		    if (bsy_count == 0)
+		      status[7] = 0;
+		    else
+		      bsy_count = bsy_count - 1;
+		 end
+	       
 	    end
 	endcase
      end

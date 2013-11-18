@@ -123,7 +123,7 @@ do_ide_read(struct state_s *s)
         (s->reg_secnum & 0xff);
 
     vpi_printf("pli_ide: lba %08x (%d), seccnt %d (read)\n",
-               s->lba, s->lba*512,s->reg_seccnt);
+               s->lba, s->lba, s->reg_seccnt);
 
     ret = lseek(s->file_fd, (off_t)s->lba*512, SEEK_SET);
     ret = read(s->file_fd, (char *)s->fifo, 512 * s->reg_seccnt);
@@ -161,7 +161,7 @@ do_ide_write_done(struct state_s *s)
     int ret;
 
     vpi_printf("pli_ide: lba %08x (%d), seccnt %d (write)\n",
-               s->lba, s->lba*512, s->reg_seccnt);
+               s->lba, s->lba, s->reg_seccnt);
 
     ret = lseek(s->file_fd, (off_t)s->lba*512, SEEK_SET);
     ret = write(s->file_fd, (char *)s->fifo, 512 * s->reg_seccnt);
@@ -318,7 +318,7 @@ PLI_INT32 pli_ide(void)
         case ATA_DATA:
             s->fifo[s->fifo_wr] = bus;
 
-            if (1) vpi_printf("pli_ide: write data [%d/%d] %o\n",
+            if (0) vpi_printf("pli_ide: write data [%d/%d] %o\n",
                               s->fifo_wr, s->fifo_depth, bus);
 
             if (s->fifo_wr < s->fifo_depth)
@@ -351,7 +351,7 @@ PLI_INT32 pli_ide(void)
         switch (cs << 3 | da) {
         case ATA_DATA:
             bus = s->fifo[s->fifo_rd];
-            if (1) vpi_printf("pli_ide: read data [%d/%d] %04o\n",
+            if (0) vpi_printf("pli_ide: read data [%d/%d] %04o\n",
                               s->fifo_rd, s->fifo_depth, bus);
             if (s->fifo_rd < s->fifo_depth)
                 s->fifo_rd++;

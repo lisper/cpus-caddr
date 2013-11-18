@@ -29,8 +29,10 @@ int last_evh;
 char last_dior_bit;
 char last_diow_bit;
 unsigned short last_read;
+int rw_delay;
 
 int running_cver;
+int debug;
 
 static struct state_s {
     unsigned short reg_seccnt, reg_secnum, reg_cyllow, reg_cylhigh, reg_drvhead;
@@ -45,6 +47,10 @@ static struct state_s {
     int file_fd;
 
     unsigned int lba;
+
+    int rw_delay;
+    unsigned int rw_status;
+
 } state;
 
 #define ATA_ALTER    0x0e
@@ -72,6 +78,7 @@ static struct state_s {
 #define ATA_CMD_READ  0x0020
 #define ATA_CMD_WRITE  0x0030
 
+#define RW_DELAY 	5
 
 static void
 do_ide_setup(struct state_s *s)
@@ -82,6 +89,31 @@ do_ide_setup(struct state_s *s)
     s->fifo_depth = 0;
     s->fifo_rd = 0;
     s->fifo_wr = 0;
+
+    rw_delay = RW_DELAY;
+}
+
+void ide_update_status(struct state_s *s)
+{
+    if (0) printf("dpi_ide: delay %d\n", s->rw_delay);
+    if (s->rw_delay > 0) {
+        s->rw_delay--;
+        if (s->rw_delay == 0) {
+            s->status = s->rw_status;
+        }
+    }
+}
+
+void ide_future_status(struct state_s *s, int delay, int now, int later)
+{
+    if (delay == 0) {
+        s->status = later;
+        return;
+    }
+
+    s->rw_delay = delay;
+    s->rw_status = later;
+    s->status = now;
 }
 
 static void
@@ -103,14 +135,17 @@ do_ide_read(struct state_s *s)
     if (ret < 0)
         perror("read");
 
-    printf("dpi_ide: buffer %06o %06o %06o %06o\n",
-               s->fifo[0], s->fifo[1], s->fifo[2], s->fifo[3]);
+    if (debug) printf("dpi_ide: buffer %06o %06o %06o %06o\n",
+                      s->fifo[0], s->fifo[1], s->fifo[2], s->fifo[3]);
 
     s->fifo_depth = (512 * s->reg_seccnt) / 2;
     s->fifo_rd = 0;
     s->fifo_wr = 0;
 
-    s->status = (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC) | (1<<IDE_STATUS_DRQ);
+//    s->status = 
+    ide_future_status(s, rw_delay,
+                      (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC) | (1<<IDE_STATUS_BSY),
+                      (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC) | (1<<IDE_STATUS_DRQ));
 }
 
 static void
@@ -125,7 +160,7 @@ do_ide_write(struct state_s *s)
     if (0) printf("dpi_ide: %d (lba %d), seccnt %d (write)\n",
                s->lba*512, s->lba, s->reg_seccnt);
 
-    printf("dpi_ide: write prep\n");
+    if (debug) printf("dpi_ide: write prep\n");
 
     s->fifo_depth = (512 * s->reg_seccnt) / 2;
     s->fifo_rd = 0;
@@ -144,10 +179,14 @@ do_ide_write_done(struct state_s *s)
 
     ret = lseek(s->file_fd, (off_t)s->lba*512, SEEK_SET);
     ret = write(s->file_fd, (char *)s->fifo, 512 * s->reg_seccnt);
-    if (ret < 0)
+    if (ret < 0) {
         perror("write");
+    }
 
-    s->status = (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC);
+//    s->status = 
+    ide_future_status(s, rw_delay,
+                      (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC)|(1<<IDE_STATUS_BSY),
+                      (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC));
 }
 
 /*
@@ -232,14 +271,14 @@ void dpi_ide(int data_in, int* data_out, int dior, int diow, int cs, int da)
             break;
 
         case ATA_COMMAND:
-            printf("dpi_ide: command %04x\n", data_in);
+            if (debug) printf("dpi_ide: command %04x\n", data_in);
             switch (data_in) {
             case 0x0020:
-                printf("dpi_ide: XXX READ\n");
+                if (debug) printf("dpi_ide: XXX READ\n");
                 do_ide_read(s);
                 break;
             case 0x0030:
-                printf("dpi_ide: XXX WRITE\n");
+                if (debug) printf("dpi_ide: XXX WRITE\n");
                 do_ide_write(s);
                 break;
             }
@@ -259,14 +298,15 @@ void dpi_ide(int data_in, int* data_out, int dior, int diow, int cs, int da)
                 s->fifo_rd++;
 
             if (s->fifo_rd >= s->fifo_depth) {
-                printf("dpi_ide: fifo empty\n");
+                if (debug) printf("dpi_ide: fifo empty\n");
                 s->status = (1<<IDE_STATUS_DRDY)|(1<<IDE_STATUS_DSC);
             }
             break;
 
         case ATA_STATUS:
+            ide_update_status(s);
             *data_out = last_read = s->status;
-            if (1) printf("dpi_ide: read status %04x\n", *data_out);
+            if (debug) printf("dpi_ide: read status %04x\n", *data_out);
             break;
         }
     }

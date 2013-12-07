@@ -8,7 +8,8 @@
 `define debug
 `define DBG_DLY
 
-`define build_debug
+//`define build_debug_s3
+`define build_debug_lx45
 //`define debug_patch_disk_copy
   
 //`include "defs.v"
@@ -16,56 +17,13 @@
 
 `timescale 1ns / 1ns
 
-module wrap_ide(clk, ide_data_in, ide_data_out,
-		ide_dior, ide_diow, ide_cs, ide_da);
-
-   input clk;
-   input [15:0]  ide_data_in;
-   output [15:0] ide_data_out;
-   input 	 ide_dior;
-   input 	 ide_diow;
-   input [1:0] 	 ide_cs;
-   input [2:0] 	 ide_da;
-		
-   import "DPI-C" function void dpi_ide(input integer data_in,
-					output integer data_out,
-				        input integer dior,
-				        input integer diow,
-				        input integer cs,
-				        input integer da);
-
-   integer dbi, dbo;
-   wire [31:0] dboo;
-      
-   assign dbi = {16'b0, ide_data_in};
-   assign dboo = dbo;
-
-   assign ide_data_out = dboo[15:0];
-
-   always @(posedge clk)
-     begin
-	dpi_ide(dbi,
-		dbo,
-		{31'b0, ide_dior}, 
-		{31'b0, ide_diow},
-		{30'b0, ide_cs},
-		{29'b0, ide_da});
-
-`ifdef debug_ide
-	if (ide_dior == 0)
-	  begin
-	     $display("wrap_ide: read (%b %b) %x %x %x %x",
-		      ide_dior, ide_diow, dbo, dboo, dboo[15:0], ide_data_out);
-	  end
-	if (ide_diow == 0)
-	  begin
-	     $display("wrap_ide: write (%b %b) %x %x %x",
-		      ide_dior, ide_diow, dbo, dboo, ide_data_out);
-	  end
+`ifdef use_ide
+ `include "wrap_ide.v"
 `endif
-     end
 
-endmodule
+`ifdef use_mmc
+ `include "wrap_mmc.v"
+`endif
 
 module test;
    reg ext_osc;
@@ -81,8 +39,8 @@ module test;
    wire        dbread, dbwrite;
    wire [3:0]  eadr;
 
-   wire [15:0] 	ide_data_in;
-   wire [15:0] 	ide_data_out;
+   wire [15:0] 	ide_data_bd2ide;
+   wire [15:0] 	ide_data_ide2bd;
    wire 	ide_dior;
    wire 	ide_diow;
    wire [1:0] 	ide_cs;
@@ -117,6 +75,18 @@ module test;
    wire [31:0] 	 vram_vga_data_out;
    wire 	 vram_vga_req;
    wire 	 vram_vga_ready;
+
+   wire [1:0] 	 bd_cmd;	/* generic block device interface */
+   wire 	 bd_start;
+   wire 	 bd_bsy;
+   wire 	 bd_rdy;
+   wire 	 bd_err;
+   wire [23:0] 	 bd_addr;
+   wire [15:0] 	 bd_data_cpu2bd;
+   wire [15:0] 	 bd_data_bd2cpu;
+   wire 	 bd_rd;
+   wire 	 bd_wr;
+   wire 	 bd_iordy;
 
    wire [13:0] 	 pc;
    wire [5:0] 	 state;
@@ -215,8 +185,7 @@ module test;
      end
 
 
-//
-
+   // cpu
    caddr cpu (.clk(clk1x),
 	      .ext_int(interrupt),
 	      .ext_reset(reset),
@@ -260,12 +229,17 @@ module test;
 	      .vram_write(vram_cpu_write),
 	      .vram_done(vram_cpu_done),
 
-	      .ide_data_in(ide_data_in),
-	      .ide_data_out(ide_data_out),
-	      .ide_dior(ide_dior),
-	      .ide_diow(ide_diow),
-	      .ide_cs(ide_cs),
-	      .ide_da(ide_da),
+	      .bd_cmd(bd_cmd),
+	      .bd_start(bd_start),
+	      .bd_bsy(bd_bsy),
+	      .bd_rdy(bd_rdy),
+	      .bd_err(bd_err),
+	      .bd_addr(bd_addr),
+	      .bd_data_in(bd_data_bd2cpu),
+	      .bd_data_out(bd_data_cpu2bd),
+	      .bd_rd(bd_rd),
+	      .bd_wr(bd_wr),
+	      .bd_iordy(bd_iordy),
 	      
 	      .kb_data(kb_data),
 	      .kb_ready(kb_ready),
@@ -295,6 +269,9 @@ module test;
 `endif
 `ifdef pipe_rc
    pipe_ram_controller
+`endif
+`ifdef lx45_rc
+   lx45_ram_controller
 `endif
 		  rc
 		     (.clk(clk100),
@@ -334,6 +311,7 @@ module test;
 		      .vram_vga_req(vram_vga_req),
 		      .vram_vga_ready(vram_vga_ready),
       
+`ifndef lx45_rc
 		      .sram_a(sram_a),
 		      .sram_oe_n(sram_oe_n),
 		      .sram_we_n(sram_we_n),
@@ -347,6 +325,7 @@ module test;
 		      .sram2_ce_n(sram2_ce_n),
 		      .sram2_ub_n(sram2_ub_n),
 		      .sram2_lb_n(sram2_lb_n)
+`endif
 		      );
 `else
    assign mcr_ready = 1;
@@ -413,15 +392,73 @@ module test;
    assign      ms_x = 12'b0;
    assign      ms_y = 12'b0;
    assign      ms_button = 3'b0;
-   
+
+`ifdef use_ide
+   // ide
+   ide_block_dev ide_bd(
+			.clk(clk1x),
+			.reset(reset),
+   			.bd_cmd(bd_cmd),
+			.bd_start(bd_start),
+			.bd_bsy(bd_bsy),
+			.bd_rdy(bd_rdy),
+			.bd_err(bd_err),
+			.bd_addr(bd_addr),
+			.bd_data_in(bd_data_cpu2bd),
+			.bd_data_out(bd_data_bd2cpu),
+			.bd_rd(bd_rd),
+			.bd_wr(bd_wr),
+			.bd_iordy(bd_iordy),
+
+			.ide_data_in(ide_data_ide2bd),
+			.ide_data_out(ide_data_bd2ide),
+			.ide_dior(ide_dior),
+			.ide_diow(ide_diow),
+			.ide_cs(ide_cs),
+			.ide_da(ide_da)
+			);
+
    wrap_ide wrap_ide(.clk(clk1x),
-		     .ide_data_in(ide_data_out),
-		     .ide_data_out(ide_data_in),
+		     .ide_data_in(ide_data_bd2ide),
+		     .ide_data_out(ide_data_ide2bd),
 		     .ide_dior(ide_dior),
 		     .ide_diow(ide_diow),
 		     .ide_cs(ide_cs),
 		     .ide_da(ide_da));
+`endif
+   
+`ifdef use_mmc
+   // mmc
+   wire mmc_cs, mmc_di, mmc_do, mmc_sclk;
 
+   mmc_block_dev mmc_bd(
+			.clk(clk50),
+			.reset(reset),
+   			.bd_cmd(bd_cmd),
+			.bd_start(bd_start),
+			.bd_bsy(bd_bsy),
+			.bd_rdy(bd_rdy),
+			.bd_err(bd_err),
+			.bd_addr(bd_addr),
+			.bd_data_in(bd_data_cpu2bd),
+			.bd_data_out(bd_data_bd2cpu),
+			.bd_rd(bd_rd),
+			.bd_wr(bd_wr),
+			.bd_iordy(bd_iordy),
+
+			.mmc_cs(mmc_cs),
+			.mmc_di(mmc_di),
+			.mmc_do(mmc_do),
+			.mmc_sclk(mmc_sclk)
+			);
+
+   wrap_mmc mmc_wrap(.clk(clk1x),
+		     .mmc_cs(mmc_cs),
+		     .mmc_di(mmc_do),
+		     .mmc_do(mmc_di),
+		     .mmc_sclk(mmc_sclk));
+`endif
+   
 `ifdef use_s3board_ram
    ram_s3board ram(.ram_a(sram_a),
 		   .ram_oe_n(sram_oe_n),
@@ -436,6 +473,24 @@ module test;
 		   .ram2_ce_n(sram2_ce_n),
 		   .ram2_ub_n(sram2_ub_n),
 		   .ram2_lb_n(sram2_lb_n));
+`endif
+
+`ifdef use_debug_bd
+   debug_block_dev debug_bd(
+			    .clk(clk50),
+			    .reset(reset),
+   			    .bd_cmd(bd_cmd),
+			    .bd_start(bd_start),
+			    .bd_bsy(bd_bsy),
+			    .bd_rdy(bd_rdy),
+			    .bd_err(bd_err),
+			    .bd_addr(bd_addr),
+			    .bd_data_in(bd_data_cpu2bd),
+			    .bd_data_out(bd_data_bd2cpu),
+			    .bd_rd(bd_rd),
+			    .bd_wr(bd_wr),
+			    .bd_iordy(bd_iordy)
+			    );
 `endif
    
 endmodule

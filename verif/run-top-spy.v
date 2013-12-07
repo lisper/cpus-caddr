@@ -66,11 +66,30 @@ module test;
    wire 	 vram_cpu_write;
    wire 	 vram_cpu_done;
 
+   wire [1:0] 	 bd_cmd;	/* generic block device interface */
+   wire 	 bd_start;
+   wire 	 bd_bsy;
+   wire 	 bd_rdy;
+   wire 	 bd_err;
+   wire [23:0] 	 bd_addr;
+   wire [15:0] 	 bd_data_in;
+   wire [15:0] 	 bd_data_out;
+   wire 	 bd_rd;
+   wire 	 bd_wr;
+   wire 	 bd_iordy;
+
    wire [14:0] 	 vram_vga_addr;
    wire [31:0] 	 vram_vga_data_out;
    wire 	 vram_vga_req;
    wire 	 vram_vga_ready;
 
+   wire [15:0]	 kb_data;
+   wire 	 kb_ready;
+   wire [11:0]	 ms_x;
+   wire [11:0]	 ms_y;
+   wire [2:0] 	 ms_button;
+   wire 	 ms_ready;
+   
    wire [17:0] 	 sram_a;
    wire 	 sram_oe_n, sram_we_n;
    wire [15:0] 	 sram1_in;
@@ -150,12 +169,24 @@ module test;
 	      .vram_write(vram_cpu_write),
 	      .vram_done(vram_cpu_done),
 
-	      .ide_data_in(ide_data_in),
-	      .ide_data_out(ide_data_out),
-	      .ide_dior(ide_dior),
-	      .ide_diow(ide_diow),
-	      .ide_cs(ide_cs),
-	      .ide_da(ide_da));
+	      .bd_cmd(bd_cmd),
+	      .bd_start(bd_start),
+	      .bd_bsy(bd_bsy),
+	      .bd_rdy(bd_rdy),
+	      .bd_err(bd_err),
+	      .bd_addr(bd_addr),
+	      .bd_data_in(bd_data_in),
+	      .bd_data_out(bd_data_out),
+	      .bd_rd(bd_rd),
+	      .bd_wr(bd_wr),
+	      .bd_iordy(bd_iordy),
+
+	      .kb_data(kb_data),
+	      .kb_ready(kb_ready),
+	      .ms_x(ms_x),
+	      .ms_y(ms_y),
+	      .ms_button(ms_button),
+	      .ms_ready(ms_ready));
 
 `ifdef use_ram_controller   
 

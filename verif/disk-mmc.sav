@@ -1,0 +1,65 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Tue Dec  3 13:47:56 2013
+[*]
+[dumpfile] "/files/code/cpus/caddr/verif/run-disk.vcd"
+[dumpfile_mtime] "Tue Dec  3 13:44:40 2013"
+[dumpfile_size] 9731314
+[savefile] "/files/code/cpus/caddr/verif/disk-mmc.sav"
+[timestart] 42650
+[size] 1661 717
+[pos] -87 -16
+*-12.900583 431920 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_busint.
+[treeopen] test_busint.busint.
+[treeopen] test_busint.busint.disk.
+[treeopen] test_busint.mmc_bd.
+[sst_width] 224
+[signals_width] 296
+[sst_expanded] 1
+[sst_vpaned_height] 193
+@28
+test_busint.clk
+test_busint.reset
+@22
+test_busint.busint.state[3:0]
+@28
+test_busint.busint.req
+test_busint.busint.ack
+test_busint.busint.write
+test_busint.busint.load
+test_busint.busint.disk.decode
+@200
+-
+@22
+test_busint.busint.disk.disk_state[4:0]
+@200
+-
+@28
+test_busint.mmc_bd.bd_start
+test_busint.mmc_bd.bd_rd
+test_busint.mmc_bd.bd_wr
+test_busint.mmc_bd.bd_rdy
+@29
+test_busint.mmc_bd.bd_iordy
+@28
+test_busint.mmc_bd.bd_cmd[1:0]
+test_busint.mmc_bd.bd_cmd_hold[1:0]
+@22
+test_busint.mmc_bd.state[5:0]
+@28
+test_busint.mmc_bd.inc_wc
+@22
+test_busint.mmc_bd.lba[23:0]
+test_busint.mmc_bd.wc[8:0]
+@200
+-
+@28
+test_busint.mmc_sclk
+test_busint.mmc_cs
+test_busint.mmc_di
+test_busint.mmc_do
+@200
+-
+[pattern_trace] 1
+[pattern_trace] 0

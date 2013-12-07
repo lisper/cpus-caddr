@@ -1,0 +1,110 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Thu Dec  5 17:09:48 2013
+[*]
+[dumpfile] "(null)"
+[savefile] "/files/code/cpus/caddr/verif/run-top-lx45.sav"
+[timestart] 2184130
+[size] 1724 832
+[pos] -1 -1
+*-11.087915 2193380 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] run_top.
+[treeopen] run_top.uut.
+[treeopen] run_top.uut.cpu.
+[treeopen] run_top.uut.cpu.busint.
+[treeopen] run_top.uut.mmc_bd.
+[sst_width] 224
+[signals_width] 336
+[sst_expanded] 1
+[sst_vpaned_height] 233
+@28
+run_top.uut.support.boot
+run_top.uut.support.button_b
+run_top.uut.support.button_c
+run_top.uut.support.button_h
+run_top.uut.support.button_r
+run_top.uut.support.cpu_slowcount[1:0]
+run_top.uut.support.cpu_slowevent
+run_top.uut.support.cpu_state[2:0]
+run_top.uut.support.cpu_state_next[2:0]
+run_top.uut.support.cpuclk
+run_top.uut.support.dcm_reset
+run_top.uut.support.halt
+@22
+run_top.uut.support.hold[9:0]
+@28
+run_top.uut.support.interrupt
+run_top.uut.support.press_detected
+run_top.uut.support.press_history
+run_top.uut.support.pressed
+run_top.uut.support.reset
+run_top.uut.support.reset_state[2:0]
+run_top.uut.support.reset_state_next[2:0]
+@22
+run_top.uut.support.sys_medcount[5:0]
+@28
+run_top.uut.support.sys_medevent
+@200
+-
+@22
+run_top.uut.support.sys_slowcount[11:0]
+@28
+run_top.uut.support.sys_slowevent
+run_top.uut.support.sysclk
+run_top.uut.fpga_clocks.CLK2X_BUF
+run_top.uut.fpga_clocks.CLKFB_IN
+run_top.uut.fpga_clocks.CLKFX_BUF
+run_top.uut.fpga_clocks.GND1
+run_top.uut.fpga_clocks.LOCKED_OUT
+run_top.uut.fpga_clocks.clk1x
+run_top.uut.fpga_clocks.clk25
+run_top.uut.fpga_clocks.clk50
+run_top.uut.fpga_clocks.clk50_dcm
+run_top.uut.fpga_clocks.clk100
+run_top.uut.fpga_clocks.clk100_dcm
+run_top.uut.fpga_clocks.dcm_reset
+run_top.uut.fpga_clocks.pixclk
+@22
+run_top.uut.fpga_clocks.slideswitch[7:0]
+run_top.uut.fpga_clocks.switches[7:0]
+@28
+run_top.uut.fpga_clocks.sysclk
+run_top.uut.fpga_clocks.sysclk_buf
+@200
+-
+@28
+run_top.uut.mmc_sclk
+run_top.uut.mmc_cs
+run_top.uut.mmc_di
+run_top.uut.mmc_do
+@200
+-
+@28
+run_top.uut.mmc_bd.bd_rd
+run_top.uut.mmc_bd.bd_wr
+run_top.uut.mmc_bd.bd_start
+run_top.uut.mmc_bd.bd_rdy
+run_top.uut.mmc_bd.bd_bsy
+run_top.uut.mmc_bd.bd_iordy
+@22
+run_top.uut.mmc_bd.bd_data_out[15:0]
+run_top.uut.mmc_bd.mmc_hold[15:0]
+run_top.uut.mmc_bd.bd_data_in[15:0]
+@25
+run_top.uut.mmc_bd.state[5:0]
+@22
+run_top.uut.mmc_bd.wc[7:0]
+@200
+-
+@24
+run_top.uut.cpu.busint.disk.state[5:0]
+@22
+run_top.uut.cpu.busint.disk.lba[23:0]
+run_top.uut.cpu.busint.disk.wc[7:0]
+@28
+run_top.uut.cpu.busint.disk.clear_wc
+run_top.uut.cpu.busint.disk.inc_wc
+@200
+-
+[pattern_trace] 1
+[pattern_trace] 0

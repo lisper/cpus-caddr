@@ -1,0 +1,62 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Sat Dec  7 12:46:09 2013
+[*]
+[dumpfile] "/files/code/cpus/caddr/verif/test.vcd"
+[dumpfile_mtime] "Sat Dec  7 12:45:47 2013"
+[dumpfile_size] 200794645
+[savefile] "/files/code/cpus/caddr/verif/test-verilator-ide.sav"
+[timestart] 0
+[size] 1676 850
+[pos] 61 6
+*-16.805868 6658 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.v.
+[treeopen] TOP.v.cpu.
+[treeopen] TOP.v.cpu.busint.
+[treeopen] TOP.v.ide_bd.
+[sst_width] 224
+[signals_width] 230
+[sst_expanded] 1
+[sst_vpaned_height] 240
+@28
+TOP.v.ide_bd.ide.ide_dior
+TOP.v.ide_bd.ide.ide_diow
+TOP.v.ide_bd.ide.ide_cs[1:0]
+TOP.v.ide_bd.ide.ide_da[2:0]
+@22
+TOP.v.ide_bd.ide.ide_data_in[15:0]
+TOP.v.ide_bd.ide.ide_data_out[15:0]
+@29
+TOP.v.ide_bd.ide.ata_done
+@200
+-
+-
+@28
+TOP.v.ide_bd.reset
+TOP.v.ide_bd.ata_rd
+TOP.v.ide_bd.ata_wr
+TOP.v.ide_bd.ata_done
+TOP.v.ide_bd.bd_start
+TOP.v.ide_bd.bd_rd
+TOP.v.ide_bd.bd_wr
+TOP.v.ide_bd.bd_rdy
+TOP.v.ide_bd.bd_iordy
+TOP.v.ide_bd.bd_err
+@24
+TOP.v.ide_bd.state[5:0]
+TOP.v.ide_bd.wc[8:0]
+@200
+-
+@22
+TOP.v.cpu.busint.disk.wc[7:0]
+@24
+TOP.v.cpu.busint.disk.state[5:0]
+@28
+TOP.v.cpu.busint.disk.clk
+@22
+TOP.v.cpu.busint.disk.dma_dataout[31:0]
+TOP.v.cpu.busint.disk.bd_data_in[15:0]
+TOP.v.cpu.busint.disk.disk_data_hold[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

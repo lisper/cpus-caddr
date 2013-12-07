@@ -1,0 +1,25 @@
+
+cver
+----
+run-cver.sh			runs top
+run-cver-top-cpu-test.sh
+run-cver-top-lx9-test.sh
+run-cver-disk.sh		busint only, exercises disk interface
+run-cver-spy.sh			boots cpu, runs with spy_port_test testbench
+
+verilator
+---------
+diag.sh		- run verilator exe, runs diag code
+run-file.sh
+run.sh
+verilator.sh
+
+iverilog
+--------
+iv.sh
+ivt.sh
+
+other
+-----
+maketraces.sh
+show.sh

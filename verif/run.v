@@ -13,6 +13,8 @@
 `define debug_md
 
 `define build_debug
+//`define build_test
+//`define build_fpga
 
 `include "rtl.v"
 
@@ -56,6 +58,18 @@ module test;
    wire 	 sdram_req;
    wire 	 sdram_write;
    wire 	 sdram_done;
+
+   wire [1:0] 	 bd_cmd;
+   wire 	 bd_start;
+   wire 	 bd_bsy;
+   wire 	 bd_rdy;
+   wire 	 bd_err;
+   wire [23:0] 	 bd_addr;
+   wire [15:0] 	 bd_data_in;
+   wire [15:0] 	 bd_data_out;
+   wire 	 bd_rd;
+   wire 	 bd_wr;
+   wire 	 bd_iordy;
 
    wire [14:0] 	 vram_cpu_addr;
    wire [31:0] 	 vram_cpu_data_out;
@@ -190,12 +204,17 @@ module test;
 	      .vram_write(vram_cpu_write),
 	      .vram_done(vram_cpu_done),
 
-	      .ide_data_in(ide_data_bus/*ide_data_in*/),
-	      .ide_data_out(ide_data_out),
-	      .ide_dior(ide_dior),
-	      .ide_diow(ide_diow),
-	      .ide_cs(ide_cs),
-	      .ide_da(ide_da),
+	      .bd_cmd(bd_cmd),
+	      .bd_start(bd_start),
+	      .bd_bsy(bd_bsy),
+	      .bd_rdy(bd_rdy),
+	      .bd_err(bd_err),
+	      .bd_addr(bd_addr),
+	      .bd_data_in(bd_data_in),
+	      .bd_data_out(bd_data_out),
+	      .bd_rd(bd_rd),
+	      .bd_wr(bd_wr),
+	      .bd_iordy(bd_iordy),
 
 	      .kb_data(kb_data),
 	      .kb_ready(kb_ready),
@@ -280,26 +299,6 @@ module test;
    assign mcr_ready = 1;
 `endif // use_ram_controller   
 
-`ifdef use_vga_controller
-   wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
-
-   vga_display vga (.clk(clk50),
-		    .pixclk(pixclk),
-		    .reset(reset),
-
-		    .vram_addr(vram_vga_addr),
-		    .vram_data(vram_vga_data_out),
-		    .vram_req(vram_vga_req),
-		    .vram_ready(vram_vga_ready),
-      
-		    .vga_red(vga_red),
-		    .vga_blu(vga_blu),
-		    .vga_grn(vga_grn),
-		    .vga_hsync(vga_hsync),
-		    .vga_vsync(vga_vsync)
-		    );
-`endif // use_vga_controller
-   
    ram_s3board ram(.ram_a(sram_a),
 		   .ram_oe_n(sram_oe_n),
 		   .ram_we_n(sram_we_n),
@@ -327,6 +326,26 @@ module test;
 		     .eadr(eadr)
 		     );
 
+`ifdef use_vga_controller
+   wire 	 vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync;
+
+   vga_display vga (.clk(clk50),
+		    .pixclk(pixclk),
+		    .reset(reset),
+
+		    .vram_addr(vram_vga_addr),
+		    .vram_data(vram_vga_data_out),
+		    .vram_req(vram_vga_req),
+		    .vram_ready(vram_vga_ready),
+      
+		    .vga_red(vga_red),
+		    .vga_blu(vga_blu),
+		    .vga_grn(vga_grn),
+		    .vga_hsync(vga_hsync),
+		    .vga_vsync(vga_vsync)
+		    );
+`endif // use_vga_controller
+   
    assign      kb_ready = 0;
    assign      kb_data = 0;
    
@@ -422,19 +441,46 @@ module test;
 
 	ram.ram1.ram_h[0] = 0;
 	ram.ram2.ram_l[0] = 0;
-		
-//	#1 begin
-//	   reset = 1;
-//	   boot = 0;
-//        end
-//
-//	#500 boot = 1;
-//
-//	#500 reset = 0;
-//	#500 boot = 0;
+
+`define force_reset_boot
+`ifdef force_reset_boot	
+	#1 begin
+	   reset = 1;
+	   boot = 0;
+        end
+
+	#500 boot = 1;
+
+	#500 reset = 0;
+	#500 boot = 0;
+`endif
      end
 
+`ifdef use_ide
    // ide
+   ide_block_dev ide(
+		     .clk(clk50),
+		     .reset(reset),
+   		     .bd_cmd(bd_cmd),
+		     .bd_start(bd_start),
+		     .bd_bsy(bd_bsy),
+		     .bd_rdy(bd_rdy),
+		     .bd_err(bd_err),
+		     .bd_addr(bd_addr),
+		     .bd_data_in(bd_data_out),
+		     .bd_data_out(bd_data_in),
+		     .bd_rd(bd_rd),
+		     .bd_wr(bd_wr),
+		     .bd_iordy(bd_iordy),
+
+		     .ide_data_in(ide_data_in),
+		     .ide_data_out(ide_data_out),
+		     .ide_dior(ide_dior),
+		     .ide_diow(ide_diow),
+		     .ide_cs(ide_cs),
+		     .ide_da(ide_da)
+		     );
+
    assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
 
    assign ide_data_in = ide_data_bus;
@@ -443,6 +489,39 @@ module test;
      begin
 	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
      end
+`endif //  `ifdef use_ide
+
+`ifdef use_mmc
+   wire mmc_cs, mmc_di, mmc_do, mmc_sclk;
+   
+   // mmc
+   mmc_block_dev mmc(
+		     .clk(clk50),
+		     .reset(reset),
+   		     .bd_cmd(bd_cmd),
+		     .bd_start(bd_start),
+		     .bd_bsy(bd_bsy),
+		     .bd_rdy(bd_rdy),
+		     .bd_err(bd_err),
+		     .bd_addr(bd_addr),
+		     .bd_data_in(bd_data_in),
+		     .bd_data_out(bd_data_out),
+		     .bd_rd(bd_rd),
+		     .bd_wr(bd_wr),
+		     .bd_iordy(bd_iordy),
+
+		     .mmc_cs(mmc_cs),
+		     .mmc_di(mmc_di),
+		     .mmc_do(mmc_do),
+		     .mmc_sclk(mmc_sclk)
+		     );
+
+   always @(posedge clk1x)
+     begin
+	$pli_mmc(mmc_cs, mmc_sclk, mmc_do,mmc_di);
+     end
+`endif
+
 
    //
    // debug

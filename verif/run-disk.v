@@ -7,6 +7,9 @@
 `define debug_detail
 `define debug_detail_delay
 `define DBG_DLY #1
+
+//`define use_ide
+`define use_mmc
   
 `include "../rtl/busint.v"
 `include "../rtl/xbus-sram.v"
@@ -14,7 +17,10 @@
 `include "../rtl/xbus-tv.v"
 `include "../rtl/xbus-io.v"
 `include "../rtl/xbus-unibus.v"
+`include "../rtl/ide_block_dev.v"
+`include "../rtl/mmc_block_dev.v"
 `include "../rtl/ide.v"
+`include "../rtl/mmc.v"
 
 `timescale 1ns / 1ns
 
@@ -33,13 +39,17 @@ module test_busint;
    wire        load;
    wire        interrupt;
 
-   wire [15:0] 	ide_data_bus;
-   wire [15:0] 	ide_data_in;
-   wire [15:0] 	ide_data_out;
-   wire 	ide_dior;
-   wire 	ide_diow;
-   wire [1:0] 	ide_cs;
-   wire [2:0] 	ide_da;
+   wire [1:0] 	bd_cmd;	/* generic block device interface */
+   wire 	bd_start;
+   wire 	bd_bsy;
+   wire 	bd_rdy;
+   wire 	bd_err;
+   wire [23:0] 	bd_addr;
+   wire [15:0] 	bd_data_in;
+   wire [15:0] 	bd_data_out;
+   wire 	bd_rd;
+   wire 	bd_wr;
+   wire 	bd_iordy;
 
    busint busint(.mclk(clk),
 		 .reset(reset),
@@ -54,12 +64,27 @@ module test_busint;
 		 .load(load),
 		 .interrupt(interrupt),
 
-		 .ide_data_in(ide_data_in),
-		 .ide_data_out(ide_data_out),
-		 .ide_dior(ide_dior),
-		 .ide_diow(ide_diow),
-		 .ide_cs(ide_cs),
-		 .ide_da(ide_da)
+		 .sdram_addr(), .sdram_data_in(), .sdram_data_out(),
+		 .sdram_req(), .sdram_ready(), .sdram_write(), .sdram_done(),
+		 
+		 .vram_addr(), .vram_data_in(), .vram_data_out(),
+		 .vram_req(), .vram_ready(), .vram_write(), .vram_done(),
+
+		 .bd_cmd(bd_cmd),
+		 .bd_start(bd_start),
+		 .bd_bsy(bd_bsy),
+		 .bd_rdy(bd_rdy),
+		 .bd_err(bd_err),
+		 .bd_addr(bd_addr),
+		 .bd_data_in(bd_data_out),
+		 .bd_data_out(bd_data_in),
+		 .bd_rd(bd_rd),
+		 .bd_wr(bd_wr),
+		 .bd_iordy(bd_iordy),
+
+		 .kb_data(), .kb_ready(),
+		 .ms_x(), .ms_y(), .ms_button(), .ms_ready(),
+		 .promdisable(), .disk_state(), .bus_state()
 		 );
 
 
@@ -125,16 +150,19 @@ module test_busint;
 	#1 reset = 1;
 	#500 reset = 0;
 
+	// write dram - command list
 	bus_write(22'o22, 32'o1001);
-	#100 bus_write(22'o23, 32'o4000);
+	#100
+	bus_write(22'o23, 32'o4000);
 
+	// program disk controller
 	bus_read(22'o17377774);
 	bus_read(22'o17377774);
 	bus_read(22'o17377774);
-	bus_write(22'o17377775, 32'o22);
-	bus_write(22'o17377777, 32'o0);
+	bus_write(22'o17377775, 32'o22);	// load clp
+	bus_write(22'o17377777, 32'o0);		// start read
 
-	#1000000 $finish;
+	#9000000 $finish;
      end
 
    always
@@ -143,7 +171,39 @@ module test_busint;
 	#20 clk = 1;
      end
 
+`ifdef use_ide
    // ide
+   wire [15:0] 	ide_data_bus;
+   wire [15:0] 	ide_data_in;
+   wire [15:0] 	ide_data_out;
+   wire 	ide_dior;
+   wire 	ide_diow;
+   wire [1:0] 	ide_cs;
+   wire [2:0] 	ide_da;
+
+   ide_block_dev ide_bd(
+			.clk(clk),
+			.reset(reset),
+   			.bd_cmd(bd_cmd),
+			.bd_start(bd_start),
+			.bd_bsy(bd_bsy),
+			.bd_rdy(bd_rdy),
+			.bd_err(bd_err),
+			.bd_addr(bd_addr),
+			.bd_data_in(bd_data_in),
+			.bd_data_out(bd_data_out),
+			.bd_rd(bd_rd),
+			.bd_wr(bd_wr),
+			.bd_iordy(bd_iordy),
+
+			.ide_data_in(ide_data_in),
+			.ide_data_out(ide_data_out),
+			.ide_dior(ide_dior),
+			.ide_diow(ide_diow),
+			.ide_cs(ide_cs),
+			.ide_da(ide_da)
+			);
+
    assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
 
    assign ide_data_in = ide_data_bus;
@@ -152,5 +212,41 @@ module test_busint;
      begin
 	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
      end
+`endif
 
+`ifdef use_mmc
+   // mmc
+   wire mmc_cs;
+   wire mmc_di;
+   wire mmc_do;
+   wire mmc_sclk;
+
+   mmc_block_dev mmc_bd(
+			.clk(clk),
+			.reset(reset),
+   			.bd_cmd(bd_cmd),
+			.bd_start(bd_start),
+			.bd_bsy(bd_bsy),
+			.bd_rdy(bd_rdy),
+			.bd_err(bd_err),
+			.bd_addr(bd_addr),
+			.bd_data_in(bd_data_in),
+			.bd_data_out(bd_data_out),
+			.bd_rd(bd_rd),
+			.bd_wr(bd_wr),
+			.bd_iordy(bd_iordy),
+
+			.mmc_cs(mmc_cs),
+			.mmc_di(mmc_di),
+			.mmc_do(mmc_do),
+			.mmc_sclk(mmc_sclk)
+			);
+
+   always @(posedge clk)
+     begin
+	$pli_mmc(mmc_cs, mmc_sclk, mmc_di, mmc_do);
+     end
+`endif
+
+   
 endmodule // test

@@ -1,0 +1,64 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Fri Dec  6 18:09:42 2013
+[*]
+[dumpfile] "/files/code/cpus/caddr/verif/test.vcd"
+[dumpfile_mtime] "Fri Dec  6 18:08:59 2013"
+[dumpfile_size] 616639506
+[savefile] "/files/code/cpus/caddr/verif/test-verilator.sav"
+[timestart] 303425
+[size] 1676 850
+[pos] -1 -1
+*-10.814851 308900 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.v.
+[treeopen] TOP.v.cpu.
+[treeopen] TOP.v.cpu.busint.
+[sst_width] 224
+[signals_width] 230
+[sst_expanded] 1
+[sst_vpaned_height] 240
+@28
+TOP.v.mmc_bd.mmc.mmc_sclk
+TOP.v.mmc_bd.mmc.mmc_cs
+TOP.v.mmc_bd.mmc.mmc_di
+TOP.v.mmc_bd.mmc.mmc_do
+@200
+-
+-
+@28
+TOP.v.mmc_bd.reset
+TOP.v.mmc_bd.mmc_init
+TOP.v.mmc_bd.mmc_send
+TOP.v.mmc_bd.mmc_rd
+TOP.v.mmc_bd.mmc_wr
+TOP.v.mmc_bd.mmc_done
+@22
+TOP.v.mmc_bd.wc[7:0]
+@28
+TOP.v.mmc_bd.bd_start
+TOP.v.mmc_bd.bd_rd
+TOP.v.mmc_bd.bd_wr
+TOP.v.mmc_bd.bd_rdy
+TOP.v.mmc_bd.bd_iordy
+TOP.v.mmc_bd.bd_err
+@22
+TOP.v.mmc_bd.lba32[31:0]
+@24
+TOP.v.mmc_bd.state[5:0]
+@200
+-
+@22
+TOP.v.cpu.busint.disk.wc[7:0]
+@24
+TOP.v.cpu.busint.disk.state[5:0]
+@28
+TOP.v.cpu.busint.disk.clk
+@22
+TOP.v.cpu.busint.disk.dma_dataout[31:0]
+@23
+TOP.v.cpu.busint.disk.bd_data_in[15:0]
+@22
+TOP.v.cpu.busint.disk.disk_data_hold[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

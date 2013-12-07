@@ -16,29 +16,44 @@
  `define ISE_OR_SIMULATION
 `endif
 
-//`define build_fpga
-//`define build_debug
+//`define build_fpga_lx45
+//`define build_fpga_s3
+//`define build_debug_lx45
+//`define build_debug_s3
 //`define build_test
 
 //
-// build_fpga
+// build_fpga_lx45
 //
-`ifdef build_fpga
+`ifdef build_fpga_lx45
+ `define use_ram_controller   
+ `define lx45_rc
+ `define use_vga_controller
+ `define build_debug_or_fpga
+ `define use_mmc
+`endif
+
+//
+// build_fpga_s3
+//
+`ifdef build_fpga_s3
  `define use_ram_controller   
  `define slow_rc
  `define use_s3board_ram
  `define use_vga_controller
  `define build_debug_or_fpga
+ `define use_bd
+ `define use_ide
 `endif
 
 //
-// build_debug
+// build_debug_s3
 //
 // fpga+debug; for sim
 // ram controller
 // vga controller
 //
-`ifdef build_debug
+`ifdef build_debug_s3
  `define debug
  `define use_ram_controller   
 // `define slow_rc
@@ -52,7 +67,23 @@
  `define use_s3board_ram
  `define use_vga_controller
  `define build_debug_or_fpga
-`endif // build_debug
+ `define use_bd
+ `define use_ide
+`endif // build_debug_s3
+
+`ifdef build_debug_lx45
+ `define debug
+ `define debug_sdram
+ `define use_ram_controller   
+ `define lx45_rc
+ `define lx45_fake_sdram
+ `define debug_patch_rom
+ `define use_vga_controller
+ `define build_debug_or_fpga
+ `define use_bd
+ `define use_mmc
+// `define use_ide
+`endif // build_debug_lx45
 
 //
 // build_test
@@ -65,9 +96,10 @@
  `define use_ucode_ram
 // `define debug_with_usim_delay
 // `define debug_with_usim
- `define debug_patch_rom
- `define debug_patch_disk_copy
+// `define debug_patch_rom
+// `define debug_patch_disk_copy
 // `define use_iologger
+ `define use_debug_bd
 `endif // build_test
 
 //
@@ -101,6 +133,10 @@
  `include "../rtl/pipe_ram_controller.v"
 `endif
 
+`ifdef lx45_rc
+ `include "../rtl/lx45_ram_controller.v"
+`endif
+
 `ifdef build_debug_or_fpga
  `include "../rtl/vga_display.v"
 `endif
@@ -119,13 +155,13 @@
 
 `ifdef build_test
  `include "debug-xbus-tv.v"
+ `include "debug_block_dev.v"
 `else
  `include "../rtl/xbus-tv.v"
 `endif
 
 `include "../rtl/xbus-io.v"
 `include "../rtl/xbus-unibus.v"
-`include "../rtl/ide.v"
 `include "../rtl/ps2_support.v"
 `include "../rtl/ps2.v"
 `include "../rtl/ps2_send.v"
@@ -141,6 +177,17 @@
 `include "../rtl/part_2kx17ram.v"
 `include "../rtl/part_32x32ram.v"
 `include "../rtl/part_2kx5ram.v"
+`include "../rtl/part_21kx32ram.v"
+
+`ifdef use_ide
+`include "../rtl/ide.v"
+`include "../rtl/ide_block_dev.v"
+`endif
+
+`ifdef use_mmc
+`include "../rtl/mmc.v"
+`include "../rtl/mmc_block_dev.v"
+`endif
 
 `ifdef use_ucode_ram
  `include "../rtl/part_16kx49ram.v"

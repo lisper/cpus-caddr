@@ -11,12 +11,8 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
    input 	wren_a, rden_a;
    output [48:0] q_a;
 
-`ifdef debug
    parameter IRAM_SIZE = 16384;
-`else
-   parameter IRAM_SIZE = 4;
-`endif
-   
+
 `ifdef QUARTUS
    altsyncram ram
      (
@@ -44,7 +40,21 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
            ram.widthad_b = 14;
 `endif // QUARTUS
 
-`ifdef ISE_OR_SIMULATION
+`ifdef ISE
+   wire ena_a = rden_a | wren_a;
+   
+   ise_16kx49ram inst
+     (
+      .clka(clk_a),
+      .ena(ena_a),
+      .wea(wren_a),
+      .addra(address_a),
+      .dina(data_a),
+      .douta(q_a)
+      );
+`endif
+
+`ifdef SIMULATION
    reg [48:0] 	 ram [0:IRAM_SIZE-1];
    reg [48:0] 	 out_a;
 
@@ -61,6 +71,7 @@ module part_16kx49ram(clk_a, reset, address_a, q_a, data_a, wren_a, rden_a);
      end
 `endif
 
+   /* synthesis syn_ramstyle="block_ram" */
    always @(posedge clk_a)
      if (wren_a)
        begin

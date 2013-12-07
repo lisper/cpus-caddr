@@ -262,17 +262,17 @@ module pipe_ram_controller(
 `ifdef debug
    always @(posedge clk)
      begin
-	if (^mcr_addr === 1'bx) $display("assert: mcr_addr undefined' %t", $time);
-	if (^mcr_data_in === 1'bx) $display("assert: mcr_data_in undefined; %t", $time);
+	if (^mcr_addr === 1'bx && ~reset) $display("assert: mcr_addr undefined' %t", $time);
+	if (^mcr_data_in === 1'bx && ~reset) $display("assert: mcr_data_in undefined; %t", $time);
 
-	if (^sdram_addr === 1'bx) $display("assert: sdram_addr undefined; %t", $time);
-	if (^sdram_data_in === 1'bx) $display("assert: sdram_data_in undefined; %t", $time);
+	if (^sdram_addr === 1'bx && ~reset) $display("assert: sdram_addr undefined; %t", $time);
+	if (^sdram_data_in === 1'bx && ~reset) $display("assert: sdram_data_in undefined; %t", $time);
 
-	if (^vram_cpu_addr === 1'bx)
+	if (^vram_cpu_addr === 1'bx && ~reset)
 	  $display("assert: vram_cpu_addr undefined; %t", $time);
-	if (^vram_cpu_data_in === 1'bx)
+	if (^vram_cpu_data_in === 1'bx && ~reset)
 	  $display("assert: vram_cpu_data_in undefined; %t", $time);
-	if (^{vram_vga_addr} === 1'bx)
+	if (^{vram_vga_addr} === 1'bx && ~reset)
 	  $display("assert: vram_vga_addr undefined; %t", $time);
      end
 `endif

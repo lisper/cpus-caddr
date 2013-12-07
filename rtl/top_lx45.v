@@ -1,5 +1,5 @@
 /*
- * top of S3 fpga for CADDR
+ * top of LX45 fpga for CADDR
  */
 
 `define full_design
@@ -8,23 +8,17 @@
 `define use_ps2
 
 module top(rs232_txd, rs232_rxd,
-	   button, led, sysclk,
+	   sysclk, led,
 	   ps2_clk, ps2_data,
 	   ms_ps2_clk, ms_ps2_data,
-	   vga_red, vga_blu, vga_grn, vga_hsync, vga_vsync,
-	   sevenseg, sevenseg_an,
-	   slideswitch,
-	   sram_a, sram_oe_n, sram_we_n,
-	   sram1_io, sram1_ce_n, sram1_ub_n, sram1_lb_n,
-	   sram2_io, sram2_ce_n, sram2_ub_n, sram2_lb_n,
-	   ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
+	   vga_out, vga_hsync, vga_vsync,
+	   mmc_cs, mmc_di, mmc_do, mmc_sclk
+	   );
 
    input	rs232_rxd;
    output	rs232_txd;
 
-   input [3:0] 	button;
-
-   output [7:0] led;
+   output [3:0] led;
    input 	sysclk; // synthesis attribute period sysclk "50 MHz";
 
    input	ps2_clk;
@@ -33,39 +27,15 @@ module top(rs232_txd, rs232_rxd,
    inout	ms_ps2_clk;
    inout 	ms_ps2_data;
    
-   output 	vga_red;
-   output 	vga_blu;
-   output 	vga_grn;
+   output 	vga_out;
    output 	vga_hsync;
    output 	vga_vsync;
 
-   output [7:0] sevenseg;
-   output [3:0] sevenseg_an;
-
-   input [7:0] 	slideswitch;
-
-   output [17:0] sram_a;
-   output 	 sram_oe_n;
-   output 	 sram_we_n;
-
-   inout [15:0]  sram1_io;
-   output 	 sram1_ce_n;
-   output 	 sram1_ub_n;
-   output 	 sram1_lb_n;
-
-   inout [15:0]  sram2_io;
-   output 	 sram2_ce_n;
-   output 	 sram2_ub_n;
-   output 	 sram2_lb_n;
+   output 	mmc_cs;
+   output 	mmc_do;
+   output 	mmc_sclk;
+   input 	mmc_di;
    
-   inout [15:0]  ide_data_bus;
-   wire [15:0] 	 ide_data_in;
-   wire [15:0] 	 ide_data_out;
-   output 	 ide_dior;
-   output 	 ide_diow;
-   output [1:0]  ide_cs;
-   output [2:0]  ide_da;
-
    // -----------------------------------------------------------------
 
    wire 	 clk50; // synthesis attribute period clk50 "50 MHz";
@@ -92,8 +62,8 @@ module top(rs232_txd, rs232_rxd,
    wire 	 mcr_done;
 
    wire [21:0] 	 sdram_addr;
-   wire [31:0] 	 sdram_data_out;
-   wire [31:0] 	 sdram_data_in;
+   wire [31:0] 	 sdram_data_cpu2rc;
+   wire [31:0] 	 sdram_data_rc2cpu;
    wire 	 sdram_ready; // synthesis attribute keep sdram_ready true;
    wire 	 sdram_req; // synthesis attribute keep sdram_req true;
    wire 	 sdram_write; // synthesis attribute keep sdram_write true;
@@ -118,8 +88,8 @@ module top(rs232_txd, rs232_rxd,
    wire 	 bd_rdy;
    wire 	 bd_err;
    wire [23:0] 	 bd_addr;
-   wire [15:0] 	 bd_data_in;
-   wire [15:0] 	 bd_data_out;
+   wire [15:0] 	 bd_data_bd2cpu;
+   wire [15:0] 	 bd_data_cpu2cpu;
    wire 	 bd_rd;
    wire 	 bd_wr;
    wire 	 bd_iordy;
@@ -141,7 +111,6 @@ module top(rs232_txd, rs232_rxd,
    wire [15:0] 	 sram2_out;
 
    wire 	 sysclk_buf;
-   wire [7:0] 	 switches;
 
    wire [15:0] 	 kb_data;
    wire 	 kb_ready;
@@ -150,8 +119,10 @@ module top(rs232_txd, rs232_rxd,
    wire [2:0] 	 ms_button;
    wire 	 ms_ready;
 
+   wire [7:0] 	 switches;
+   
    fpga_clocks fpga_clocks(.sysclk(sysclk),
-			   .slideswitch(slideswitch),
+			   .slideswitch(8'b0),
 			   .switches(switches),
 			   .dcm_reset(dcm_reset),
 			   .sysclk_buf(sysclk_buf),
@@ -163,10 +134,10 @@ module top(rs232_txd, rs232_rxd,
    
    support support(.sysclk(sysclk_buf),
 		   .cpuclk(cpuclk),
-		   .button_r(button[3]),
-		   .button_b(button[2]),
-		   .button_h(button[1]),
-		   .button_c(button[0]),
+		   .button_r(1'b0),
+		   .button_b(1'b0),
+		   .button_h(1'b0),
+		   .button_c(1'b0),
 		   .dcm_reset(dcm_reset),
 		   .reset(reset),
 		   .interrupt(interrupt),
@@ -202,8 +173,8 @@ module top(rs232_txd, rs232_rxd,
 	      .mcr_done(mcr_done),
 
 	      .sdram_addr(sdram_addr),
-	      .sdram_data_in(sdram_data_in),
-	      .sdram_data_out(sdram_data_out),
+	      .sdram_data_in(sdram_data_rc2cpu),
+	      .sdram_data_out(sdram_data_cpu2rc),
 	      .sdram_req(sdram_req),
 	      .sdram_ready(sdram_ready),
 	      .sdram_write(sdram_write),
@@ -223,8 +194,8 @@ module top(rs232_txd, rs232_rxd,
 	      .bd_rdy(bd_rdy),
 	      .bd_err(bd_err),
 	      .bd_addr(bd_addr),
-	      .bd_data_in(bd_data_in),
-	      .bd_data_out(bd_data_out),
+	      .bd_data_in(bd_data_bd2cpu),
+	      .bd_data_out(bd_data_cpu2bd),
 	      .bd_rd(bd_rd),
 	      .bd_wr(bd_wr),
 	      .bd_iordy(bd_iordy),
@@ -236,9 +207,6 @@ module top(rs232_txd, rs232_rxd,
 	      .ms_button(ms_button),
 	      .ms_ready(ms_ready));
    
-   assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
-   assign ide_data_in = ide_data_bus;
-
 `ifdef use_spyport
    spy_port spy_port(
 		     .sysclk(clk50),
@@ -260,79 +228,45 @@ module top(rs232_txd, rs232_rxd,
    assign      rs232_txd = 1'b1;
 `endif
    
-   pipe_ram_controller rc (
-		      .clk(clk100),
-		      .vga_clk(clk50),
-		      .cpu_clk(cpuclk),
-		      .reset(reset),
-		      .prefetch(prefetch),
-		      .fetch(fetch),
-		      .machrun(machrun),
-		      .state_out(rc_state),
+   lx45_ram_controller rc (
+			   .clk(clk100),
+			   .vga_clk(clk50),
+			   .cpu_clk(cpuclk),
+			   .reset(reset),
+			   .prefetch(prefetch),
+			   .fetch(fetch),
+			   .machrun(machrun),
+			   .state_out(rc_state),
 
-		      .mcr_addr(mcr_addr),
-		      .mcr_data_out(mcr_data_in),
-		      .mcr_data_in(mcr_data_out),
-		      .mcr_ready(mcr_ready),
-		      .mcr_write(mcr_write),
-		      .mcr_done(mcr_done),
+			   .mcr_addr(mcr_addr),
+			   .mcr_data_out(mcr_data_in),
+			   .mcr_data_in(mcr_data_out),
+			   .mcr_ready(mcr_ready),
+			   .mcr_write(mcr_write),
+			   .mcr_done(mcr_done),
 
-		      .sdram_addr(sdram_addr),
-		      .sdram_data_in(sdram_data_out),
-		      .sdram_data_out(sdram_data_in),
-		      .sdram_req(sdram_req),
-		      .sdram_ready(sdram_ready),
-		      .sdram_write(sdram_write),
-		      .sdram_done(sdram_done),
+			   .sdram_addr(sdram_addr),
+			   .sdram_data_in(sdram_data_cpu2rc),
+			   .sdram_data_out(sdram_data_rc2cpu),
+			   .sdram_req(sdram_req),
+			   .sdram_ready(sdram_ready),
+			   .sdram_write(sdram_write),
+			   .sdram_done(sdram_done),
       
-		      .vram_cpu_addr(vram_cpu_addr),
-		      .vram_cpu_data_in(vram_cpu_data_out),
-		      .vram_cpu_data_out(vram_cpu_data_in),
-		      .vram_cpu_req(vram_cpu_req),
-		      .vram_cpu_ready(vram_cpu_ready),
-		      .vram_cpu_write(vram_cpu_write),
-		      .vram_cpu_done(vram_cpu_done),
+			   .vram_cpu_addr(vram_cpu_addr),
+			   .vram_cpu_data_in(vram_cpu_data_out),
+			   .vram_cpu_data_out(vram_cpu_data_in),
+			   .vram_cpu_req(vram_cpu_req),
+			   .vram_cpu_ready(vram_cpu_ready),
+			   .vram_cpu_write(vram_cpu_write),
+			   .vram_cpu_done(vram_cpu_done),
       
-		      .vram_vga_addr(vram_vga_addr),
-		      .vram_vga_data_out(vram_vga_data_out),
-		      .vram_vga_req(vram_vga_req),
-		      .vram_vga_ready(vram_vga_ready),
-      
-		      .sram_a(sram_a),
-		      .sram_oe_n(sram_oe_n),
-		      .sram_we_n(sram_we_n),
-		      .sram1_in(sram1_in),
-		      .sram1_out(sram1_out),
-		      .sram1_ce_n(sram1_ce_n),
-		      .sram1_ub_n(sram1_ub_n),
-		      .sram1_lb_n(sram1_lb_n),
-		      .sram2_in(sram2_in),
-		      .sram2_out(sram2_out),
-		      .sram2_ce_n(sram2_ce_n),
-		      .sram2_ub_n(sram2_ub_n),
-		      .sram2_lb_n(sram2_lb_n)
-		      );
+			   .vram_vga_addr(vram_vga_addr),
+			   .vram_vga_data_out(vram_vga_data_out),
+			   .vram_vga_req(vram_vga_req),
+			   .vram_vga_ready(vram_vga_ready)
+			   );
 `else
-   assign ide_data_bus = 0;
-   assign ide_dior = 1'b1;
-   assign ide_diow = 1'b1;
-   assign ide_cs = 0;
-   assign ide_da = 0;
-
-   assign sram_a = 0;
-   assign sram_oe_n = 1'b1;
-   assign sram_we_n = 1'b1;
-
-   assign sram1_io = 0;
-   assign sram1_ce_n = 1'b1;
-   assign sram1_ub_n = 1'b1;
-   assign sram1_lb_n = 1'b1;
-
-   assign sram2_io = 0;
-   assign sram2_ce_n = 1'b1;
-   assign sram2_ub_n = 1'b1;
-   assign sram2_lb_n = 1'b1;
-
    assign eadr = 4'b0;
    assign dbread = 0;
    assign dbwrite = 0;
@@ -340,7 +274,7 @@ module top(rs232_txd, rs232_rxd,
    assign rs232_txd = 1'b1;
 `endif
 
-   ide_block_dev ide_bd(
+   mmc_block_dev mmc_bd(
 			.clk(clk50),
 			.reset(reset),
    			.bd_cmd(bd_cmd),
@@ -349,21 +283,22 @@ module top(rs232_txd, rs232_rxd,
 			.bd_rdy(bd_rdy),
 			.bd_err(bd_err),
 			.bd_addr(bd_addr),
-			.bd_data_in(bd_data_in),
-			.bd_data_out(bd_data_out),
+			.bd_data_in(bd_data_cpu2bd),
+			.bd_data_out(bd_data_bd2cpu),
 			.bd_rd(bd_rd),
 			.bd_wr(bd_wr),
 			.bd_iordy(bd_iordy),
 
-			.ide_data_in(ide_data_in),
-			.ide_data_out(ide_data_out),
-			.ide_dior(ide_dior),
-			.ide_diow(ide_diow),
-			.ide_cs(ide_cs),
-			.ide_da(ide_da)
+			.mmc_cs(mmc_cs),
+			.mmc_di(mmc_di),
+			.mmc_do(mmc_do),
+			.mmc_sclk(mmc_sclk)
 			);
 
 `ifdef use_vga
+   wire vga_red, vga_blu, vga_grn;
+   assign vga_out = vga_grn;
+   
    vga_display vga (.clk(clk50),
 		    .pixclk(pixclk),
 		    .reset(reset),
@@ -381,9 +316,7 @@ module top(rs232_txd, rs232_rxd,
 		    );
 `else
    assign vram_vga_req = 0;
-   assign vga_red = 0;
-   assign vga_blu = 0;
-   assign vga_grn = 0;
+   assign vga_out = 0;
    assign vga_hsync = 0;
    assign vga_vsync = 0;
 `endif
@@ -436,22 +369,9 @@ module top(rs232_txd, rs232_rxd,
    assign ms_button = 0;
 `endif
    
-   display show_pc(.clk(cpuclk), .reset(reset),
-		   .pc(pc), .dots(dots),
-		   .sevenseg(sevenseg), .sevenseg_an(sevenseg_an));
+   assign led[3] = machrun;
+   assign led[2] = disk_state[4];
+   assign led[1] = disk_state[3];
+   assign led[0] = disk_state[0];
 
-   assign led[7:3] = disk_state[4:0];
-   assign led[2] = machrun;
-   assign led[1] = ~ide_diow;
-   assign led[0] = ~ide_dior;
-
-   assign dots[3:0] = machrun ? cpu_state[3:0] : bus_state[3:0];
-//   assign dots[3:0] = rc_state;
-   
-   assign sram1_io = ~sram_we_n ? sram1_out : 16'bz;
-   assign sram1_in = sram1_io;
-   
-   assign sram2_io = ~sram_we_n ? sram2_out : 16'bz;
-   assign sram2_in = sram2_io;
-   
 endmodule

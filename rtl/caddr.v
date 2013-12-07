@@ -126,7 +126,8 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	       vram_addr, vram_data_in, vram_data_out,
 	       vram_req, vram_ready, vram_write, vram_done,
 
-	       ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
+	       bd_cmd, bd_start, bd_bsy, bd_rdy, bd_err, bd_addr,
+	       bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy,
 
 	       kb_data, kb_ready,
 	       ms_x, ms_y, ms_button, ms_ready );
@@ -174,12 +175,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    output 	 vram_write;
    input 	 vram_done;
    
-   input [15:0]  ide_data_in;
-   output [15:0] ide_data_out;
-   output 	 ide_dior;
-   output 	 ide_diow;
-   output [1:0]  ide_cs;
-   output [2:0]  ide_da;
+   output [1:0]  bd_cmd;	/* generic block device interface */
+   output 	 bd_start;
+   input 	 bd_bsy;
+   input 	 bd_rdy;
+   input 	 bd_err;
+   output [23:0] bd_addr;
+   input [15:0]  bd_data_in;
+   output [15:0] bd_data_out;
+   output 	 bd_rd;
+   output 	 bd_wr;
+   input 	 bd_iordy;
 
    input [15:0]  kb_data;
    input 	 kb_ready;
@@ -585,6 +591,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign     need_mmu_state = memprepare | wmap | srcmap;
 
    wire       mcr_hold;
+`define use_ucode_ram
 `ifdef use_ucode_ram
    assign     mcr_hold = 0;
 `else
@@ -2585,12 +2592,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .vram_write(vram_write),
 		 .vram_done(vram_done),
 		 
-		 .ide_data_in(ide_data_in),
-		 .ide_data_out(ide_data_out),
-		 .ide_dior(ide_dior),
-		 .ide_diow(ide_diow),
-		 .ide_cs(ide_cs),
-		 .ide_da(ide_da),
+		 .bd_cmd(bd_cmd),
+		 .bd_start(bd_start),
+		 .bd_bsy(bd_bsy),
+		 .bd_rdy(bd_rdy),
+		 .bd_err(bd_err),
+		 .bd_addr(bd_addr),
+		 .bd_data_in(bd_data_in),
+		 .bd_data_out(bd_data_out),
+		 .bd_rd(bd_rd),
+		 .bd_wr(bd_wr),
+		 .bd_iordy(bd_iordy),
 
 		 .kb_data(kb_data),
 		 .kb_ready(kb_ready),

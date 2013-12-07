@@ -1,11 +1,5 @@
 /*
- * xbus-disk.v
- * $Id$
- * generic block device version
- *
- * It expects the block device to provide 1024 byte blocks w/16 bit interface
- * Currently the lba is passed with 512 byte block addressing
- * 
+ * $Id: xbus-disk.v 138 2012-08-20 17:53:40Z brad $
  */
 
 /*
@@ -254,8 +248,8 @@ module xbus_disk (
 		  writein, writeout,
 		  decodein, decodeout,
 		  interrupt,
-		  bd_cmd, bd_start, bd_bsy, bd_rdy, bd_err, bd_addr,
-		  bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy,
+		  ide_data_in, ide_data_out,
+		  ide_dior, ide_diow, ide_cs, ide_da,
 		  disk_state
 		);
 
@@ -282,26 +276,15 @@ module xbus_disk (
    reg 		 reqout;
    reg 		 writeout;
    reg 		 busreqout;
-
-   output [1:0]  bd_cmd;	/* generic block device interface */
-   output 	 bd_start;
-   input 	 bd_bsy;
-   input 	 bd_rdy;
-   input 	 bd_err;
-   output [23:0] bd_addr;
-   input [15:0]  bd_data_in;
-   output [15:0] bd_data_out;
-   output 	 bd_rd;
-   output 	 bd_wr;
-   input 	 bd_iordy;
+   
+   input [15:0]  ide_data_in;
+   output [15:0] ide_data_out;
+   output 	 ide_dior;
+   output 	 ide_diow;
+   output [1:0]  ide_cs;
+   output [2:0]  ide_da;
    
    output [4:0]  disk_state;
-
-   reg [1:0]	 bd_cmd;
-   reg 		 bd_start;
-   reg [15:0] 	 bd_data_out;
-   reg 		 bd_rd;
-   reg 		 bd_wr;
    
    // -------------------------------------------------------------------
    
@@ -329,7 +312,8 @@ module xbus_disk (
 	       DISK_CMD_RDCMP = 10'o0010,
 	       DISK_CMD_WRITE = 10'o0011,
 	       DISK_CMD_RECAL = 10'o1005,
-	       DISK_CMD_CLEAR = 10'o0405;
+	       DISK_CMD_CLEAR = 10'o0405,
+	       DISK_CMD_IDE_R = 10'o1333;
 	       
    wire 	 addr_match;
    wire 	 decode;
@@ -348,24 +332,39 @@ module xbus_disk (
 		s_read_ccw_done = 3,
 		s_init0 = 4,
 		s_init1 = 5,
-
-		s_read0 = 8,
-		s_read1 = 9,
-		s_read2 = 10,
-
-		s_write0 = 11,
-		s_write1 = 12,
-      		s_write2 = 13,
-
-      		s_last0 = 14,
-      		s_last1 = 15,
-		s_last2 = 16,
-      		s_done0 = 17,
-      		s_done1 = 18,
-		s_reset = 19,
-                s_reset0 = 20;
-   
-   
+		s_wait0 = 6,
+		s_init2 = 7,
+		s_init3 = 8,
+		s_init4 = 9,
+		s_init5 = 10,
+		s_init6 = 11,
+		s_init7 = 12,
+		s_init8 = 13,
+		s_init9 = 14,
+		s_wait1 = 15,
+		s_init10 = 16,
+		s_init11 = 17,
+		s_read0 = 18,
+		s_read1 = 19,
+		s_read2 = 20,
+		s_write0 = 21,
+		s_write1 = 22,
+      		s_write2 = 23,
+      		s_last0 = 24,
+      		s_last1 = 25,
+		s_last2 = 26,
+      		s_done0 = 27,
+      		s_done1 = 28,
+		s_reset = 29,
+		s_reset0 = 30,
+		s_reset1 = 31,
+		s_reset2 = 32,
+		s_reset3 = 33,
+		s_reset4 = 34,
+		s_reset5 = 35,
+		s_reset6 = 36,
+   		s_ide_rd0 = 40,
+   		s_ide_rd1 = 41;
 		      
    reg [5:0] state;
    reg [5:0] state_next;
@@ -397,6 +396,27 @@ module xbus_disk (
        ATA_STATUS  = 5'b10111,
        ATA_COMMAND = 5'b10111;
 
+   parameter
+       IDE_STATUS_BSY =  7,
+       IDE_STATUS_DRDY = 6,
+       IDE_STATUS_DWF =  5,
+       IDE_STATUS_DSC =  4,
+       IDE_STATUS_DRQ =  3,
+       IDE_STATUS_CORR = 2,
+       IDE_STATUS_IDX =  1,
+       IDE_STATUS_ERR =  0;
+   
+   parameter
+       ATA_CMD_READ = 16'h0020,
+       ATA_CMD_WRITE = 16'h0030;
+
+   reg 	    ata_rd;
+   reg 	    ata_wr;
+   reg [4:0] ata_addr;
+   reg [15:0] ata_in;
+   wire [15:0] ata_out;
+   wire        ata_done;
+
    reg [23:0] lba;
    wire [22:0] block_number;
 
@@ -419,12 +439,14 @@ module xbus_disk (
    reg [31:0] reg_dataout;
    reg [31:0] dma_dataout;
 
-//`define debug_disk
+   reg [15:0] dbg_ide_reg;
+   reg [15:0] dbg_ide_data;
+   
 `ifdef debug
    integer debug/* verilator public_flat */;
 
    initial
-     debug = 0/*1*/;
+     debug = 1;
 `endif
    
    // -----------------------------------------------------------------
@@ -473,6 +495,8 @@ module xbus_disk (
 	  done_intr_enb <= 0;
 	  
 	  reg_dataout = 0;
+
+	  dbg_ide_reg <= 0;
        end
      else
        begin
@@ -493,17 +517,17 @@ module xbus_disk (
 		  begin
 		     reg_dataout = disk_status;
 `ifdef debug
-		     if (debug != 0 && disk_status != 0) $display("disk: read status %o", disk_status);
+		     if (debug != 0) $display("disk: read status %o", disk_status);
 `endif
 		  end
 		3'o1: reg_dataout = disk_ma;
 		3'o2: reg_dataout = disk_da;
-		3'o3: reg_dataout = 0;
+		3'o3: reg_dataout = { 8'h12, 3'b000, dbg_ide_reg[4:0], dbg_ide_data };
 		3'o4:
 		  begin
 		     reg_dataout = disk_status;
 `ifdef debug
-		     if (debug != 0 && disk_status != 0) $display("disk: read status %o", disk_status);
+		     if (debug != 0) $display("disk: read status %o", disk_status);
 `endif
 		  end
 		3'o5: reg_dataout = { 8'b0, 2'b00, disk_clp };
@@ -523,10 +547,15 @@ module xbus_disk (
 	   begin
 	       if (addrin[5:3] == 3'o7)
 	      case (addrin[2:0])
-		3'o0, 3'o1, 3'o2, 3'o3:
+		3'o0, 3'o1, 3'o2:
 		  begin
 		  end
 
+		3'o3:
+		  begin
+		     dbg_ide_reg <= datain[15:0];
+		  end
+		
 		3'o4:
 		  begin
 `ifdef debug
@@ -635,6 +664,13 @@ module xbus_disk (
    
 
    //
+   ide ide(.clk(clk), .reset(reset),
+	   .ata_rd(ata_rd), .ata_wr(ata_wr), .ata_addr(ata_addr),
+	   .ata_in(ata_in), .ata_out(ata_out), .ata_done(ata_done),
+	   .ide_data_in(ide_data_in), .ide_data_out(ide_data_out),
+	   .ide_dior(ide_dior), .ide_diow(ide_diow),
+	   .ide_cs(ide_cs), .ide_da(ide_da));
+
    
    // = (cyl * 323)
    // = (cyl * 320) + cyl + cyl + cyl
@@ -659,8 +695,6 @@ module xbus_disk (
 			 { 18'b0, disk_block };
    
 
-   assign bd_addr = lba;
-     
    // lba = block# * 2
    always @(posedge clk)
      if (reset)
@@ -730,9 +764,9 @@ module xbus_disk (
 	      end
 
    reg [31:0] dma_data_hold;
-   reg [15:0] disk_data_hold;
+   reg [15:0] ata_hold;
    
-   // grab the dma'd data, later used by disk
+   // grab the dma'd data, later used by ide
    always @(posedge clk)
      if (reset)
        dma_data_hold <= 0;
@@ -740,14 +774,21 @@ module xbus_disk (
      if (state == s_write0 && busgrantin && ackin)
        dma_data_hold <= datain;
 
-   // grab the disk data, later used by dma
+   // grab the ide data, later used by dma
    always @(posedge clk)
      if (reset)
-       disk_data_hold <= 0;
+       ata_hold <= 0;
      else
-     if (state == s_read0 && bd_iordy)
-       disk_data_hold <= bd_data_in;
+     if (state == s_read0 && ata_done)
+       ata_hold <= ata_out;
 
+   always @(posedge clk)
+     if (reset)
+       dbg_ide_data <= 16'ha55a;
+     else
+       if (state == s_ide_rd0 && ata_done)
+	 dbg_ide_data <= ata_out;
+   
    //
    always @(posedge clk)
      if (reset)
@@ -814,12 +855,11 @@ module xbus_disk (
        writeout <= state_next == s_read2    ? 1 : 0;
    
    // combinatorial logic based on state
-//   always @(state or disk_cmd or disk_da or disk_ccw or disk_clp or
-//	    lba or disk_start or wc or more_ccws or
-//            bd_bsy or bd_rdy or bd_iordy or bd_data_in or disk_data_hold or
-//	    busgrantin or ackin or dma_data_hold
-//	    )
-   always @(*)
+   always @(state or disk_cmd or disk_da or disk_ccw or disk_clp or
+	    lba or disk_start or wc or more_ccws or
+            ata_done or ata_out or ata_hold or
+	    busgrantin or ackin or dma_data_hold
+	    )
      begin
 	state_next = state;
 
@@ -834,11 +874,10 @@ module xbus_disk (
 	clear_wc = 0;
 	inc_wc = 0;
 
-	bd_rd = 0;
-	bd_wr = 0;
-	bd_data_out = 0;
-	bd_start = 0;
-	bd_cmd = 0;
+	ata_rd = 0;
+	ata_wr = 0;
+	ata_addr = 0;
+	ata_in = 0;
 
 	dma_dataout = 0;
 
@@ -862,6 +901,9 @@ module xbus_disk (
 		   DISK_CMD_CLEAR:
 		     state_next = s_reset;
 
+		   DISK_CMD_IDE_R:
+		     state_next = s_ide_rd0;
+		     
 		   default:
 		     begin
 `ifdef debug
@@ -884,28 +926,82 @@ module xbus_disk (
 	  
 	  s_reset:
 	    begin
-	       bd_start = 1;
-	       bd_cmd = 2'b0;
-	       
-	       if (bd_bsy)
+	       ata_wr = 1;
+	       ata_addr = ATA_DRVHEAD;
+	       ata_in = 16'h0040;
+	       if (ata_done)
 		 state_next = s_reset0;
 	    end
 
 	  s_reset0:
 	    begin
-	       if (bd_rdy)
-		 state_next = s_busy;
+	       ata_wr = 1;
+	       ata_addr = ATA_SECNUM;
+	       ata_in = 16'b0;
+	       if (ata_done)
+		 state_next = s_reset1;
 	    end
 
+	  s_reset1:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_CYLLOW;
+	       ata_in = 16'b0;
+	       if (ata_done)
+		 state_next = s_reset2;
+	    end
+
+	  s_reset2:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_CYLHIGH;
+	       ata_in = 16'b0;
+	       if (ata_done)
+		 state_next = s_reset3;
+	    end
+
+	  s_reset3:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_COMMAND;
+	       ata_in = 16'h0070;
+	       if (ata_done)
+		 state_next = s_reset4;
+	    end
+	    
+	  s_reset4:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = ATA_STATUS;
+	       if (ata_done && ~ata_out[IDE_STATUS_BSY])
+		 state_next = s_reset5;
+	    end
+	  
+	  s_reset5:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_DEVCTRL;
+	       ata_in = 16'h0002;
+	       if (ata_done)
+		 state_next = s_reset6;
+	    end
+	  
+	  s_reset6:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = ATA_STATUS;
+	       if (ata_done && ~ata_out[IDE_STATUS_BSY])
+		 state_next = s_busy;
+	    end
+	  
 	  s_read_ccw:
 	    begin
 	       /* busreqout = 1; */
 	       /* reqout = 1; */
 	       /* addrout <= disk_clk; */
 	       
-`ifdef debug
-	       if (busgrantin && ackin)
-		 $display("disk: dma clp @ %o", disk_clp);
+`ifdef debug_disk
+	       $display("disk: dma clp @ %o", disk_clp);
 `endif
 
 	       if (busgrantin && ackin)
@@ -913,27 +1009,20 @@ module xbus_disk (
 	    end
 
 	  s_read_ccw_done:
-	    begin
-`ifdef debug
-	       $display("disk: s_read_ccw_done; %t", $time);
-`endif
-	       state_next = s_init0;
-	    end
+	    state_next = s_init0;
 
 	  s_init0:
 	    begin
-`ifdef debug_disk
-	       $display("disk: init0");
-`endif
-	       bd_start = 1;
-	       if (disk_cmd == DISK_CMD_WRITE)
-		 bd_cmd = 2'b10;
-	       else
-		 if (disk_cmd == DISK_CMD_RDCMP || disk_cmd == DISK_CMD_READ)
-		   bd_cmd = 2'b01;
-
-	       if (bd_bsy)
+	       ata_addr = ATA_STATUS;
+	       ata_rd = 1;
+	       if (ata_done &&
+		   ~ata_out[IDE_STATUS_BSY] &&
+		   ata_out[IDE_STATUS_DRDY])
 		 state_next = s_init1;
+`ifdef debug_disk
+	       if (ata_done)
+		 $display("disk: s_init0, status %x; %t", ata_out, $time);
+`endif
 	    end
 
 	  s_init1:
@@ -941,35 +1030,161 @@ module xbus_disk (
 `ifdef debug_disk
 	       $display("disk: init1");
 `endif
-	       if (bd_rdy && bd_err)
+	       ata_wr = 1;
+	       ata_addr = ATA_DRVHEAD;
+	       ata_in = 16'h00e0/*16'h0040*/;
+	       if (ata_done)
+		 state_next = s_wait0;
+	    end
+
+	  s_wait0:
+	    begin
+	       state_next = s_init2;
+	    end
+
+	  s_init2:
+	    begin
+	       ata_addr = ATA_STATUS;
+	       ata_rd = 1;
+	       if (ata_done &&
+		   ~ata_out[IDE_STATUS_BSY] &&
+		   ata_out[IDE_STATUS_DRDY])
+		 state_next = s_init3;
+	    end
+
+	  s_init3:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_DEVCTRL;
+	       ata_in = 16'h0002;		// nIEN
+	       if (ata_done)
+		 state_next = s_init4;
+	    end
+	  
+	  s_init4:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_SECCNT;
+	       ata_in = 16'd2;
+	       if (ata_done)
+		 state_next = s_init5;
+	    end
+	  
+	  s_init5:
+	    begin
+`ifdef debug
+	       if (debug != 0) 
+	       $display("disk: da %o (unit%d cyl%d head%d block%d) lba %d",
+			disk_da,
+			disk_unit, disk_cyl, disk_head, disk_block,
+			lba);
+	       
+`endif
+	       ata_wr = 1;
+	       ata_addr = ATA_SECNUM;
+	       ata_in = {8'b0, lba[7:0]};	// LBA[7:0]
+	       if (ata_done)
+		 state_next = s_init6;
+	    end
+
+	  s_init6:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_CYLLOW;
+	       ata_in = {8'b0, lba[15:8]};	// LBA[15:8]
+	       if (ata_done)
+		 state_next = s_init7;
+	    end
+
+	  
+	  s_init7:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_CYLHIGH;
+	       ata_in = {8'b0, lba[23:16]};	// LBA[23:16]
+	       if (ata_done)
+		 state_next = s_init8;
+	    end
+
+	  s_init8:
+	    begin
+//	       ata_wr = 1;
+//	       ata_addr = ATA_DRVHEAD;
+//	       ata_in = 16'h00e0/*16'h0040*/;		// LBA[27:24] + LBA
+//	       if (ata_done)
+		 state_next = s_init9;
+	    end
+
+	  s_init9:
+	    begin
+	       ata_wr = 1;
+	       ata_addr = ATA_COMMAND;
+	       ata_in = disk_cmd == DISK_CMD_WRITE ? ATA_CMD_WRITE :
+			disk_cmd == DISK_CMD_RDCMP ? ATA_CMD_READ :
+			disk_cmd == DISK_CMD_READ  ? ATA_CMD_READ : 16'b0;
+	       if (ata_done)
+		 state_next = s_wait1;
+	    end
+
+	  s_wait1:
+	    begin
+	       state_next = s_init10;
+	    end
+	  
+	  s_init10:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = ATA_ALTER;
+	       if (ata_done)
+		 state_next = s_init11;
+	    end
+	  
+	  s_init11:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = ATA_STATUS;
+
+	       if (ata_done && ata_out[IDE_STATUS_ERR])
 		 begin
 		    set_err = 1;
 		 end
 	       
-	       if (bd_rdy && ~bd_err)
+	       if (ata_done && ~ata_out[IDE_STATUS_BSY])
 		 begin
 		    clear_wc = 1;
 		    
-		    if (disk_cmd == DISK_CMD_WRITE)
+//		    if (disk_cmd == DISK_CMD_WRITE)
+//		      state_next = s_write0;
+//		    else
+//		    if ((disk_cmd == DISK_CMD_READ ||
+//			 disk_cmd == DISK_CMD_RDCMP) && ata_out[IDE_STATUS_DRQ])
+//		      state_next = s_read0;
+
+		    if (disk_cmd == DISK_CMD_WRITE && ata_done && ata_out[IDE_STATUS_DRQ])
 		      state_next = s_write0;
 		    else
-		    if (disk_cmd == DISK_CMD_READ || disk_cmd == DISK_CMD_RDCMP)
+		    if ((disk_cmd == DISK_CMD_READ ||
+			 disk_cmd == DISK_CMD_RDCMP) && ata_done && ata_out[IDE_STATUS_DRQ])
 		      state_next = s_read0;
 		 end
 	    end
 
 	  s_read0:
 	    begin
-	       bd_rd = 1;
-	       if (bd_iordy)
+	       ata_rd = 1;
+	       ata_addr = ATA_DATA;
+	       if (ata_done)
 		 state_next = s_read1;
 	    end
-
+	  
 	  s_read1:
 	    begin
-	       bd_rd = 1;
-	       if (bd_iordy)
-		 state_next = s_read2;
+	       ata_rd = 1;
+	       ata_addr = ATA_DATA;
+	       if (ata_done)
+		 begin
+		    state_next = s_read2;
+		 end
 	    end
 	  
 	  s_read2:
@@ -979,13 +1194,13 @@ module xbus_disk (
 	       /* reqout <= 1; */
 	       /* addrout <= { disk_ccw, wc } */
 
-	       dma_dataout = { bd_data_in, disk_data_hold };
+	       dma_dataout = { ata_out, ata_hold };
 	       
 	       /* writeout <= 1; */
 	       
 `ifdef debug_disk
-	       if (busgrantin) $display("s_read2: dma_data_out %o (%x), dma_addr %o, wc 0x%x",
-					dma_dataout, dma_dataout, { 10'b0, disk_ccw, wc }, wc);
+	       if (busgrantin) $display("s_read2: ata_out %o, dma_addr %o",
+			       ata_out, { 10'b0, disk_ccw, wc });
 `endif
 			    
 	       if (busgrantin && ackin)
@@ -1012,23 +1227,23 @@ module xbus_disk (
 
 	  s_write1:
 	    begin
-	       bd_wr = 1;
-	       bd_data_out = dma_data_hold[15:0];
-`ifdef debug_disk
-	       if (busgrantin) $display("s_write1: bd_data_out %o, dma_addr %o",
-					bd_data_in, { 10'b0, disk_ccw, wc });
-`endif
-	       if (bd_iordy)
-		 state_next = s_write2;
+	       ata_wr = 1;
+	       ata_addr = ATA_DATA;
+	       ata_in = dma_data_hold[15:0];
+
+	       if (ata_done)
+		 begin
+		    state_next = s_write2;
+		 end
 	    end
 
 	  s_write2:
 	    begin
-	       bd_wr = 1;
-	       bd_data_out = dma_data_hold[31:16];
+	       ata_wr = 1;
+	       ata_addr = ATA_DATA;
+	       ata_in = dma_data_hold[31:16];
 
-$display("disk: s_write2: wc=%x", wc);
-	       if (bd_iordy)
+	       if (ata_done)
 		 begin
 		    inc_wc = 1;
 		    if (wc == 8'hff)
@@ -1040,21 +1255,20 @@ $display("disk: s_write2: wc=%x", wc);
 	  
 	  s_last0:
 	    begin
-`ifdef debug_disk
-	       $display("disk: s_last0");
-`endif
-	       if (bd_rdy)
+	       ata_rd = 1;
+	       ata_addr = ATA_ALTER;
+	       if (ata_done)
 		 state_next = s_last1;
 	    end
 	  
 	  s_last1:
 	    begin
-`ifdef debug_disk
-	       $display("disk: s_last1");
-`endif
-	       if (bd_rdy)
+	       ata_rd = 1;
+	       ata_addr = ATA_STATUS;
+
+	       if (ata_done)
 		 begin
-		    if (bd_err)
+		    if (ata_out[IDE_STATUS_ERR])
 		      set_err = 1;
 
 		    state_next = s_last2;
@@ -1095,6 +1309,18 @@ $display("disk: s_write2: wc=%x", wc);
 `endif
 	    end
 
+	  s_ide_rd0:
+	    begin
+	       ata_rd = 1;
+	       ata_addr = dbg_ide_reg[4:0];
+
+	       if (ata_done)
+		 state_next = s_ide_rd1;
+	    end
+		 
+	  s_ide_rd1:
+	    state_next = s_idle;
+		 
 	  default:
 	    begin
 	    end

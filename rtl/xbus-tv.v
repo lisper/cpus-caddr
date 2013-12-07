@@ -155,7 +155,7 @@ module xbus_tv(
 		  end
 
 `ifdef debug
-	  if (vram_done)
+	  if (fb_write_req && vram_done)
 	    $display("tv: write @%o done <- %o; state %b %t",
 		     addr, datain, fb_state, $time);
 //	  if (vram_ready)

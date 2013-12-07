@@ -59,7 +59,9 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
                  .PSCLK(GND1), 
                  .PSEN(GND1), 
                  .PSINCDEC(GND1), 
-                 .RST(dcm_reset), 
+                 .RST(dcm_reset),
+		 .CLK0(),
+		 .CLKDV(),
                  .CLKFX(CLKFX_BUF), 
                  .CLK2X(CLK2X_BUF), 
                  .LOCKED(LOCKED_OUT));
@@ -86,6 +88,13 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 
    DCM dcm100(.CLKIN(sysclk_buf),
 	      .RST(dcm_reset),
+	      .DSSEN(), 
+              .PSCLK(), 
+              .PSEN(), 
+              .PSINCDEC(), 
+	      .CLKDV(),
+              .CLKFX(), 
+              .LOCKED(),
 	      .CLKFB(clk50/*_dcm*/),
 	      .CLK0(clk50_dcm),
 	      .CLK2X(clk100_dcm));
@@ -129,7 +138,10 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 `endif
 
 `ifdef fixed_clock_25mhz
-   reg clk25, clk12;
+   reg clk25;
+
+   initial
+     clk25 = 0;
 
    always @(posedge clk50)
      clk25 = ~clk25;
@@ -139,6 +151,12 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 
 `ifdef fixed_clock_12mhz
    reg clk25, clk12;
+
+   initial
+     begin
+	clk12 = 0;
+	clk25 = 0;
+     end
 
    always @(posedge clk50)
      clk25 = ~clk25;

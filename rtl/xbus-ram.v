@@ -50,5 +50,14 @@ module xbus_ram (
    assign sdram_data_out = datain;
    assign dataout = sdram_data_in;
 
+`ifdef debug_decode
+   always @(posedge clk)
+     if (sdram_req || sdram_write)
+       begin
+	  $display("xbus-ram: sdram decode req %b%b addr=%o; datain=%o dataout=%o %t",
+		   sdram_req, sdram_write, addr, datain, dataout, $time);
+       end
+`endif
+
 endmodule
 

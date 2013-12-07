@@ -71,7 +71,8 @@ module busint(mclk, reset,
 	      vram_addr, vram_data_in, vram_data_out,
 	      vram_req, vram_ready, vram_write, vram_done,
 
-	      ide_data_in, ide_data_out, ide_dior, ide_diow, ide_cs, ide_da,
+	      bd_cmd, bd_start, bd_bsy, bd_rdy, bd_err, bd_addr,
+	      bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy,
 
 	      kb_data, kb_ready,
 	      ms_x, ms_y, ms_button, ms_ready,
@@ -91,12 +92,17 @@ module busint(mclk, reset,
    input 	 req, write;
    output 	 ack, load, interrupt;
    
-   input [15:0]  ide_data_in;
-   output [15:0] ide_data_out;
-   output 	 ide_dior;
-   output 	 ide_diow;
-   output [1:0]  ide_cs;
-   output [2:0]  ide_da;
+   output [1:0]  bd_cmd;	/* generic block device interface */
+   output 	 bd_start;
+   input 	 bd_bsy;
+   input 	 bd_rdy;
+   input 	 bd_err;
+   output [23:0] bd_addr;
+   input [15:0]  bd_data_in;
+   output [15:0] bd_data_out;
+   output 	 bd_rd;
+   output 	 bd_wr;
+   input 	 bd_iordy;
 
    output 	 promdisable;
    output [4:0]  disk_state;
@@ -229,12 +235,17 @@ module busint(mclk, reset,
 		   .writeout(disk_write2busint),
 		   .decodein(decodein_disk),
 
-		   .ide_data_in(ide_data_in),
-		   .ide_data_out(ide_data_out),
-		   .ide_dior(ide_dior),
-		   .ide_diow(ide_diow),
-		   .ide_cs(ide_cs),
-		   .ide_da(ide_da),
+		   .bd_cmd(bd_cmd),
+		   .bd_start(bd_start),
+		   .bd_bsy(bd_bsy),
+		   .bd_rdy(bd_rdy),
+		   .bd_err(bd_err),
+		   .bd_addr(bd_addr),
+		   .bd_data_in(bd_data_in),
+		   .bd_data_out(bd_data_out),
+		   .bd_rd(bd_rd),
+		   .bd_wr(bd_wr),
+		   .bd_iordy(bd_iordy),
 
 		   .disk_state(disk_state)
 		  );
@@ -383,7 +394,7 @@ module busint(mclk, reset,
 	    end
 `endif
 	  
-`ifdef debug_detail
+`ifdef debug_detail_xx
 	  if (next_state != state)
 	    begin
 	       case (next_state)
@@ -400,32 +411,38 @@ module busint(mclk, reset,
 		 default:   $display("busint: ??; %t", $time);
 	       endcase
 	    end
+`endif
 
-	  if (next_state == BUS_REQ)
-	    $display("busint: REQ req %b write %b decode_dram %b",
-		     req, write, decode_dram);
+`ifdef debug_detail
+	  if (next_state != state)
+	  case (next_state)
+	    BUS_REQ:
+	      begin
+		 $display("busint: REQ req %b write %b decode_dram %b",
+			  req, write, decode_dram);
+		 $display("busint: REQ req %b dram_reqin %b dram_writein %b",
+			  req, dram_reqin, dram_writein);
+		 $display("busint: REQ req %b ack %b; acks %b %b %b %b %b",
+			  req, device_ack, 
+			  ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
+	      end
+	    BUS_WAIT:
+	      $display("busint: WAIT req %b ack %b; acks %b %b %b %b %b",
+		       req, device_ack, 
+		       ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
+	    BUS_SLAVE:
+	      begin
+		 #1 $display("busint: SLAVE addr %o; %t", dram_addr, $time);
+		 #1 $display("busint: slave req %b ack %b; ack_dram %b",
+			  req, device_ack, ack_dram);
+	      end
 
-	  if (next_state == BUS_REQ)
-	    $display("busint: REQ req %b dram_reqin %b dram_writein %b",
-		     req, dram_reqin, dram_writein);
+	    BUS_SWAIT: $display("busint: SWAIT addr %o; %t",
+				dram_addr, $time);
 
-	  if (next_state == BUS_REQ)
-	    $display("busint: REQ req %b ack %b; acks %b %b %b %b %b",
-		     req, device_ack, 
-		     ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
-
-	  if (next_state == BUS_WAIT)
-	    $display("busint: WAIT req %b ack %b; acks %b %b %b %b %b",
-		     req, device_ack, 
-		     ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
-
-	  if (next_state == BUS_SLAVE)
-	    begin
-	       $display("busint: BUS_SLAVE addr %o; %t", dram_addr, $time);
-
-	       $display("busint: slave req %b ack %b; ack_dram %b",
-			req, device_ack, ack_dram);
-	    end
+	    BUS_IDLE:  $display("busint: IDLE               ; %t",
+				$time);
+	  endcase
 `endif
 
        end

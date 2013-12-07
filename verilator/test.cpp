@@ -10,7 +10,7 @@
 
 //#define RC_SYNC_CHECK
 #define LOAD_MEMORIES
-#define RC_MEM
+//#define RC_MEM
 //#define MODEL_MEM
 
 Vtest *top;                      // Instantiation of module
@@ -146,6 +146,7 @@ int main(int argc, char** argv)
 
     int reset_mult = 1;
     int loop_count = 0;
+    int wait_count = 0;
     int max_loop = 20;
     char *mem_filename;
     int result = 0;
@@ -468,6 +469,21 @@ int main(int argc, char** argv)
 
 	if (loop_count > max_loop) {
 		VL_PRINTF("MC STOP ERROR PROM; lpc %o, main_time %lld\n",
+			  top->v__DOT__cpu__DOT__lpc, main_time);
+		vl_finish("test.cpp",__LINE__,"");
+		result = 2;
+	}
+
+	/* catch looping on disk */
+	if (top->v__DOT__cpu__DOT__state == 32) {
+		if (top->v__DOT__cpu__DOT__lpc == 0610)
+			wait_count = 0;
+		if (top->v__DOT__cpu__DOT__lpc == 0614)
+			wait_count++;
+	}
+
+	if (wait_count > 10000) {
+		VL_PRINTF("MC WAIT DISK; lpc %o, main_time %lld\n",
 			  top->v__DOT__cpu__DOT__lpc, main_time);
 		vl_finish("test.cpp",__LINE__,"");
 		result = 2;

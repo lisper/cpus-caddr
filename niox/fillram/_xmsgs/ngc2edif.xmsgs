@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IMPORTANT: This is an internal file that has been generated
+     by the Xilinx ISE software.  Any direct editing or
+     changes made to this file may result in unpredictable
+     behavior or data corruption.  It is strongly advised that
+     users do not edit the contents of this file. -->
+<messages>
+<msg type="warning" file="NetListWriters" num="298" delta="old" >No output is written to <arg fmt="%s" index="1">top_niox.xncf</arg>, ignored.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/kb_data</arg><arg fmt="%s" index="2">&lt;15 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/ms_x</arg><arg fmt="%s" index="2">&lt;11 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/ms_y</arg><arg fmt="%s" index="2">&lt;11 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">bd_state</arg><arg fmt="%s" index="2">&lt;10 : 7&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/_n2056</arg><arg fmt="%s" index="2">&lt;8 : 1&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/STATE</arg><arg fmt="%s" index="2">&lt;5 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/RstCounter</arg><arg fmt="%s" index="2">&lt;9 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/IODRPCTRLR_MEMCELL_ADDR</arg><arg fmt="%s" index="2">&lt;7 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/iodrp_controller/memcell_addr_reg</arg><arg fmt="%s" index="2">&lt;7 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/iodrp_mcb_controller/memcell_addr_reg</arg><arg fmt="%s" index="2">&lt;7 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/mouse/m_b2</arg><arg fmt="%s" index="2">&lt;5 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/keyboard/data</arg><arg fmt="%s" index="2">&lt;15 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/keyboard/scancode_convert/keycode</arg><arg fmt="%s" index="2">&lt;8 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/dlmb_datai</arg><arg fmt="%s" index="2">&lt;15 : 7&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/bus/unibus/dataout</arg><arg fmt="%s" index="2">&lt;10 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/bus/disk/n0389[16:0]</arg><arg fmt="%s" index="2">&lt;9 : 6&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/bus/io/iob_key_scan</arg><arg fmt="%s" index="2">&lt;16 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/bus/io/mouse_y</arg><arg fmt="%s" index="2">&lt;11 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/bus/io/mouse_x</arg><arg fmt="%s" index="2">&lt;11 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">cpu/bus/unibus/GND_19_o_offset[5]_mux_24_OUT</arg><arg fmt="%s" index="2">&lt;10 : 0&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+<msg type="warning" file="NetListWriters" num="306" delta="old" >Signal bus <arg fmt="%s" index="1">ps2_support/keyboard/scancode_convert/scancode_rom/data</arg><arg fmt="%s" index="2">&lt;8 : 2&gt;</arg> on block <arg fmt="%s" index="3">top_niox</arg> is not reconstructed, because there are some missing bus signals.
+</msg>
+
+</messages>
+

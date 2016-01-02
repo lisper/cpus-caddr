@@ -1,0 +1,127 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Tue Mar 25 12:07:35 2014
+[*]
+[dumpfile] "/files/code/cpus/caddr/verif/run-disk.vcd"
+[dumpfile_mtime] "Tue Mar 25 11:57:31 2014"
+[dumpfile_size] 59384589
+[savefile] "/files/code/cpus/caddr/verif/run-disk-mmc.sav"
+[timestart] 5142306
+[size] 1437 651
+[pos] 45 -14
+*-10.271916 5145040 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_busint.
+[treeopen] test_busint.busint.
+[treeopen] test_busint.busint.disk.
+[treeopen] test_busint.mmc_bd.
+[sst_width] 224
+[signals_width] 296
+[sst_expanded] 1
+[sst_vpaned_height] 169
+@28
+test_busint.clk
+test_busint.reset
+@22
+test_busint.busint.state[3:0]
+@28
+test_busint.busint.req
+test_busint.busint.ack
+test_busint.busint.write
+test_busint.busint.load
+test_busint.busint.disk.decode
+@200
+-
+@22
+test_busint.busint.disk.disk_state[4:0]
+@24
+test_busint.busint.disk.state[4:0]
+@22
+test_busint.busint.disk.wc[7:0]
+@200
+-
+@28
+test_busint.mmc_bd.bd_start
+test_busint.mmc_bd.bd_rd
+test_busint.mmc_bd.bd_wr
+test_busint.mmc_bd.bd_rdy
+test_busint.mmc_bd.bd_iordy
+test_busint.mmc_bd.bd_cmd[1:0]
+test_busint.mmc_bd.bd_cmd_hold[1:0]
+@24
+test_busint.mmc_bd.state[5:0]
+@28
+test_busint.mmc_bd.inc_wc
+@22
+test_busint.mmc_bd.wc[7:0]
+test_busint.mmc_bd.data_hold[15:0]
+@200
+-
+@28
+test_busint.mmc_bd.mmc.clk
+test_busint.mmc_bd.mmc.init
+test_busint.mmc_bd.mmc.done
+test_busint.mmc_bd.mmc.rd
+test_busint.mmc_bd.mmc.wr
+test_busint.mmc_bd.mmc.send
+test_busint.mmc_bd.mmc.stop
+@22
+test_busint.mmc_bd.mmc.data_in[7:0]
+test_busint.mmc_bd.mmc.data_out[7:0]
+@200
+-
+@28
+test_busint.mmc_sclk
+test_busint.mmc_cs
+test_busint.mmc_di
+test_busint.mmc_do
+@200
+-
+@28
+test_busint.busint.ack
+test_busint.busint.req
+test_busint.busint.decode_disk
+@22
+test_busint.busint.addr[21:0]
+test_busint.busint.state[3:0]
+@28
+test_busint.busint.disk.decode
+test_busint.busint.disk.decodeout
+test_busint.busint.disk.reqin
+@22
+test_busint.busint.disk.dataout[31:0]
+test_busint.busint.dataout_disk[31:0]
+test_busint.busint.busin[31:0]
+test_busint.busint.busout[31:0]
+@200
+-
+@28
+test_busint.mmc_bd.mmc.clk
+test_busint.mmc_bd.mmc.mmc_cs
+test_busint.mmc_bd.mmc.mmc_sclk
+test_busint.mmc_bd.mmc.mmc_do
+@29
+test_busint.mmc_bd.mmc.mmc_di
+@22
+test_busint.mmc_bd.mmc.bit_time[15:0]
+@28
+test_busint.mmc_bd.mmc.bit_middle
+test_busint.mmc_bd.mmc.bit_end
+test_busint.mmc_bd.mmc.sclk_toggle
+test_busint.mmc_bd.mmc.sclk_assert
+@24
+test_busint.mmc_bd.mmc.sclk_state[1:0]
+test_busint.mmc_bd.mmc.state[3:0]
+@28
+test_busint.mmc_bd.mmc.counting_bits
+@24
+test_busint.mmc_bd.mmc.bitcount[7:0]
+@28
+test_busint.mmc_bd.mmc.bit_sample
+@22
+test_busint.mmc_bd.mmc.bitmiddle[31:0]
+test_busint.mmc_bd.mmc.bitwidth[31:0]
+@28
+test_busint.mmc_bd.mmc.pos_edge
+test_busint.mmc_bd.mmc.neg_edge
+[pattern_trace] 1
+[pattern_trace] 0

@@ -111,7 +111,8 @@
 
 module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
-	       spy_in, spy_out, dbread, dbwrite, eadr,
+	       spy_in, spy_out,
+	       dbread, dbwrite, eadr, spy_reg, spy_rd, spy_wr,
 
 	       pc_out, state_out, machrun_out,
 	       prefetch_out, fetch_out,
@@ -127,7 +128,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	       vram_req, vram_ready, vram_write, vram_done,
 
 	       bd_cmd, bd_start, bd_bsy, bd_rdy, bd_err, bd_addr,
-	       bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy,
+	       bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy, bd_state_in,
 
 	       kb_data, kb_ready,
 	       ms_x, ms_y, ms_button, ms_ready );
@@ -142,8 +143,11 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    output [15:0] spy_out;
    input 	dbread;
    input 	dbwrite;
-   input [3:0] 	eadr;
-
+   input [4:0] 	eadr;
+   output [3:0]	spy_reg;
+   output 	spy_rd;
+   output 	spy_wr;
+   
    output [13:0] pc_out;
    output [5:0]  state_out;
    output [4:0]  disk_state_out;
@@ -186,6 +190,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    output 	 bd_rd;
    output 	 bd_wr;
    input 	 bd_iordy;
+   input [11:0]  bd_state_in;
 
    input [15:0]  kb_data;
    input 	 kb_ready;
@@ -552,13 +557,19 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    // SPY 0
 
    wire   spy_obh, spy_obl, spy_pc, spy_opc,
-	  spy_nc, spy_irh, spy_irm, spy_irl;
+	  spy_scratch, spy_irh, spy_irm, spy_irl;
 
    wire   spy_sth, spy_stl, spy_ah, spy_al,
 	  spy_mh, spy_ml, spy_flag2, spy_flag1;
 
-   wire   ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl;
+   wire   spy_mdh, spy_mdl, spy_vmah, spy_vmal, spy_obh_, spy_obl_;
+   wire   spy_disk, spy_bd;
+   
+   wire   ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl, ldscratch1, ldscratch2;
+   wire   ldmdh, ldmdl, ldvmah, ldvmal;
    wire   set_promdisable;
+
+   reg [15:0] scratch;
    
 `ifdef debug
    integer 	  debug;
@@ -877,12 +888,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			    .rden_b(1'b0)
 			    );
 
-`ifdef debug_amem
-   always @(posedge clk)
-     if (awp && aadr != 0)
-       $display("amem: W %o <- %o", aadr, l);
-`endif
-   
    // page CONTRL
 
    assign dfall  = dr & dp;			/* push-pop fall through */
@@ -1086,11 +1091,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (state_fetch && destintctl)
 	 begin
-`ifdef debug
-	    if (debug > 0)
-	      $display("destintctl: ob %o (%b %b %b %b)",
-		       ob, ob[29], ob[28], ob[27], ob[26]);
-`endif
             lc_byte_mode <= ob[29];
             prog_unibus_reset <= ob[28];
             int_enable <= ob[27];
@@ -1120,18 +1120,9 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if (state_fetch)
 	 begin
-	    ir[48] <= ~destimod1 ? i[48] : 0;
+	    ir[48] <= ~destimod1 ? i[48] : 1'b0;
 	    ir[47:26] <= ~destimod1 ? i[47:26] : iob[47:26]; 
 	    ir[25:0] <= ~destimod0 ? i[25:0] : iob[25:0];
-`ifdef debug_iram
-	    if (~destimod0 && ~destimod0 && ~promenable)
-	      $display("iram: [%o] -> %o; %t", pc, iram, $time);
-`endif
-`ifdef debug_detail
-	    if (destimod1)
-	      $display("destimod1: lpc %o ob %o ir %o",
-		       lpc, ob[21:0], { iob[47:26], i[25:0] });
-`endif
 	 end
 
 
@@ -1253,22 +1244,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	    next_instrd <= next_instr;
 	 end
 
-`ifdef use_iologger
-   always @(posedge clk)
-     begin
-	if (state_fetch && ~sintr && bus_int)
-	  test.iologger(32'd3, 0, 1);
-	if (state_fetch && sintr && ~bus_int)
-	  test.iologger(32'd3, 0, 0);
-     end
-`endif
-
-`ifdef debug_ifetch
-   always @(posedge clk)
-     if (ifetch && state_fetch)
-       $display("(lba) ifetch! lpc %o, lc %o; %t", lpc, lc, $time);
-`endif
-   
    // mustn't depend on nop
 
    assign lc_modifies_mrot  = ir[10] & ir[11];
@@ -1332,27 +1307,15 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        if ((loadmd && memrq) || (state_alu && destmdr))
 	 begin
-`ifdef debug_md
-            if (debug != 0)
-	    if (state_fetch && destmdr)
-	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o; lpc %o",
-		       mds, mdsel, osel, alu, mo, lpc);
-	    else
-	      $display("load md <- %o; L lpc %o; %t", mds, lpc, $time);
-	    $display("load md <- %o; %t", mds, $time);
-`endif
 	    md <= mds;
 	    mdhaspar <= mdgetspar;
 	 end
-
-`ifdef debug
-   always @(posedge clk) 
-     if (loadmd && (state_fetch && destmdr))
-       begin
-	  $display("XXXX loadmd and destmdr conflict, lpc %o; %t", lpc, $time);
-	  $finish;
-       end
-`endif
+       else
+	 if (ldmdh)
+	   md[31:16] <= spy_in;
+	 else
+	   if (ldmdl)
+	     md[15:0] <= spy_in;
    
    assign mddrive = srcmd &
 		    (state_alu || state_write || state_mmu || state_fetch);
@@ -1418,12 +1381,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			  .rden_b(1'b0)
 			);
 
-`ifdef debug_mmem
-   always @(posedge clk)
-     if (mwp && madr != 0)
-       $display("mmem: %o <- %o; %t", madr, l, $time);
-`endif
-
    // page MO
 
    //for (i = 0; i < 31; i++)
@@ -1484,43 +1441,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 	 pc <= npc;
 
    assign ipc = pc + 14'd1;
-
-`ifdef debug_dispatch
-   always @(posedge clk)
-     if (state_fetch && irdisp/*({pcs1,pcs0} == 2'b10)*/)
-       begin
-	  $display("dispatch: dadr=%o %b%b%b %o; dmask %o r %o ir %b vmo %b md %o",
-		   dadr, dr, dp, dn, dpc, dmask, r[11:0],
-		   {ir[8], ir[9]}, {vmo[19],vmo[18]}, md);
-	  $display("dispatch: mapi %o vmap %o vmem1_adr %o vmo %o",
-		   mapi[23:13], vmap, vmem1_adr, vmo);
-	  $display("dispatch: pcs %b, dispenb %b dfall %b; vmo[19:18] %o, npc %o",
-		   {pcs1,pcs0}, dispenb, dfall, vmo[19:18], npc);
-       end
-`endif
-   
-`ifdef debug_detail
-   always @(posedge clk)
-     if (~reset)
-       begin
-	  $display("; npc %o ipc %o, spc %o, pc %o pcs %b%b state %b",
-		   npc, ipc, spc, pc, pcs1, pcs0, state);
-	  $display("; spco %o, spcw %o",
-	  	   spco, spcw);
-	  $display("; %b %b %b %b (%b %b)", 
-		   (popj & ~ignpopj),
-		   (jfalse & ~jcond),
-		   (irjump & ~ir[6] & jcond),
-		   (dispenb & dr & ~dp),
-		   popj, ignpopj);
-	  $display("; conds=%b,  aeqm=%b, aeqm_bits=%b",
-		   conds, aeqm, aeqm_bits);
-	  $display("; trap=%b,  trapenb=%b boot_trap=%b",
-		   trap, trapenb, boot_trap);
-	  $display("; nopa %b, inop %b, nop11 %b",
-		   nopa, inop, nop11);
-       end
-`endif
 
    // page OPCD
 
@@ -1595,12 +1515,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        if (state_write && destpdlx)
 	 pdlidx <= ob[9:0];
 
-`ifdef debug
-   always @(posedge clk)
-     if (state_write && destpdlx && pdlidx != ob[9:0] && debug > 0)
-       $display("pdlidx <- %o", ob[9:0]);
-`endif
-   
    // pdlpop = read[pdlptr] (state_read), pdlptr-- (state_fetch)
    // pdlpush = pdlptr++ (state_read), write[pdlptr] (state_write)
    
@@ -1936,35 +1850,46 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        ob_last <= 0;
      else
-       if (state_fetch)
+       if (/*state_fetch*/state_write)
 	 ob_last <= ob;
    
    wire[15:0] spy_mux;
 
    assign spy_out = dbread ? spy_mux : 16'b1111111111111111;
 
+   wire [4:0] disk_state_in;
+   
    assign spy_mux =
 	spy_irh ? ir[47:32] :
 	spy_irm ? ir[31:16] :
 	spy_irl ? ir[15:0] :
 	spy_obh ? ob_last[31:16] :
 	spy_obl ? ob_last[15:0] :
+spy_obh_ ? ob[31:16] :
+spy_obl_ ? ob[15:0] :
+        spy_disk ? { 11'b0, disk_state_in } :
+        spy_bd ? { 4'b0, bd_state_in } :
 	spy_ah  ? a[31:16] :
 	spy_al  ? a[15:0] :
 	spy_mh  ? m[31:16] :
 	spy_ml  ? m[15:0] :
+	spy_mdh ? md[31:16] :
+        spy_mdl ? md[15:0] :
+	spy_vmah ? vma[31:16] :
+        spy_vmal ? vma[15:0] :
 	spy_flag2 ?
 			{ 2'b0,wmap,destspc,iwrited,imod,pdlwrite,spush,
 			  2'b0,ir[48],nop,vmaok,jcond,pcs1,pcs0 } :
 	spy_opc ?
 			{ 2'b0,opc } :
 	spy_flag1 ?
-			{ waiting, 1'b0, 1'b0, promdisable,
+			{ waiting, 1'b0, boot, promdisable,
 			  stathalt, err, ssdone, srun,
 			  1'b0, 1'b0, 1'b0, 1'b0,
 			  1'b0, 1'b0, 1'b0, 1'b0 } :
 	spy_pc ?
 			{ 2'b0,pc } :
+        spy_scratch ?   scratch :
         16'b1111111111111111;
 
 
@@ -2042,21 +1967,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    assign memrq = mbusy | (memcheck & ~memstart & (pfr | pfw));
 
-`ifdef debug_xbus
-   always @(posedge clk)
-     begin
-	if (memstart & ~vmaok)
-	  $display("xbus: access fault, l1[%o]=%o, l2[%o]= %b%b %o; %t",
-		   mapi[23:13], vmap,
-		   vmem1_adr, vmo[23], vmo[22], vmo[21:0],
-		   $time);
-	if (memstart & vmaok)
-	  $display("xbus: start l1[%o]=%o, l2[%o]= %b%b %o",
-		   mapi[23:13], vmap,
-		   vmem1_adr, vmo[23], vmo[22], vmo[21:0]);
-     end
-`endif
-   
    always @(posedge clk)
      if (reset)
        mbusy <= 0;
@@ -2146,17 +2056,15 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      if (reset)
        vma <= 0;
      else
-       begin
-	  if (state_alu && vmaenb)
-	    begin
-	       vma <= vmas;
-`ifdef debug_vma
-	       if (vma != vmas)
-		 $display("vma <- %o", vmas);
-`endif
-	    end
-       end
-
+       if (state_alu && vmaenb)
+	 vma <= vmas;
+       else
+	 if (ldvmah)
+	   vma[31:16] <= spy_in;
+	 else
+	   if (ldvmal)
+	     vma[15:0] <= spy_in;
+   
    assign vmadrive = srcvma &
 		     (state_alu || state_write || state_fetch);
 
@@ -2190,20 +2098,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 			  .rden_b(1'b0)
 			  );
 
-`ifdef debug
-   always @(vm0wp or mapwr0 or state_write)
-     if (debug != 0)
-     if (vm0wp)
-       $display("vm0wp %b, a=%o, di=%o; %t",
-		vm0wp, mapi[23:13], vma[31:27], $time);
-
-   always @(vm1wp or mapwr1 or state_write)
-     if (debug != 0)
-     if (vm1wp)
-       $display("vm1wp %b, a=%o, di=%o; %t",
-		vm1wp, vmem1_adr, vma[23:0], $time);
-`endif
-   
    assign use_map = srcmap | memstart;
 
    // page VMEM1&2
@@ -2238,29 +2132,6 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
    assign mapdrive = srcmap &
 		     (state_alu || state_write || state_mmu || state_fetch);
 
-   
-`ifdef debug_vmem
-   always @(memprepare or memstart or mapi or vmo or vmap or clk)
-     if (memprepare && memstart)
-       begin
-	  $display("%t prep vmem0_adr %o, vmap=%o",
-		   $time, mapi[23:13], vmap);
-	  $display("%t prep vmem1_adr %o, vma=%o, vmo[23:22]=%b%b, vmo=%o",
-		   $time, vmem1_adr, vma, vmo[23], vmo[22], vmo[21:0]);
-       end
-   
-   always @(memrq)
-     if (memrq)
-       begin
-	  $display("%t req vmem0_adr %o, vmap=%o",
-		   $time, mapi[23:13], vmap);
-	  $display("%t req vmem1_adr %o, vma=%o, vmo[23:22]=%b, vmo[21:0]=%o",
-		   $time, vmem1_adr, vma, {vmo[23], vmo[22]}, vmo[21:0]);
-	  $display("%t req lvmo_23,22 %b%b, pma=%o",
-		   $time, lvmo_23, lvmo_22, pma);
-       end
-`endif
-  
    // page DEBUG
 
    always @(posedge clk)
@@ -2323,6 +2194,17 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
        else
 	 if (set_promdisable)
 	   promdisable <= 1;
+
+   always @(posedge clk)
+     if (reset)
+       begin
+	  scratch <= 16'h1234;
+       end
+     else
+       if (ldscratch2 || ldscratch1)
+	 begin
+	    scratch <= spy_in;
+	 end
 	   
    always @(posedge clk)
      if (reset)
@@ -2377,15 +2259,16 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
      else
        begin
 	  srun <= run;
-	  sstep <= step;
-	  ssdone <= sstep;
+//	  sstep <= step;
+//	  ssdone <= sstep;
+if (sstep == 0 && step) begin
+   sstep <= step;
+   ssdone <= 0;
+end
+else
+  sstep <= step;
+if (state_fetch) ssdone <= sstep;
 	  promdisabled <= promdisable;
-`ifdef debug
-	  if (promdisable == 1 && promdisabled == 0)
-	    $display("prom: disabled");
-	  if (promdisable == 0 && promdisabled == 1)
-	    $display("prom: enabled");
-`endif
        end
 
    assign machrun = (sstep & ~ssdone) |
@@ -2514,9 +2397,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 
    // page SPY0
 
+`ifdef old_spy
    /* read registers */
    assign {spy_obh, spy_obl, spy_pc, spy_opc,
-	   spy_nc, spy_irh, spy_irm, spy_irl} =
+	   spy_scratch, spy_irh, spy_irm, spy_irl} =
 	  (eadr[3] | ~dbread) ? 8'b0000000 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
 		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
@@ -2543,16 +2427,77 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		                                        8'b00000000;
 
    /* load registers */
-   assign {ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl} =
-	  (~dbwrite) ? 6'b000000 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 6'b000001 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 6'b000010 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 6'b000100 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 6'b001000 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 6'b010000 :
-		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 6'b100000 :
-		                                        6'b000000;
+   assign {ldscratch2, ldscratch1, ldmode, ldopc, ldclk, lddbirh, lddbirm, lddbirl} =
+	  (~dbwrite) ? 8'b00000000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b000) ? 8'b00000001 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b001) ? 8'b00000010 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b010) ? 8'b00000100 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b011) ? 8'b00001000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b100) ? 8'b00010000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b101) ? 8'b00100000 :
+		({eadr[2],eadr[1],eadr[0]} == 3'b110) ? 8'b01000000 :
+                ({eadr[2],eadr[1],eadr[0]} == 3'b111) ? 8'b10000000 :
+		                                        8'b00000000;
+`else
+   /* read registers */
+   assign {spy_obh, spy_obl, spy_pc, spy_opc,
+	   spy_scratch, spy_irh, spy_irm, spy_irl} =
+          ({dbread, eadr} == 6'b10_0000) ? 8'b00000001 :
+          ({dbread, eadr} == 6'b10_0001) ? 8'b00000010 :
+          ({dbread, eadr} == 6'b10_0010) ? 8'b00000100 :
+          ({dbread, eadr} == 6'b10_0011) ? 8'b00001000 :
+          ({dbread, eadr} == 6'b10_0100) ? 8'b00010000 :
+          ({dbread, eadr} == 6'b10_0101) ? 8'b00100000 :
+          ({dbread, eadr} == 6'b10_0110) ? 8'b01000000 :
+          ({dbread, eadr} == 6'b10_0111) ? 8'b10000000 :
+		                           8'b00000000;
 
+   /* read registers */
+   assign {spy_sth, spy_stl, spy_ah, spy_al,
+	   spy_mh, spy_ml, spy_flag2, spy_flag1} =
+          ({dbread, eadr} == 6'b10_1000) ? 8'b00000001 :
+          ({dbread, eadr} == 6'b10_1001) ? 8'b00000010 :
+          ({dbread, eadr} == 6'b10_1010) ? 8'b00000100 :
+          ({dbread, eadr} == 6'b10_1011) ? 8'b00001000 :
+          ({dbread, eadr} == 6'b10_1100) ? 8'b00010000 :
+          ({dbread, eadr} == 6'b10_1101) ? 8'b00100000 :
+          ({dbread, eadr} == 6'b10_1110) ? 8'b01000000 :
+          ({dbread, eadr} == 6'b10_1111) ? 8'b10000000 :
+		                           8'b00000000;
+
+   /* read registers */
+   assign {spy_bd, spy_disk, spy_obh_, spy_obl_, spy_vmah, spy_vmal, spy_mdh, spy_mdl} =
+          ({dbread, eadr} == 6'b11_0000) ? 8'b00000001 :
+          ({dbread, eadr} == 6'b11_0001) ? 8'b00000010 :
+          ({dbread, eadr} == 6'b11_0010) ? 8'b00000100 :
+          ({dbread, eadr} == 6'b11_0011) ? 8'b00001000 :
+          ({dbread, eadr} == 6'b11_0100) ? 8'b00010000 :
+          ({dbread, eadr} == 6'b11_0101) ? 8'b00100000 :
+          ({dbread, eadr} == 6'b11_0110) ? 8'b01000000 :
+          ({dbread, eadr} == 6'b11_0111) ? 8'b10000000 :
+                                           8'b00000000;
+
+   /* load registers */
+   assign {ldscratch2, ldscratch1, ldmode,
+	   ldopc, ldclk, lddbirh, lddbirm, lddbirl} =
+          ({dbwrite, eadr} == 6'b10_0000) ? 8'b00000001 :
+          ({dbwrite, eadr} == 6'b10_0001) ? 8'b00000010 :
+          ({dbwrite, eadr} == 6'b10_0010) ? 8'b00000100 :
+          ({dbwrite, eadr} == 6'b10_0011) ? 8'b00001000 :
+          ({dbwrite, eadr} == 6'b10_0100) ? 8'b00010000 :
+          ({dbwrite, eadr} == 6'b10_0101) ? 8'b00100000 :
+          ({dbwrite, eadr} == 6'b10_0110) ? 8'b01000000 :
+          ({dbwrite, eadr} == 6'b10_0111) ? 8'b10000000 :
+		                            8'b00000000;
+
+   assign {ldvmah, ldvmal, ldmdh, ldmdl} =
+          ({dbwrite, eadr} == 6'b10_1000) ? 4'b0001 :
+          ({dbwrite, eadr} == 6'b10_1001) ? 4'b0010 :
+          ({dbwrite, eadr} == 6'b10_1010) ? 4'b0100 :
+          ({dbwrite, eadr} == 6'b10_1011) ? 4'b1000 :
+		                            4'b0000;
+`endif
+   
    // *************
    // Bus Interface
    // *************
@@ -2568,7 +2513,10 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .busout(busint_bus),
 		 .spyin(spy_in),
 		 .spyout(busint_spyout),
-
+		 .spyreg(spy_reg),
+		 .spyrd(spy_rd),
+		 .spywr(spy_wr),
+		 
 		 .req(memrq),
 		 .ack(memack),
 		 .write(wrcyc),
@@ -2603,6 +2551,7 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .bd_rd(bd_rd),
 		 .bd_wr(bd_wr),
 		 .bd_iordy(bd_iordy),
+		 .bd_state_in(bd_state_in),
 
 		 .kb_data(kb_data),
 		 .kb_ready(kb_ready),
@@ -2616,5 +2565,224 @@ module caddr ( clk, ext_int, ext_reset, ext_boot, ext_halt,
 		 .bus_state(bus_state_out)
 		 );
 
+
+   assign disk_state_in = busint.disk.state;
+   
+`ifdef debug
+   // ======================================================================================
+   // monitors
+
+   always @(posedge clk)
+     begin
+       if ((loadmd && memrq) || (state_alu && destmdr))
+	 $display("md: load <- %o", mds);
+       else
+	 if (ldmdh)
+	   $display("spy: load md[31:16] <= %o", spy_in);
+	 else
+	   if (ldmdl)
+	     $display("spy: load md[15:0] <= %o", spy_in);
+
+       if (state_alu && vmaenb)
+	 $display("vma: load <- %o", vmas);
+       else
+	 if (ldvmah)
+	   $display("vma: load vma[31:16] <- %o", spy_in);
+	 else
+	   if (ldvmal)
+	     $display("vma: load vma[15:0] <- %o", spy_in);
+
+       if (state_fetch && destintctl)
+	 if (debug > 0)
+	   $display("destintctl: ob %o (%b %b %b %b)", ob, ob[29], ob[28], ob[27], ob[26]);
+
+       if (state_fetch)
+	 begin
+`ifdef debug_iram
+	    if (~destimod0 && ~destimod0 && ~promenable)
+	      $display("iram: [%o] -> %o; %t", pc, iram, $time);
+`endif
+`ifdef debug_detail
+	    if (destimod1)
+	      $display("destimod1: lpc %o ob %o ir %o",
+		       lpc, ob[21:0], { iob[47:26], i[25:0] });
+`endif
+	 end
+
+`ifdef use_iologger
+	if (state_fetch && ~sintr && bus_int)
+	  test.iologger(32'd3, 0, 1);
+	if (state_fetch && sintr && ~bus_int)
+	  test.iologger(32'd3, 0, 0);
+`endif
+   
+`ifdef debug_ifetch
+	if (ifetch && state_fetch)
+	  $display("(lba) ifetch! lpc %o, lc %o; %t", lpc, lc, $time);
+`endif
+
+`ifdef debug_md
+       if ((loadmd && memrq) || (state_alu && destmdr))
+	 begin
+            if (debug != 0)
+	    if (state_fetch && destmdr)
+	      $display("load md <- %o; D mdsel%b osel %b alu %o mo %o; lpc %o",
+		       mds, mdsel, osel, alu, mo, lpc);
+	    else
+	      $display("load md <- %o; L lpc %o; %t", mds, lpc, $time);
+	    $display("load md <- %o; %t", mds, $time);
+	 end
+`endif
+
+	
+`ifdef debug
+	if (loadmd && (state_fetch && destmdr))
+	  begin
+	     $display("XXXX loadmd and destmdr conflict, lpc %o; %t", lpc, $time);
+	     $finish;
+	  end
+`endif
+
+`ifdef debug_mmem
+	if (mwp && madr != 0)
+	  $display("mmem: %o <- %o; %t", madr, l, $time);
+`endif
+
+`ifdef debug_dispatch
+	if (state_fetch && irdisp/*({pcs1,pcs0} == 2'b10)*/)
+	  begin
+	     $display("dispatch: dadr=%o %b%b%b %o; dmask %o r %o ir %b vmo %b md %o",
+		      dadr, dr, dp, dn, dpc, dmask, r[11:0],
+		      {ir[8], ir[9]}, {vmo[19],vmo[18]}, md);
+	     $display("dispatch: mapi %o vmap %o vmem1_adr %o vmo %o",
+		      mapi[23:13], vmap, vmem1_adr, vmo);
+	     $display("dispatch: pcs %b, dispenb %b dfall %b; vmo[19:18] %o, npc %o",
+		      {pcs1,pcs0}, dispenb, dfall, vmo[19:18], npc);
+	  end
+`endif
+   
+`ifdef debug_detail
+	if (~reset)
+	  begin
+	     $display("; npc %o ipc %o, spc %o, pc %o pcs %b%b state %b",
+		      npc, ipc, spc, pc, pcs1, pcs0, state);
+	     $display("; spco %o, spcw %o",
+	  	      spco, spcw);
+	     $display("; %b %b %b %b (%b %b)", 
+		      (popj & ~ignpopj),
+		      (jfalse & ~jcond),
+		      (irjump & ~ir[6] & jcond),
+		      (dispenb & dr & ~dp),
+		      popj, ignpopj);
+	     $display("; conds=%b,  aeqm=%b, aeqm_bits=%b",
+		      conds, aeqm, aeqm_bits);
+	     $display("; trap=%b,  trapenb=%b boot_trap=%b",
+		      trap, trapenb, boot_trap);
+	     $display("; nopa %b, inop %b, nop11 %b",
+		      nopa, inop, nop11);
+	  end
+`endif
+`ifdef debug
+	if (state_write && destpdlx && pdlidx != ob[9:0] && debug > 0)
+	  $display("pdlidx <- %o", ob[9:0]);
+`endif
+   
+`ifdef debug_amem
+	if (awp && aadr != 0)
+	  $display("amem: W %o <- %o", aadr, l);
+`endif
+   
+`ifdef debug_xbus
+	if (memstart & ~vmaok)
+	  $display("xbus: access fault, l1[%o]=%o, l2[%o]= %b%b %o; %t",
+		   mapi[23:13], vmap,
+		   vmem1_adr, vmo[23], vmo[22], vmo[21:0],
+		   $time);
+	if (memstart & vmaok)
+	  $display("xbus: start l1[%o]=%o, l2[%o]= %b%b %o",
+		   mapi[23:13], vmap,
+		   vmem1_adr, vmo[23], vmo[22], vmo[21:0]);
+`endif
+   
+`ifdef debug_vma
+	if (state_alu && vmaenb)
+	  if (vma != vmas)
+	    $display("vma <- %o", vmas);
+`endif
+
+	if (promdisable == 1 && promdisabled == 0)
+	  $display("prom: disabled");
+	if (promdisable == 0 && promdisabled == 1)
+	  $display("prom: enabled");
+	
+     end
+
+`ifdef debug
+   always @(vm0wp or mapwr0 or state_write)
+     if (debug != 0)
+     if (vm0wp)
+       $display("vm0wp %b, a=%o, di=%o; %t",
+		vm0wp, mapi[23:13], vma[31:27], $time);
+
+   always @(vm1wp or mapwr1 or state_write)
+     if (debug != 0)
+     if (vm1wp)
+       $display("vm1wp %b, a=%o, di=%o; %t",
+		vm1wp, vmem1_adr, vma[23:0], $time);
+`endif
+   
+`ifdef debug_vmem
+   always @(memprepare or memstart or mapi or vmo or vmap or clk)
+     if (memprepare && memstart)
+       begin
+	  $display("%t prep vmem0_adr %o, vmap=%o",
+		   $time, mapi[23:13], vmap);
+	  $display("%t prep vmem1_adr %o, vma=%o, vmo[23:22]=%b%b, vmo=%o",
+		   $time, vmem1_adr, vma, vmo[23], vmo[22], vmo[21:0]);
+       end
+   
+   always @(memrq)
+     if (memrq)
+       begin
+	  $display("%t req vmem0_adr %o, vmap=%o",
+		   $time, mapi[23:13], vmap);
+	  $display("%t req vmem1_adr %o, vma=%o, vmo[23:22]=%b, vmo[21:0]=%o",
+		   $time, vmem1_adr, vma, {vmo[23], vmo[22]}, vmo[21:0]);
+	  $display("%t req lvmo_23,22 %b%b, pma=%o",
+		   $time, lvmo_23, lvmo_22, pma);
+       end
+`endif
+  
+`endif
+
+`define CHIPSCOPE_CADDR
+
+`ifdef __CVER__
+ `ifdef CHIPSCOPE_CADDR
+  `undef CHIPSCOPE_CADDR
+ `endif
+`endif
+   
+`ifdef CHIPSCOPE_CADDR
+   // chipscope
+   wire [35:0] control0;
+   wire [127:0] trig0;
+   wire        mclk_en;
+   wire        mclk;
+	
+   assign trig0 = {
+		   busint.disk.state, //5
+		   bd_state_in,       //12
+		   state_decode,      //1
+		   lpc,		      //14
+		   a,		      //32
+		   m,		      //32
+		   md		      //32
+		   };
+
+   chipscope_icon_caddr icon1 (.CONTROL0(control0));
+   chipscope_ila_caddr ila1 (.CONTROL(control0), .CLK(clk), .TRIG0(trig0));
+`endif
+   
 endmodule
 

@@ -1,0 +1,13 @@
+run
+-ifmt VHDL
+-ent ise_1kx32_dpram_exdes
+-p xc6slx45-csg324-3
+-ifn xst.prj
+-write_timing_constraints No
+-iobuf YES
+-max_fanout 100
+-ofn ise_1kx32_dpram_exdes 
+-ofmt NGC
+-bus_delimiter ()
+-hierarchy_separator /
+-case Maintain

@@ -1,14 +1,19 @@
 /* boot prom */
 
+//`define no_rom
+//`define debug_patch_rom
+//`define debug_sdram_rom
+
+`ifdef SIMULATION
+ `define debug_patch_rom
+`endif
+
 module part_512x49prom( clk, addr, q );
 
    input clk;
    input [8:0] addr;
    output [48:0] q;
    reg [48:0] 	 q;
-
-//`define no_rom
-//`define debug_patch_rom
 
 `ifdef no_rom
    always @(posedge clk)
@@ -536,7 +541,6 @@ module part_512x49prom( clk, addr, q );
     // patches for debugging
     /* verilator lint_off CASEINCOMPLETE */
     case (addr)
-//`ifdef debug
      // clear local mems in fpga
      ~9'o175 & 9'h1ff: q = 49'h000000001000;
      ~9'o202 & 9'h1ff: q = 49'h000000001000;
@@ -544,12 +548,67 @@ module part_512x49prom( clk, addr, q );
      ~9'o232 & 9'h1ff: q = 49'h000000001000;
      ~9'o236 & 9'h1ff: q = 49'h000000001000;
      ~9'o244 & 9'h1ff: q = 49'h000000001000;
-//`endif
      ~9'o251 & 9'h1ff: q = 49'h000000001000;
      ~9'o256 & 9'h1ff: q = 49'h000000001000;
      ~9'o263 & 9'h1ff: q = 49'h000000001000;
      ~9'o314 & 9'h1ff: q = 49'h000000001000;
     endcase
+    /* verilator lint_on CASEINCOMPLETE */
+`endif
+
+`ifdef debug_sdram_rom
+    /* verilator lint_off CASEINCOMPLETE */
+     case (addr)
+       ~9'o000 & 9'h1ff: q = 49'o0000000000150173; // (alu) SETO a=0 m=0 m[0] C=0 alu-> Q-R -><none>,m[3] 
+       ~9'o001 & 9'h1ff: q = 49'o0200000000450247; // (jump) a=0 m=m[0] pc 45, !next jump-always
+       
+       ~9'o045 & 9'h1ff: q = 49'o4000000000110003; // (alu) SETZ a=0 m=0 m[0] C=0 alu-> Q-R -><none>,m[2] 
+       ~9'o046 & 9'h1ff: q = 49'o0000000000010003; // (alu) SETZ a=0 m=0 m[0] C=0 alu-> Q-R -><none>,m[0] 
+       ~9'o047 & 9'h1ff: q = 49'o0600101602030000; // (byte) a=2 m=m[3] dpb pos=0, width=1 ->a_mem[40] 
+       ~9'o050 & 9'h1ff: q = 49'o0600101602070001; // (byte) a=2 m=m[3] dpb pos=1, width=1 ->a_mem[41] 
+       ~9'o051 & 9'h1ff: q = 49'o0600101602130040; // (byte) a=2 m=m[3] dpb pos=0, width=2 ->a_mem[42] 
+       ~9'o052 & 9'h1ff: q = 49'o4600101602170002; // (byte) a=2 m=m[3] dpb pos=2, width=1 ->a_mem[43] 
+       ~9'o053 & 9'h1ff: q = 49'o0602001602230002; // (byte) a=40 m=m[3] dpb pos=2, width=1 ->a_mem[44] 
+       ~9'o054 & 9'h1ff: q = 49'o0602001602270003; // (byte) a=40 m=m[3] dpb pos=3, width=1 ->a_mem[45] 
+       ~9'o055 & 9'h1ff: q = 49'o0600101602330005; // (byte) a=2 m=m[3] dpb pos=5, width=1 ->a_mem[46] 
+       ~9'o056 & 9'h1ff: q = 49'o0600101602370010; // (byte) a=2 m=m[3] dpb pos=10, width=1 ->a_mem[47] 
+       ~9'o057 & 9'h1ff: q = 49'o0600101602430015; // (byte) a=2 m=m[3] dpb pos=15, width=1 ->a_mem[50] 
+       ~9'o060 & 9'h1ff: q = 49'o0600101602470104; // (byte) a=2 m=m[3] dpb pos=4, width=3 ->a_mem[51] 
+       ~9'o061 & 9'h1ff: q = 49'o0602441602470110; // (byte) a=51 m=m[3] dpb pos=10, width=3 ->a_mem[51] 
+       ~9'o062 & 9'h1ff: q = 49'o0602201602570011; // (byte) a=44 m=m[3] dpb pos=11, width=1 ->a_mem[53] 
+       ~9'o063 & 9'h1ff: q = 49'o4602541602570025; // (byte) a=53 m=m[3] dpb pos=25, width=1 ->a_mem[53] 
+       ~9'o064 & 9'h1ff: q = 49'o4600101602530144; // (byte) a=2 m=m[3] dpb pos=4, width=4 ->a_mem[52] 
+       ~9'o065 & 9'h1ff: q = 49'o4602501602530551; // (byte) a=52 m=m[3] dpb pos=11, width=14 ->a_mem[52] 
+       ~9'o066 & 9'h1ff: q = 49'o0602501602530027; // (byte) a=52 m=m[3] dpb pos=27, width=1 ->a_mem[52] 
+       ~9'o067 & 9'h1ff: q = 49'o0000000060010000; // (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+       ~9'o070 & 9'h1ff: q = 49'o0600101446030032; // (byte) a=2 m=m[3] dpb pos=32, width=1 ->VMA,write-map ,m[0]
+       ~9'o071 & 9'h1ff: q = 49'o0000000000010000; // (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+       ~9'o072 & 9'h1ff: q = 49'o0000024400210030; // (alu) SETM a=0 m=51 MAP[MD] C=0 alu-> -><none>,m[4] 
+       ~9'o073 & 9'h1ff: q = 49'o0600102000250210; // (byte) a=2 m=m[4] ldb pos=10, width=5 -><none>,m[5] 
+       ~9'o074 & 9'h1ff: q = 49'o0200102400220343; // (jump) a=2 m=m[5] pc 22, !next !jump M-src = A-src 
+       ~9'o075 & 9'h1ff: q = 49'o4600101446230166; // (byte) a=2 m=m[3] dpb pos=26, width=4 ->VMA,write-map ,m[4]
+       ~9'o076 & 9'h1ff: q = 49'o4600201400270400; // (byte) a=4 m=m[3] dpb pos=0, width=11 -><none>,m[5] 
+       ~9'o077 & 9'h1ff: q = 49'o0002340060010050; // (alu) SETA a=47 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+       ~9'o100 & 9'h1ff: q = 49'o0600241446030152; // (byte) a=5 m=m[3] dpb pos=12, width=4 ->VMA,write-map ,m[0]
+       ~9'o101 & 9'h1ff: q = 49'o0600101603030302; // (byte) a=2 m=m[3] dpb pos=2, width=7 ->a_mem[60] 
+       ~9'o102 & 9'h1ff: q = 49'o0002365060010310; // (alu) M+A [ADD] a=47 m=52 MD C=0 alu-> ->MD ,m[0] 
+       ~9'o103 & 9'h1ff: q = 49'o0600201400270041; // (byte) a=4 m=m[3] dpb pos=1, width=2 -><none>,m[5] 
+       ~9'o104 & 9'h1ff: q = 49'o4600241446030444; // (byte) a=5 m=m[3] dpb pos=4, width=12 ->VMA,write-map ,m[0]
+       ~9'o105 & 9'h1ff: q = 49'o0002365060010310; // (alu) M+A [ADD] a=47 m=52 MD C=0 alu-> ->MD ,m[0] 
+       ~9'o106 & 9'h1ff: q = 49'o4600201446030000; // (byte) a=4 m=m[3] dpb pos=0, width=1 ->VMA,write-map ,m[0] 
+       ~9'o107 & 9'h1ff: q = 49'o0000000000010000; // (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+       ~9'o110 & 9'h1ff: q = 49'o4000000040010170; // (alu) SETO a=0 m=0 m[0] C=0 alu-> ->VMA ,m[0] 
+       ~9'o111 & 9'h1ff: q = 49'o0002024042010310; // (alu) M+A [ADD] a=40 m=50 VMA C=0 alu-> ->VMA,start-read ,m[0] 
+       ~9'o112 & 9'h1ff: q = 49'o4200000000240244; // (jump) a=0 m=m[0] pc 24, !next pf 
+       ~9'o113 & 9'h1ff: q = 49'o0000025064010030; // (alu) SETM a=0 m=52 MD C=0 alu-> ->MD,start-write ,m[0] 
+       ~9'o114 & 9'h1ff: q = 49'o4200000000240244; // (jump) a=0 m=m[0] pc 24, !next pf 
+       ~9'o115 & 9'h1ff: q = 49'o0202364001110241; // (jump) a=47 m=VMA pc 111, !next M-src < A-src 
+       ~9'o116 & 9'h1ff: q = 49'o4002140060010050; // (alu) SETA a=43 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+       ~9'o117 & 9'h1ff: q = 49'o4602201444030011; // (byte) a=44 m=m[3] dpb pos=11, width=1 ->VMA,start-write ,m[0] 
+       ~9'o120 & 9'h1ff: q = 49'o4200000000240244; // (jump) a=0 m=m[0] pc 24, !next pf 
+       ~9'o121 & 9'h1ff: q = 49'o0200000001110247; // (jump) a=0 m=m[0] pc 111, !next jump-always
+       ~9'o122 & 9'h1ff: q = 49'o0000000000000000; //
+     endcase
     /* verilator lint_on CASEINCOMPLETE */
 `endif
 

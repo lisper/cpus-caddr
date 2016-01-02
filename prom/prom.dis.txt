@@ -1,0 +1,560 @@
+000 0200000000450247 (jump) a=0 m=m[0] pc 45, !next jump-always 
+001 4000000000000000 (alu) no-op
+002 4000000000000000 (alu) no-op
+003 4000000000000000 (alu) no-op
+004 4000000000000000 (alu) no-op
+005 4000000000000000 (alu) no-op
+006 4200123400060143 (jump) a=2 m=Q pc 6, !jump M-src = A-src 
+007 4000163400010313 (alu) M+A [ADD] a=3 m=47 Q C=0 alu-> Q-R -><none>,m[0] 
+010 4200000000102247 (jump) a=0 m=m[0] pc 10, !next jump-always 
+011 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+012 0200000000122247 (jump) a=0 m=m[0] pc 12, !next jump-always 
+013 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+014 0200000000142247 (jump) a=0 m=m[0] pc 14, !next jump-always 
+015 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+016 4200000000162247 (jump) a=0 m=m[0] pc 16, !next jump-always 
+017 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+020 4200000000202247 (jump) a=0 m=m[0] pc 20, !next jump-always 
+021 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+022 0200000000222247 (jump) a=0 m=m[0] pc 22, !next jump-always 
+023 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+024 0200000000242247 (jump) a=0 m=m[0] pc 24, !next jump-always 
+025 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+026 4200000000262247 (jump) a=0 m=m[0] pc 26, !next jump-always 
+027 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+030 0200000000302247 (jump) a=0 m=m[0] pc 30, !next jump-always 
+031 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+032 4200000000322247 (jump) a=0 m=m[0] pc 32, !next jump-always 
+033 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+034 4200000000342247 (jump) a=0 m=m[0] pc 34, !next jump-always 
+035 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+036 0200000000362247 (jump) a=0 m=m[0] pc 36, !next jump-always 
+037 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+040 4200000000402247 (jump) a=0 m=m[0] pc 40, !next jump-always 
+041 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+042 0200000000422247 (jump) a=0 m=m[0] pc 42, !next jump-always 
+043 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+044 0200000000442247 (jump) a=0 m=m[0] pc 44, !next jump-always 
+GO
+045 4000000000110003 (alu) SETZ a=0 m=0 m[0] C=0 alu-> Q-R -><none>,m[2] 
+046 4200023400120200 (jump) a=0 m=Q pc 12, !next m-rot<< 0
+047 0200023400120237 (jump) a=0 m=Q pc 12, !next m-rot<< 31
+050 4200023400120236 (jump) a=0 m=Q pc 12, !next m-rot<< 30
+051 4200023400120235 (jump) a=0 m=Q pc 12, !next m-rot<< 29
+052 0200023400120234 (jump) a=0 m=Q pc 12, !next m-rot<< 28
+053 4200023400120233 (jump) a=0 m=Q pc 12, !next m-rot<< 27
+054 0200023400120232 (jump) a=0 m=Q pc 12, !next m-rot<< 26
+055 0200023400120231 (jump) a=0 m=Q pc 12, !next m-rot<< 25
+056 4200023400120230 (jump) a=0 m=Q pc 12, !next m-rot<< 24
+057 4200023400120227 (jump) a=0 m=Q pc 12, !next m-rot<< 23
+060 0200023400120226 (jump) a=0 m=Q pc 12, !next m-rot<< 22
+061 0200023400120225 (jump) a=0 m=Q pc 12, !next m-rot<< 21
+062 4200023400120224 (jump) a=0 m=Q pc 12, !next m-rot<< 20
+063 0200023400120223 (jump) a=0 m=Q pc 12, !next m-rot<< 19
+064 4200023400120222 (jump) a=0 m=Q pc 12, !next m-rot<< 18
+065 4200023400120221 (jump) a=0 m=Q pc 12, !next m-rot<< 17
+066 0200023400120220 (jump) a=0 m=Q pc 12, !next m-rot<< 16
+067 4200023400120217 (jump) a=0 m=Q pc 12, !next m-rot<< 15
+070 0200023400120216 (jump) a=0 m=Q pc 12, !next m-rot<< 14
+071 0200023400120215 (jump) a=0 m=Q pc 12, !next m-rot<< 13
+072 4200023400120214 (jump) a=0 m=Q pc 12, !next m-rot<< 12
+073 0200023400120213 (jump) a=0 m=Q pc 12, !next m-rot<< 11
+074 4200023400120212 (jump) a=0 m=Q pc 12, !next m-rot<< 10
+075 4200023400120211 (jump) a=0 m=Q pc 12, !next m-rot<< 9
+076 0200023400120210 (jump) a=0 m=Q pc 12, !next m-rot<< 8
+077 0200023400120207 (jump) a=0 m=Q pc 12, !next m-rot<< 7
+100 4200023400120206 (jump) a=0 m=Q pc 12, !next m-rot<< 6
+101 4200023400120205 (jump) a=0 m=Q pc 12, !next m-rot<< 5
+102 0200023400120204 (jump) a=0 m=Q pc 12, !next m-rot<< 4
+103 4200023400120203 (jump) a=0 m=Q pc 12, !next m-rot<< 3
+104 0200023400120202 (jump) a=0 m=Q pc 12, !next m-rot<< 2
+105 0200023400120201 (jump) a=0 m=Q pc 12, !next m-rot<< 1
+106 0000000000150173 (alu) SETO a=0 m=0 m[0] C=0 alu-> Q-R -><none>,m[3] 
+107 0200023400120300 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 0
+110 4200023400120337 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 31
+111 0200023400120336 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 30
+112 0200023400120335 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 29
+113 4200023400120334 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 28
+114 0200023400120333 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 27
+115 4200023400120332 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 26
+116 4200023400120331 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 25
+117 0200023400120330 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 24
+120 0200023400120327 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 23
+121 4200023400120326 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 22
+122 4200023400120325 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 21
+123 0200023400120324 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 20
+124 4200023400120323 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 19
+125 0200023400120322 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 18
+126 0200023400120321 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 17
+127 4200023400120320 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 16
+130 0200023400120317 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 15
+131 4200023400120316 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 14
+132 4200023400120315 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 13
+133 0200023400120314 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 12
+134 4200023400120313 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 11
+135 0200023400120312 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 10
+136 0200023400120311 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 9
+137 4200023400120310 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 8
+140 4200023400120307 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 7
+141 0200023400120306 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 6
+142 0200023400120305 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 5
+143 4200023400120304 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 4
+144 0200023400120303 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 3
+145 4200023400120302 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 2
+146 4200023400120301 (jump) a=0 m=Q pc 12, !next !jump m-rot<< 1
+147 0200163400160343 (jump) a=3 m=Q pc 16, !next !jump M-src = A-src 
+150 0200141400200343 (jump) a=3 m=m[3] pc 20, !next !jump M-src = A-src 
+151 0000000000010003 (alu) SETZ a=0 m=0 m[0] C=0 alu-> Q-R -><none>,m[0] 
+152 4200123400160343 (jump) a=2 m=Q pc 16, !next !jump M-src = A-src 
+153 0200101000200343 (jump) a=2 m=m[2] pc 20, !next !jump M-src = A-src 
+154 4000101400010317 (alu) M+A [ADD] a=2 m=3 m[3] C=1 alu-> Q-R -><none>,m[0] 
+155 0200123400140343 (jump) a=2 m=Q pc 14, !next !jump M-src = A-src 
+156 4000141400010313 (alu) M+A [ADD] a=3 m=3 m[3] C=0 alu-> Q-R -><none>,m[0] 
+157 4200023400140200 (jump) a=0 m=Q pc 14, !next m-rot<< 0
+160 4200023400140337 (jump) a=0 m=Q pc 14, !next !jump m-rot<< 31
+161 4200023400140301 (jump) a=0 m=Q pc 14, !next !jump m-rot<< 1
+162 4000001022010030 (alu) SETM a=0 m=2 m[2] C=0 alu-> ->PDL[ptr],push ,m[0] 
+163 0000001422010030 (alu) SETM a=0 m=3 m[3] C=0 alu-> ->PDL[ptr],push ,m[0] 
+164 4600163460011737 (byte) a=3 m=Q ldb pos=37, width=37 ->MD ,m[0] 
+165 0200165000140343 (jump) a=3 m=MD pc 14, !next !jump M-src = A-src 
+166 0200172000440343 (jump) a=3 m=PDL[Pointer], pop pc 44, !next !jump M-src = A-src 
+167 4200132000440343 (jump) a=2 m=PDL[Pointer], pop pc 44, !next !jump M-src = A-src 
+170 4600101400070005 (byte) a=2 m=m[3] dpb pos=5, width=1 -><none>,m[1] 
+171 4600101460030002 (byte) a=2 m=m[3] dpb pos=2, width=1 ->MD ,m[0] 
+CLEAR-M-MEMORY
+172 4000140400050310 (alu) M+A [ADD] a=3 m=1 m[1] C=0 alu-> -><none>,m[1] 
+173 0600100434030216 (byte) a=2 m=m[1] dpb pos=16, width=5 ->OA-reg-lo ,m[0] 
+174 4000001000010030 (alu) SETM a=0 m=2 m[2] C=0 alu-> -><none>,m[0] 
+175 0200065001720343 (jump) a=1 m=MD pc 172, !next !jump M-src = A-src 
+176 4600101400070005 (byte) a=2 m=m[3] dpb pos=5, width=1 -><none>,m[1] 
+CLEAR-A-MEMORY
+177 4600100434030456 (byte) a=2 m=m[1] dpb pos=16, width=12 ->OA-reg-lo ,m[0] 
+200 0000001200010030 (alu) SETM a=0 m=2 m[2] C=0 alu-> ->a_mem[0] 
+201 4000100400050314 (alu) M+A [ADD] a=2 m=1 m[1] C=1 alu-> -><none>,m[1] 
+202 4200000401770326 (jump) a=0 m=m[1] pc 177, !next !jump m-rot<< 22
+MAKE-CONSTANTS
+203 0600101602030000 (byte) a=2 m=m[3] dpb pos=0, width=1 ->a_mem[40] 
+204 0600101602070001 (byte) a=2 m=m[3] dpb pos=1, width=1 ->a_mem[41] 
+205 0600101602130040 (byte) a=2 m=m[3] dpb pos=0, width=2 ->a_mem[42] 
+206 4600101602170002 (byte) a=2 m=m[3] dpb pos=2, width=1 ->a_mem[43] 
+207 0602001602230002 (byte) a=40 m=m[3] dpb pos=2, width=1 ->a_mem[44] 
+210 0602001602270003 (byte) a=40 m=m[3] dpb pos=3, width=1 ->a_mem[45] 
+211 0600101602330005 (byte) a=2 m=m[3] dpb pos=5, width=1 ->a_mem[46] 
+212 0600101602370010 (byte) a=2 m=m[3] dpb pos=10, width=1 ->a_mem[47] 
+213 0600101602430015 (byte) a=2 m=m[3] dpb pos=15, width=1 ->a_mem[50] 
+214 0600101602470104 (byte) a=2 m=m[3] dpb pos=4, width=3 ->a_mem[51] 
+215 0602441602470110 (byte) a=51 m=m[3] dpb pos=10, width=3 ->a_mem[51] 
+216 0602201602570011 (byte) a=44 m=m[3] dpb pos=11, width=1 ->a_mem[53] 
+217 4602541602570025 (byte) a=53 m=m[3] dpb pos=25, width=1 ->a_mem[53] 
+220 4600101602530144 (byte) a=2 m=m[3] dpb pos=4, width=4 ->a_mem[52] 
+221 4602501602530551 (byte) a=52 m=m[3] dpb pos=11, width=14 ->a_mem[52] 
+222 0602501602530027 (byte) a=52 m=m[3] dpb pos=27, width=1 ->a_mem[52] 
+223 4600101430230012 (byte) a=2 m=m[3] dpb pos=12, width=1 ->PDL ptr ,m[4] 
+CLEAR-PDL-BUFFER
+224 4000001022010030 (alu) SETM a=0 m=2 m[2] C=0 alu-> ->PDL[ptr],push ,m[0] 
+225 4000142000210310 (alu) M+A [ADD] a=3 m=4 m[4] C=0 alu-> -><none>,m[4] 
+226 0200102002240343 (jump) a=2 m=m[4] pc 224, !next !jump M-src = A-src 
+227 0002300000210050 (alu) SETA a=46 m=0 m[0] C=0 alu-> -><none>,m[4] 
+CLEAR-SPC-MEMORY
+230 4000000032010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->SPC data,push ,m[0] 
+231 4000142000210310 (alu) M+A [ADD] a=3 m=4 m[4] C=0 alu-> -><none>,m[4] 
+232 0200102002300343 (jump) a=2 m=m[4] pc 230, !next !jump M-src = A-src 
+233 0000000060010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+CLEAR-LEVEL-1-MAP
+234 0600101446270032 (byte) a=2 m=m[3] dpb pos=32, width=1 ->VMA,write-map ,m[5] 
+235 0002425060010310 (alu) M+A [ADD] a=50 m=52 MD C=0 alu-> ->MD ,m[0] 
+236 0200025002340310 (jump) a=0 m=MD pc 234, !next !jump m-rot<< 8
+237 0000000060010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+CLEAR-LEVEL-2-MAP
+240 4600125000210223 (byte) a=2 m=MD ldb pos=23, width=5 -><none>,m[4] 
+241 0600242046030233 (byte) a=5 m=m[4] dpb pos=33, width=5 ->VMA,write-map ,m[0] 
+242 0600101446030031 (byte) a=2 m=m[3] dpb pos=31, width=1 ->VMA,write-map ,m[0] 
+243 0002365060010310 (alu) M+A [ADD] a=47 m=52 MD C=0 alu-> ->MD ,m[0] 
+244 0200025002400310 (jump) a=0 m=MD pc 240, !next !jump m-rot<< 8
+245 4000000060210000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->MD ,m[4] 
+CLEAR-I-MEMORY
+246 4600125034030654 (byte) a=2 m=MD dpb pos=14, width=16 ->OA-reg-lo ,m[0] 
+247 4200202000001647 (jump) a=4 m=m[4] pc 0, R P !next jump-always 
+250 4002025060010310 (alu) M+A [ADD] a=40 m=52 MD C=0 alu-> ->MD ,m[0] 
+251 4200025002460322 (jump) a=0 m=MD pc 246, !next !jump m-rot<< 18
+252 4600101460230021 (byte) a=2 m=m[3] dpb pos=21, width=1 ->MD ,m[4] 
+CLEAR-D-MEMORY
+253 0600125034030514 (byte) a=2 m=MD dpb pos=14, width=13 ->OA-reg-lo ,m[0] 
+254 5400200000004000 (dispatch) disp const 4, disp addr 0, map 0, len 0, rot 0 
+255 4002025060010310 (alu) M+A [ADD] a=40 m=52 MD C=0 alu-> ->MD ,m[0] 
+256 4200025002530325 (jump) a=0 m=MD pc 253, !next !jump m-rot<< 21
+FUDGE-INITIAL-DISK-PARAMETERS
+257 4002100202710050 (alu) SETA a=42 m=0 m[0] C=0 alu-> ->a_mem[56] 
+260 0002100202750050 (alu) SETA a=42 m=0 m[0] C=0 alu-> ->a_mem[57] 
+261 0600101404030034 (byte) a=2 m=m[3] dpb pos=34, width=1 ->IC ,m[0] 
+262 0002300000210050 (alu) SETA a=46 m=0 m[0] C=0 alu-> -><none>,m[4] 
+RST
+263 4200102002630143 (jump) a=2 m=m[4] pc 263, !jump M-src = A-src 
+264 4002002000210264 (alu) M-A-1 [M-A-1] a=40 m=4 m[4] C=1 alu-> -><none>,m[4] 
+265 4600101404030033 (byte) a=2 m=m[3] dpb pos=33, width=1 ->IC ,m[0] 
+SET-UP-THE-MAP
+266 0000000060010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+267 0600101446030032 (byte) a=2 m=m[3] dpb pos=32, width=1 ->VMA,write-map ,m[0] 
+270 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+271 0000024400210030 (alu) SETM a=0 m=51 MAP[MD] C=0 alu-> -><none>,m[4] 
+272 0600102000250210 (byte) a=2 m=m[4] ldb pos=10, width=5 -><none>,m[5] 
+273 0200102400220343 (jump) a=2 m=m[5] pc 22, !next !jump M-src = A-src 
+SET-UP-FOUR-PAGES
+274 4600101446230166 (byte) a=2 m=m[3] dpb pos=26, width=4 ->VMA,write-map ,m[4] 
+275 4600201400270400 (byte) a=4 m=m[3] dpb pos=0, width=11 -><none>,m[5] 
+276 0002340060010050 (alu) SETA a=47 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+277 0600241446030152 (byte) a=5 m=m[3] dpb pos=12, width=4 ->VMA,write-map ,m[0] 
+300 0600101603030302 (byte) a=2 m=m[3] dpb pos=2, width=7 ->a_mem[60] 
+301 0002365060010310 (alu) M+A [ADD] a=47 m=52 MD C=0 alu-> ->MD ,m[0] 
+302 0600201400270041 (byte) a=4 m=m[3] dpb pos=1, width=2 -><none>,m[5] 
+303 4600241446030444 (byte) a=5 m=m[3] dpb pos=4, width=12 ->VMA,write-map ,m[0] 
+304 0002365060010310 (alu) M+A [ADD] a=47 m=52 MD C=0 alu-> ->MD ,m[0] 
+305 4600201446030000 (byte) a=4 m=m[3] dpb pos=0, width=1 ->VMA,write-map ,m[0] 
+306 0000000000010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[0] 
+307 4000000040010170 (alu) SETO a=0 m=0 m[0] C=0 alu-> ->VMA ,m[0] 
+PAGE-0-PARITY-FIX
+310 0002024042010310 (alu) M+A [ADD] a=40 m=50 VMA C=0 alu-> ->VMA,start-read ,m[0] 
+311 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+312 0000025064010030 (alu) SETM a=0 m=52 MD C=0 alu-> ->MD,start-write ,m[0] 
+313 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+314 0202364003100241 (jump) a=47 m=VMA pc 310, !next M-src < A-src 
+315 4002140060010050 (alu) SETA a=43 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+316 4602201444030011 (byte) a=44 m=m[3] dpb pos=11, width=1 ->VMA,start-write ,m[0] 
+317 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+320 0200000005300647 (jump) a=0 m=m[0] pc 530, P !next jump-always 
+SAVE-A-PAGE
+321 0002000000410050 (alu) SETA a=40 m=0 m[0] C=0 alu-> -><none>,m[10] 
+322 0200000005610447 (jump) a=0 m=m[0] pc 561, P jump-always 
+323 4000000000210000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[4] 
+READ-LABEL
+324 4000000000410000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[10] 
+325 0200000005570447 (jump) a=0 m=m[0] pc 557, P jump-always 
+326 4000000000210000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[4] 
+327 0600101400270042 (byte) a=2 m=m[3] dpb pos=2, width=2 -><none>,m[5] 
+330 4600241400270006 (byte) a=5 m=m[3] dpb pos=6, width=1 -><none>,m[5] 
+331 0600241400270010 (byte) a=5 m=m[3] dpb pos=10, width=1 -><none>,m[5] 
+332 0600241400270016 (byte) a=5 m=m[3] dpb pos=16, width=1 -><none>,m[5] 
+333 4600241400270021 (byte) a=5 m=m[3] dpb pos=21, width=1 -><none>,m[5] 
+334 0600241400270026 (byte) a=5 m=m[3] dpb pos=26, width=1 -><none>,m[5] 
+335 4600241400270072 (byte) a=5 m=m[3] dpb pos=32, width=2 -><none>,m[5] 
+336 4600241400270036 (byte) a=5 m=m[3] dpb pos=36, width=1 -><none>,m[5] 
+DECODE-LABEL
+337 4000100042310050 (alu) SETA a=2 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[6] 
+340 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+341 4200265000260343 (jump) a=5 m=MD pc 26, !next !jump M-src = A-src 
+342 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+343 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+344 0202025000260343 (jump) a=40 m=MD pc 26, !next !jump M-src = A-src 
+345 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+346 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+347 4000025202610030 (alu) SETM a=0 m=52 MD C=0 alu-> ->a_mem[54] 
+350 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+351 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+352 0000025202650030 (alu) SETM a=0 m=52 MD C=0 alu-> ->a_mem[55] 
+353 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+354 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+355 0000025202710030 (alu) SETM a=0 m=52 MD C=0 alu-> ->a_mem[56] 
+356 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+357 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+360 4000025202750030 (alu) SETM a=0 m=52 MD C=0 alu-> ->a_mem[57] 
+361 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+362 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+363 4000025000250030 (alu) SETM a=0 m=52 MD C=0 alu-> -><none>,m[5] 
+364 4600101442330007 (byte) a=2 m=m[3] dpb pos=7, width=1 ->VMA,start-read ,m[6] 
+365 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+366 0000025000350030 (alu) SETM a=0 m=52 MD C=0 alu-> -><none>,m[7] 
+367 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+370 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+371 0000025000210030 (alu) SETM a=0 m=52 MD C=0 alu-> -><none>,m[4] 
+372 0002003000310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> -><none>,m[6] 
+SEARCH-LABEL
+373 0200103400300243 (jump) a=2 m=m[7] pc 30, !next M-src = A-src 
+374 0000003042010030 (alu) SETM a=0 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[0] 
+375 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+376 4200265004020243 (jump) a=5 m=MD pc 402, !next M-src = A-src 
+377 0000203000310310 (alu) M+A [ADD] a=4 m=6 m[6] C=0 alu-> -><none>,m[6] 
+400 4200000003730047 (jump) a=0 m=m[0] pc 373, jump-always 
+401 4002003400350264 (alu) M-A-1 [M-A-1] a=40 m=7 m[7] C=1 alu-> -><none>,m[7] 
+FOUND-PARTITION
+402 0002003042310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[6] 
+403 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+404 4000025203110030 (alu) SETM a=0 m=52 MD C=0 alu-> ->a_mem[62] 
+405 4003100203050050 (alu) SETA a=62 m=0 m[0] C=0 alu-> ->a_mem[61] 
+406 0002003042010310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> ->VMA,start-read ,m[0] 
+407 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+410 0000025203150030 (alu) SETM a=0 m=52 MD C=0 alu-> ->a_mem[63] 
+411 0002340000510050 (alu) SETA a=47 m=0 m[0] C=0 alu-> -><none>,m[12] 
+
+PROCESS-SECTION
+412 4200000005130647 (jump) a=0 m=m[0] pc 513, P !next jump-always 
+413 0200000005130447 (jump) a=0 m=m[0] pc 513, P jump-always 
+414 4000002000250030 (alu) SETM a=0 m=4 m[4] C=0 alu-> -><none>,m[5] 
+
+415 0200000005130447 (jump) a=0 m=m[0] pc 513, P jump-always 
+416 4000002000310030 (alu) SETM a=0 m=4 m[4] C=0 alu-> -><none>,m[6] 
+
+417 0000002000350030 (alu) SETM a=0 m=4 m[4] C=0 alu-> -><none>,m[7] 
+420 4202002404250243 (jump) a=40 m=m[5] pc 425, !next M-src = A-src 
+421 0202042404400243 (jump) a=41 m=m[5] pc 440, !next M-src = A-src 
+422 0202102404510243 (jump) a=42 m=m[5] pc 451, !next M-src = A-src 
+423 4202142404620243 (jump) a=43 m=m[5] pc 462, !next M-src = A-src 
+424 0200000000320247 (jump) a=0 m=m[0] pc 32, !next jump-always 
+PROCESS-I-MEM-SECTION
+425 4200103404120243 (jump) a=2 m=m[7] pc 412, !next M-src = A-src 
+426 0600103000211062 (byte) a=2 m=m[6] ldb pos=22, width=22 -><none>,m[4] 
+427 0200102000340343 (jump) a=2 m=m[4] pc 34, !next !jump M-src = A-src 
+
+430 0200000005130447 (jump) a=0 m=m[0] pc 513, P jump-always 
+431 4002003400350264 (alu) M-A-1 [M-A-1] a=40 m=7 m[7] C=1 alu-> -><none>,m[7] 
+
+432 0200000005130447 (jump) a=0 m=m[0] pc 513, P jump-always 
+
+433 4000002000250030 (alu) SETM a=0 m=4 m[4] C=0 alu-> -><none>,m[5] 
+434 0600103034030654 (byte) a=2 m=m[6] dpb pos=14, width=16 ->OA-reg-lo ,m[0] 
+435 0200242000001647 (jump) a=5 m=m[4] pc 0, R P !next jump-always 
+436 0200000004250047 (jump) a=0 m=m[0] pc 425, jump-always 
+437 0002003000310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> -><none>,m[6] 
+PROCESS-D-MEM-SECTION
+440 4200103404120243 (jump) a=2 m=m[7] pc 412, !next M-src = A-src 
+441 4600103000211225 (byte) a=2 m=m[6] ldb pos=25, width=25 -><none>,m[4] 
+442 0200102000340343 (jump) a=2 m=m[4] pc 34, !next !jump M-src = A-src 
+443 0200000005130447 (jump) a=0 m=m[0] pc 513, P jump-always 
+444 4002003400350264 (alu) M-A-1 [M-A-1] a=40 m=7 m[7] C=1 alu-> -><none>,m[7] 
+445 4600103034030514 (byte) a=2 m=m[6] dpb pos=14, width=13 ->OA-reg-lo ,m[0] 
+446 5400200000004000 (dispatch) disp const 4, disp addr 0, map 0, len 0, rot 0 
+447 0200000004400047 (jump) a=0 m=m[0] pc 440, jump-always 
+450 0002003000310310 (alu) M+A [ADD] a=40 m=6 m[6] C=0 alu-> -><none>,m[6] 
+PROCESS-MAIN-MEM-SECTION
+451 4200000005130647 (jump) a=0 m=m[0] pc 513, P !next jump-always 
+452 4003043400250310 (alu) M+A [ADD] a=61 m=7 m[7] C=0 alu-> -><none>,m[5] 
+MAIN-MEM-LOOP
+453 0200103004120243 (jump) a=2 m=m[6] pc 412, !next M-src = A-src 
+454 0200000005570447 (jump) a=0 m=m[0] pc 557, P jump-always 
+455 4000002400410030 (alu) SETM a=0 m=5 m[5] C=0 alu-> -><none>,m[10] 
+456 0002002400250310 (alu) M+A [ADD] a=40 m=5 m[5] C=0 alu-> -><none>,m[5] 
+457 4002342000210310 (alu) M+A [ADD] a=47 m=4 m[4] C=0 alu-> -><none>,m[4] 
+460 4200000004530047 (jump) a=0 m=m[0] pc 453, jump-always 
+461 4002003000310264 (alu) M-A-1 [M-A-1] a=40 m=6 m[6] C=1 alu-> -><none>,m[6] 
+PROCESS-A-MEM-SECTION
+462 4002003030010264 (alu) M-A-1 [M-A-1] a=40 m=6 m[6] C=1 alu-> ->PDL ptr ,m[0]
+A-MEM-LOOP
+463 4200103404720243 (jump) a=2 m=m[7] pc 472, !next M-src = A-src 
+464 0600103000211266 (byte) a=2 m=m[6] ldb pos=26, width=26 -><none>,m[4] 
+465 0200102000340343 (jump) a=2 m=m[4] pc 34, !next !jump M-src = A-src 
+466 0200000005130447 (jump) a=0 m=m[0] pc 513, P jump-always 
+467 4002003400350264 (alu) M-A-1 [M-A-1] a=40 m=7 m[7] C=1 alu-> -><none>,m[7] 
+470 4200000004630047 (jump) a=0 m=m[0] pc 463, jump-always 
+471 4000002022010030 (alu) SETM a=0 m=4 m[4] C=0 alu-> ->PDL[ptr],push ,m[0] 
+DONE-LOADING
+472 0002000000410050 (alu) SETA a=40 m=0 m[0] C=0 alu-> -><none>,m[10] 
+473 0200000005570447 (jump) a=0 m=m[0] pc 557, P jump-always 
+474 4000000000210000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[4] 
+475 0002340000010053 (alu) SETA a=47 m=0 m[0] C=0 alu-> Q-R -><none>,m[0] 
+476 0602141460030005 (byte) a=43 m=m[3] dpb pos=5, width=1 ->MD ,m[0] 
+477 0602201440030011 (byte) a=44 m=m[3] dpb pos=11, width=1 ->VMA ,m[0] 
+500 4000000026010000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> ->PDL index ,m[0] 
+FILL-M-LOOP
+501 0600121434030216 (byte) a=2 m=PDL-index 216 dpb pos=16, width=5 ->OA-reg-lo ,m[0] 
+502 4000022400010030 (alu) SETM a=0 m=45 PDL-buffer C=0 alu-> -><none>,m[0] 
+503 0000021426010344 (alu) M a=0 m=43 PDL-index 344 C=1 alu-> ->PDL index ,m[0] 
+504 0200021405010333 (jump) a=0 m=PDL-index 333 pc 501, !next !jump m-rot<< 27
+FILL-A-LOOP
+505 4600121434030456 (byte) a=2 m=PDL-index 456 dpb pos=16, width=12 ->OA-reg-lo ,m[0] 
+506 0000022600010030 (alu) SETM a=0 m=45 PDL-buffer C=0 alu-> ->a_mem[0] 
+507 0000021426010344 (alu) M a=0 m=43 PDL-index 344 C=1 alu-> ->PDL index ,m[0] 
+510 4200121405050343 (jump) a=2 m=PDL-index 343 pc 505, !next !jump M-src = A-src 
+JUMP-TO-6
+511 0200000000060047 (jump) a=0 m=m[0] pc 6, jump-always 
+512 0000024044010030 (alu) SETM a=0 m=50 VMA C=0 alu-> ->VMA,start-write ,m[0] 
+GET-NEXT-WORD
+513 4202345005200341 (jump) a=47 m=m[12] pc 520, !next !jump M-src < A-src 
+514 0000005042010030 (alu) SETM a=0 m=12 m[12] C=0 alu-> ->VMA,start-read ,m[0] 
+515 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+516 4100025000210030 popj; (alu) SETM a=0 m=52 MD C=0 alu-> -><none>,m[4] 
+517 0002005000510310 (alu) M+A [ADD] a=40 m=12 m[12] C=0 alu-> -><none>,m[12] 
+GET-NEXT-PAGE
+520 0000000000510000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[12] 
+521 4203141000360341 (jump) a=63 m=m[2] pc 36, !next !jump M-src < A-src 
+522 0003141603150310 (alu) M+A [ADD] a=63 m=3 m[3] C=0 alu-> ->a_mem[63] 
+523 0003100000410050 (alu) SETA a=62 m=0 m[0] C=0 alu-> -><none>,m[10] 
+524 0200000005570447 (jump) a=0 m=m[0] pc 557, P jump-always 
+525 4000000000210000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[4] 
+526 4200000005130047 (jump) a=0 m=m[0] pc 513, jump-always 
+527 0003101203110314 (alu) M+A [ADD] a=62 m=2 m[2] C=1 alu-> ->a_mem[62] 
+DISK-RECALIBRATE
+530 0003000042010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[0] 
+531 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+532 4200025005300300 (jump) a=0 m=MD pc 530, !next !jump m-rot<< 0
+533 4000100060010050 (alu) SETA a=2 m=0 m[0] C=0 alu-> ->MD ,m[0] 
+534 4003000040010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA ,m[0] 
+535 4002064044010310 (alu) M+A [ADD] a=41 m=50 VMA C=0 alu-> ->VMA,start-write ,m[0] 
+536 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+537 0003000042010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[0] 
+540 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+541 0200025005300227 (jump) a=0 m=MD pc 530, !next m-rot<< 23
+542 4000000000210000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[4] 
+543 4000000000410000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[10] 
+544 0002200000450050 (alu) SETA a=44 m=0 m[0] C=0 alu-> -><none>,m[11] 
+545 0200000005620447 (jump) a=0 m=m[0] pc 562, P jump-always 
+546 0600441400470010 (byte) a=11 m=m[3] dpb pos=10, width=1 -><none>,m[11] 
+547 4000000000410000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[10] 
+550 0200000005620447 (jump) a=0 m=m[0] pc 562, P jump-always 
+551 0002540000450050 (alu) SETA a=53 m=0 m[0] C=0 alu-> -><none>,m[11] 
+AWAIT-DRIVE-READY
+552 0003000042010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[0] 
+553 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+554 4002465000450010 (alu) AND a=51 m=52 MD C=0 alu-> -><none>,m[11] 
+555 4200104405520343 (jump) a=2 m=m[11] pc 552, !next !jump M-src = A-src 
+556 0200000000001247 (jump) a=0 m=m[0] pc 0, R !next jump-always 
+DISK-READ
+557 4200000005620047 (jump) a=0 m=m[0] pc 562, jump-always 
+560 0000000000450000 (alu) SETZ a=0 m=0 m[0] C=0 alu-> -><none>,m[11] 
+DISK-WRITE
+561 4002240000450050 (alu) SETA a=45 m=0 m[0] C=0 alu-> -><none>,m[11] 
+DISK-OP
+562 0003000042010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[0] 
+563 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+564 0200025005620300 (jump) a=0 m=MD pc 562, !next !jump m-rot<< 0
+565 4600102060020750 (byte) a=2 m=m[4] sel dep (a<-m&mask) pos=10, width=20 ->MD ,m[0] 
+566 0600101444030440 (byte) a=2 m=m[3] dpb pos=0, width=12 ->VMA,start-write ,m[0] 
+567 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+570 0000004460010030 (alu) SETM a=0 m=11 m[11] C=0 alu-> ->MD ,m[0] 
+571 0003000044010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA,start-write ,m[0] 
+572 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+573 4600101460030400 (byte) a=2 m=m[3] dpb pos=0, width=11 ->MD ,m[0] 
+574 0002024044010310 (alu) M+A [ADD] a=40 m=50 VMA C=0 alu-> ->VMA,start-write ,m[0] 
+575 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+576 4200000006170447 (jump) a=0 m=m[0] pc 617, P jump-always 
+577 4002740000450050 (alu) SETA a=57 m=0 m[0] C=0 alu-> -><none>,m[11] 
+600 0600123460030560 (byte) a=2 m=Q dpb pos=20, width=14 ->MD ,m[0] 
+601 4200000006170447 (jump) a=0 m=m[0] pc 617, P jump-always 
+602 0002700000450050 (alu) SETA a=56 m=0 m[0] C=0 alu-> -><none>,m[11] 
+603 4600423400430350 (byte) a=10 m=Q dpb pos=10, width=10 -><none>,m[10] 
+604 4000425060010070 (alu) IOR a=10 m=52 MD C=0 alu-> ->MD ,m[0] 
+605 0002024044010310 (alu) M+A [ADD] a=40 m=50 VMA C=0 alu-> ->VMA,start-write ,m[0] 
+606 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+607 0002024044010310 (alu) M+A [ADD] a=40 m=50 VMA C=0 alu-> ->VMA,start-write ,m[0] 
+610 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+DISK-WAIT
+611 0003000042010050 (alu) SETA a=60 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[0] 
+612 4200000000240244 (jump) a=0 m=m[0] pc 24, !next pf 
+613 4200025006110300 (jump) a=0 m=MD pc 611, !next !jump m-rot<< 0
+614 0002525000410010 (alu) AND a=52 m=52 MD C=0 alu-> -><none>,m[10] 
+615 0200104000400343 (jump) a=2 m=m[10] pc 40, !next !jump M-src = A-src 
+616 0200000000001247 (jump) a=0 m=m[0] pc 0, R !next jump-always 
+DIV
+617 4200104006220141 (jump) a=2 m=m[10] pc 622, !jump M-src < A-src 
+620 4000004203210033 (alu) SETM a=0 m=10 m[10] C=0 alu-> Q-R ->a_mem[64] 
+621 0003201000010267 (alu) M-A-1 [M-A-1] a=64 m=2 m[2] C=1 alu-> Q-R -><none>,m[0] 
+622 4000441000430511 (alu) init-div-step a=11 m=2 m[2] C=0 alu<<+q31 <<Q -><none>,m[10] 
+623 4200023400420200 (jump) a=0 m=Q pc 42, !next m-rot<< 0
+624 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+625 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+626 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+627 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+630 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+631 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+632 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+633 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+634 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+635 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+636 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+637 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+640 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+641 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+642 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+643 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+644 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+645 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+646 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+647 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+650 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+651 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+652 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+653 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+654 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+655 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+656 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+657 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+660 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+661 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+662 0000444000430411 (alu) div-step a=11 m=10 m[10] C=0 alu<<+q31 <<Q -><none>,m[10] 
+663 4000444000410411 (alu) div-step a=11 m=10 m[10] C=0 alu-> <<Q -><none>,m[10] 
+664 4203201006670042 (jump) a=64 m=m[2] pc 667, M-src <= A-src 
+665 4000444000410450 (alu) rem-corr a=11 m=10 m[10] C=0 alu-> -><none>,m[10] 
+666 4000401000410264 (alu) M-A-1 [M-A-1] a=10 m=2 m[2] C=1 alu-> -><none>,m[10] 
+667 4003204603210060 (alu) XOR a=64 m=11 m[11] C=0 alu-> ->a_mem[64] 
+670 0203201000001242 (jump) a=64 m=m[2] pc 0, R !next M-src <= A-src 
+671 4100023603210030 popj; (alu) SETM a=0 m=47 Q C=0 alu-> ->a_mem[64] 
+672 0003201000010267 (alu) M-A-1 [M-A-1] a=64 m=2 m[2] C=1 alu-> Q-R -><none>,m[0] 
+673 4000000000000000 (alu) no-op
+674 4000000000000000 (alu) no-op
+675 4000000000000000 (alu) no-op
+676 4000000000000000 (alu) no-op
+677 4000000000000000 (alu) no-op
+700 4000000000000000 (alu) no-op
+701 4000000000000000 (alu) no-op
+702 4000000000000000 (alu) no-op
+703 4000000000000000 (alu) no-op
+704 4000000000000000 (alu) no-op
+705 4000000000000000 (alu) no-op
+706 4000000000000000 (alu) no-op
+707 4000000000000000 (alu) no-op
+710 4000000000000000 (alu) no-op
+711 4000000000000000 (alu) no-op
+712 4000000000000000 (alu) no-op
+713 4000000000000000 (alu) no-op
+714 4000000000000000 (alu) no-op
+715 4000000000000000 (alu) no-op
+716 4000000000000000 (alu) no-op
+717 4000000000000000 (alu) no-op
+720 4000000000000000 (alu) no-op
+721 4000000000000000 (alu) no-op
+722 4000000000000000 (alu) no-op
+723 4000000000000000 (alu) no-op
+724 4000000000000000 (alu) no-op
+725 4000000000000000 (alu) no-op
+726 4000000000000000 (alu) no-op
+727 4000000000000000 (alu) no-op
+730 4000000000000000 (alu) no-op
+731 4000000000000000 (alu) no-op
+732 4000000000000000 (alu) no-op
+733 4000000000000000 (alu) no-op
+734 4000000000000000 (alu) no-op
+735 4000000000000000 (alu) no-op
+736 4000000000000000 (alu) no-op
+737 4000000000000000 (alu) no-op
+740 4000000000000000 (alu) no-op
+741 4000000000000000 (alu) no-op
+742 4000000000000000 (alu) no-op
+743 4000000000000000 (alu) no-op
+744 4000000000000000 (alu) no-op
+745 4000000000000000 (alu) no-op
+746 4000000000000000 (alu) no-op
+747 4000000000000000 (alu) no-op
+750 4000000000000000 (alu) no-op
+751 4000000000000000 (alu) no-op
+752 4000000000000000 (alu) no-op
+753 4000000000000000 (alu) no-op
+754 4000000000000000 (alu) no-op
+755 4000000000000000 (alu) no-op
+756 4000000000000000 (alu) no-op
+757 4000000000000000 (alu) no-op
+760 4000000000000000 (alu) no-op
+761 4000000000000000 (alu) no-op
+762 4000000000000000 (alu) no-op
+763 4000000000000000 (alu) no-op
+764 4000000000000000 (alu) no-op
+765 4000000000000000 (alu) no-op
+766 4000000000000000 (alu) no-op
+767 4000000000000000 (alu) no-op
+770 4000000000000000 (alu) no-op
+771 4000000000000000 (alu) no-op
+772 4000000000000000 (alu) no-op
+773 4000000000000000 (alu) no-op
+774 4000000000000000 (alu) no-op
+775 4000000000000000 (alu) no-op
+776 4000000000000000 (alu) no-op
+777 4000000000000000 (alu) no-op
+
+

@@ -1,3 +1,6 @@
+module PULLDOWN(output O);
+  assign O = 1'b0;
+endmodule
 
 module IBUFG(input I, output O);
   assign O = I;
@@ -72,3 +75,19 @@ module DCM(
    
 endmodule
 
+module lpddr_model_c3(Dq, Dqs, Addr, Ba, Clk, Clk_n, Cke, Cs_n, Ras_n, Cas_n, We_n, Dm);
+
+   input [15:0] Dq;
+   input        Dqs;
+   input [12:0] Addr;
+   input [1:0]  Ba;
+   input        Clk;
+   input 	Clk_n;
+   input 	Cke;
+   input 	Cs_n;
+   input        Ras_n;
+   input 	Cas_n;
+   input 	We_n;
+   input [1:0] 	Dm;
+
+endmodule

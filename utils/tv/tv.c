@@ -91,6 +91,7 @@ main(int argc, char *argv[])
 			case 'n': do_window = 0; break;
 			case 'f': do_full = 0; break;
 			case 's': do_show = 1; break;
+			case 'q': do_show = 0; break;
 			case 'v': do_vram = 1; do_tv = 0; break;
 			case 'x': do_set = 0; break;
 			case 'e': do_extract = 1; do_tv = 0; break;
@@ -165,7 +166,7 @@ main(int argc, char *argv[])
 			}
 		}
 
-		if (do_show) show = 1;
+		if (do_show) show = 1; else show = 0;
 
 		if (show) {
 			printf("addr=%o, offset=%o v=%o, h=%o bits=%o\n",

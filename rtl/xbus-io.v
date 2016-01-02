@@ -2,6 +2,10 @@
  * $Id$
  */
 
+`ifndef DBG_DLY
+ `define DBG_DLY
+`endif
+
 module xbus_io(
 	       clk, reset,
 	       addr, datain, dataout,
@@ -213,7 +217,7 @@ module xbus_io(
    assign vector =
 		  (ms_int || kb_int) ? 8'o260 :
 		  clk_int ? 8'o274 :
-		  0;
+		  8'b0;
    
    // 60hz clock
    assign hz60_clk_fired = hz60_counter == hz60_clk_div[19:0];

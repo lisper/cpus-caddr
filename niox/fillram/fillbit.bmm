@@ -1,0 +1,43 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+//  Block RAM Memory Map file: M16C5x Block RAM (4096 x 12) Program Memory
+//
+////////////////////////////////////////////////////////////////////////////////
+
+ADDRESS_SPACE ROM COMBINED [0x00000000:0x000001FF]
+ADDRESS_RANGE RAMB16
+    BUS_BLOCK
+        Mram_PROM1 [ 3:0] LOC = X0Y3;
+        Mram_PROM2 [ 7:4] LOC = X0Y4;
+        Mram_PROM3 [11:8] LOC = X0Y5;
+
+cpu_rom_Mram_mem1 [3:0] LOC=
+cpu_rom_Mram_mem2 [7:4]
+cpu_rom_Mram_mem3 [11:8]
+cpu_rom_Mram_mem4 [15:12]
+cpu_rom_Mram_mem5 [19:16]
+cpu_rom_Mram_mem6 [23:20]
+cpu_rom_Mram_mem7 [27:24]
+cpu_rom_Mram_mem8 [31:28]
+
+    END_BUS_BLOCK;
+END_ADDRESS_RANGE;
+END_ADDRESS_SPACE;
+
+
+ADDRESS_SPACE RAM COMBINED [0x00000000:0x00003FFF]
+ADDRESS_RANGE RAMB16
+
+    BUS_BLOCK
+cpu_ram_Mram_mem01 [3:0]
+cpu_ram_Mram_mem02 [7:4]
+cpu_ram_Mram_mem11 [11:8]
+cpu_ram_Mram_mem12 [15:12]
+cpu_ram_Mram_mem21 [19:16]
+cpu_ram_Mram_mem22 [23:20]
+cpu_ram_Mram_mem31 [27:24]
+cpu_ram_Mram_mem32 [31:28]
+    END_BUS_BLOCK;
+
+END_ADDRESS_RANGE;
+END_ADDRESS_SPACE;

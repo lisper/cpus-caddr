@@ -2,7 +2,7 @@
 // define rtl for simulation runs
 //
 
-// // // `timescale 1ns / 1ns
+// `timescale 1ns / 1ns
 
 //`define QUARTUS
 //`define ISE
@@ -61,6 +61,7 @@
 // `define debug_rc
 // `define debug_md
 // `define debug_vma
+// `define debug_vmem
 // `define debug_dispatch
  `define debug_patch_rom
 // `define debug_patch_disk_copy
@@ -162,6 +163,8 @@
 
 `include "../rtl/xbus-io.v"
 `include "../rtl/xbus-unibus.v"
+`include "../rtl/xbus-spy.v"
+`include "../rtl/spy.v"
 `include "../rtl/ps2_support.v"
 `include "../rtl/ps2.v"
 `include "../rtl/ps2_send.v"

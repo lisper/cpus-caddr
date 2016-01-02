@@ -1,72 +1,25 @@
-// run_top_lx9_test.v
+// run_top_lx45_test.v
 // fpga test bench
 
-`timescale 1ns / 1ns
-
-`ifdef __CVER__
-`define debug
+//`define sim_ps
+`define sim_ns
 //`define waves
+`define debug
 `define DBG_DLY #0
 `define SIMULATION
-`define debug_patch_rom
-`define lx45_fake_sdram
 
-`include "top_lx45.v"
+//`define lpddr_model
+//`define mmc_pli
+`define mmc_model
 
-//`include "top_tb.v"
-//`include "cpu_test.v"
-//`include "cpu_test_data.v"
-//`include "cpu_test_mcr.v"
-//`include "cpu_test_disk.v"
-
-`include "caddr.v"
-`include "../rtl/74181.v"
-`include "../rtl/74182.v"
-
-`include "../rtl/prom.v"
-`include "../rtl/rom.v"
-
-`include "lx45_ram_controller.v"
-`include "vga_display.v"
-
-`include "busint.v"
-`include "xbus-ram.v"
-`include "xbus-disk.v"
-`include "xbus-tv.v"
-`include "xbus-io.v"
-`include "xbus-unibus.v"
-`include "mmc_block_dev.v"
-`include "mmc.v"
-`include "ps2_support.v"
-`include "ps2.v"
-`include "ps2_send.v"
-`include "keyboard.v"
-`include "mouse.v"
-`include "scancode_convert.v"
-`include "scancode_rom.v"
-
-`include "spy.v"
-
-`include "../rtl/part_16kx49ram.v"
-`include "../rtl/part_21kx32ram.v"
-`include "../rtl/part_1kx32ram_a.v"
-`include "../rtl/part_1kx32ram_p.v"
-`include "../rtl/part_32x19ram.v"
-`include "../rtl/part_1kx24ram.v"
-`include "../rtl/part_2kx17ram.v"
-`include "../rtl/part_32x32ram.v"
-`include "../rtl/part_2kx5ram.v"
-
-`include "support.v"
-//`include "debug-support.v"
-
-`include "fpga_clocks.v"
-
-`include "xilinx.v"
+`ifdef sim_ns
+ `timescale 1ns / 1ns
 `endif
 
-//`include "mmc_disk.v"
-   
+`ifdef sim_ps
+// `timescale 1ps / 1ps
+`endif
+
 module run_top;
 
    // Inputs
@@ -74,54 +27,106 @@ module run_top;
    reg 	     sysclk;
    reg 	     ps2_clk;
    reg 	     ps2_data;
-
+   reg 	     switch;
+   
    // Outputs
    wire      rs232_txd;
-   wire [3:0] led;
+   wire [4:0] led;
    wire       vga_out;
    wire       vga_hsync;
    wire       vga_vsync;
-
+   wire       vga_r;
+   wire       vga_g;
+   wire       vga_b;
+   
+   //
+   wire [15:0] mcb3_dram_dq;
+   wire [12:0] mcb3_dram_a;
+   wire [1:0]  mcb3_dram_ba;
+   wire        mcb3_dram_cke;
+   wire        mcb3_dram_ras_n;
+   wire        mcb3_dram_cas_n;
+   wire        mcb3_dram_we_n;
+   wire        mcb3_dram_dm;
+   wire        mcb3_dram_udqs;
+   wire        mcb3_rzq;
+   wire        mcb3_dram_udm;
+   wire        mcb3_dram_dqs;
+   wire        mcb3_dram_ck;
+   wire        mcb3_dram_ck_n;
+   
    // Instantiate the Unit Under Test (UUT)
    top uut (
-	    .rs232_txd(rs232_txd), 
-	    .rs232_rxd(rs232_rxd), 
-	    .led(led), 
+	    .usb_txd(rs232_txd), 
+	    .usb_rxd(rs232_rxd), 
 	    .sysclk(sysclk), 
+	    .led(led),
+	    .switch(switch),
 	    .ps2_clk(ps2_clk), 
 	    .ps2_data(ps2_data), 
 	    .ms_ps2_clk(),
 	    .ms_ps2_data(),
-	    .vga_out(vga_out), 
 	    .vga_hsync(vga_hsync), 
 	    .vga_vsync(vga_vsync),
+	    .vga_r(vga_r),
+	    .vga_g(vga_g),
+	    .vga_b(vga_b), 
 	    .mmc_cs(mmc_cs),
 	    .mmc_di(mmc_di),
 	    .mmc_do(mmc_do),
-	    .mmc_sclk(mmc_sclk)
+	    .mmc_sclk(mmc_sclk),
+
+	    .mcb3_dram_dq(mcb3_dram_dq),
+	    .mcb3_dram_a(mcb3_dram_a),
+	    .mcb3_dram_ba(mcb3_dram_ba),
+	    .mcb3_dram_cke(mcb3_dram_cke),
+	    .mcb3_dram_ras_n(mcb3_dram_ras_n),
+	    .mcb3_dram_cas_n(mcb3_dram_cas_n),
+	    .mcb3_dram_we_n(mcb3_dram_we_n),
+	    .mcb3_dram_dm(mcb3_dram_dm),
+	    .mcb3_dram_udqs(mcb3_dram_udqs),
+	    .mcb3_rzq(mcb3_rzq),
+	    .mcb3_dram_udm(mcb3_dram_udm),
+	    .mcb3_dram_dqs(mcb3_dram_dqs),
+	    .mcb3_dram_ck(mcb3_dram_ck),
+	    .mcb3_dram_ck_n(mcb3_dram_ck_n)
 	    );
 
+`ifdef lpddr_model
+   lpddr_model_c3 u_mem3(
+      .Dq    (mcb3_dram_dq),
+      .Dqs   ({mcb3_dram_udqs,mcb3_dram_dqs}),
+      .Addr  (mcb3_dram_a),
+      .Ba    (mcb3_dram_ba),
+      .Clk   (mcb3_dram_ck),
+      .Clk_n (mcb3_dram_ck_n),
+      .Cke   (mcb3_dram_cke),
+      .Cs_n  (1'b0),
+      .Ras_n (mcb3_dram_ras_n),
+      .Cas_n (mcb3_dram_cas_n),
+      .We_n  (mcb3_dram_we_n),
+      .Dm    ({mcb3_dram_udm,mcb3_dram_dm})
+      );
 
-//   mmc_disk mmc(
-//		.mmc_cs(mmc_cs),
-//		.mmc_di(mmc_di),
-//		.mmc_do(mmc_do),
-//		.mmc_sclk(mmc_sclk)
-//		);
-
+   PULLDOWN rzq_pulldown (.O(mcb3_rzq));
+`endif
+   
    initial begin
       // Initialize Inputs
       rs232_rxd = 0;
       sysclk = 0;
       ps2_clk = 0;
       ps2_data = 0;
-
+      switch = 0;
+      
       //uut.rc.debug = 1;
       //uut.rc.debug_mcr = 1;
-      uut.cpu.busint.disk.debug = 1;
+      //uut.cpu.busint.disk.debug = 1;
 
-      // Wait 100 ns for global reset to finish
-      #100;
+//      // Wait 100 ns for global reset to finish
+//      #100;
+// #1000 force uut.lpddr_reset = 1;
+// #1100 release uut.lpddr_reset;
    end
    
 `ifdef waves
@@ -133,22 +138,45 @@ module run_top;
      end
 `endif
    
+`ifdef sim_finish
    initial
      begin
 	#100000000; $finish;
      end
+`endif
    
    // 50mhz clock
+`ifdef sim_ps
    always
      begin
-	#10 sysclk = 0;
+	#10000 sysclk = 0; // ps
+	#10000 sysclk = 1;
+     end
+`endif
+
+`ifdef sim_ns
+   always
+     begin
+	#10 sysclk = 0; // ns
 	#10 sysclk = 1;
      end
+`endif
 
+`ifdef mmc_pli
    always @(posedge sysclk)
      begin
 	$pli_mmc(mmc_cs, mmc_sclk, mmc_di, mmc_do);
      end
+`endif
+
+`ifdef mmc_model
+   mmc_model mmc_card(
+		      .spiClk(mmc_sclk),
+		      .spiDataIn(mmc_do),
+		      .spiDataOut(mmc_di),
+		      .spiCS_n(mmc_cs)
+		      );
+`endif
 
    integer cycles, faults;
 

@@ -1,0 +1,860 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="./top_niox_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="top_niox_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="195" />
+   <wave_markers>
+      <marker time="100000000" label="" />
+   </wave_markers>
+   <wvobject fp_name="/top_niox_tb/usb_txd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">usb_txd</obj_property>
+      <obj_property name="ObjectShortName">usb_txd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/usb_rxd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">usb_rxd</obj_property>
+      <obj_property name="ObjectShortName">usb_rxd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/led" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">led[4:0]</obj_property>
+      <obj_property name="ObjectShortName">led[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/ms_ps2_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ms_ps2_clk</obj_property>
+      <obj_property name="ObjectShortName">ms_ps2_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/ms_ps2_data" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ms_ps2_data</obj_property>
+      <obj_property name="ObjectShortName">ms_ps2_data</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/vga_hsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_hsync</obj_property>
+      <obj_property name="ObjectShortName">vga_hsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/vga_vsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_vsync</obj_property>
+      <obj_property name="ObjectShortName">vga_vsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/vga_r" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_r</obj_property>
+      <obj_property name="ObjectShortName">vga_r</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/vga_g" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_g</obj_property>
+      <obj_property name="ObjectShortName">vga_g</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/vga_b" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_b</obj_property>
+      <obj_property name="ObjectShortName">vga_b</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mmc_cs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_cs</obj_property>
+      <obj_property name="ObjectShortName">mmc_cs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mmc_di" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_di</obj_property>
+      <obj_property name="ObjectShortName">mmc_di</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mmc_do" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_do</obj_property>
+      <obj_property name="ObjectShortName">mmc_do</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mmc_sclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_sclk</obj_property>
+      <obj_property name="ObjectShortName">mmc_sclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_dq" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dq[15:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dq[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_a[12:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_a[12:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_ba" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ba[1:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ba[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_cke" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_cke</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_cke</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_ras_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ras_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ras_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_cas_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_cas_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_cas_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_we_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_we_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_we_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_dm" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dm</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dm</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider101" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_udqs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_udqs</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_udqs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_rzq" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_rzq</obj_property>
+      <obj_property name="ObjectShortName">mcb3_rzq</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_udm" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_udm</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_udm</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_dqs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dqs</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dqs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_ck" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ck</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ck</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/mcb3_dram_ck_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ck_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ck_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/tmds" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmds[3:0]</obj_property>
+      <obj_property name="ObjectShortName">tmds[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/tmdsb" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmdsb[3:0]</obj_property>
+      <obj_property name="ObjectShortName">tmdsb[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/sysclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sysclk</obj_property>
+      <obj_property name="ObjectShortName">sysclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/switch" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">switch</obj_property>
+      <obj_property name="ObjectShortName">switch</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/ps2_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ps2_clk</obj_property>
+      <obj_property name="ObjectShortName">ps2_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/ps2_data" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ps2_data</obj_property>
+      <obj_property name="ObjectShortName">ps2_data</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider35" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/pc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">pc[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/pc_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pc_en</obj_property>
+      <obj_property name="ObjectShortName">pc_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/support/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/support/cpu_in_reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cpu_in_reset</obj_property>
+      <obj_property name="ObjectShortName">cpu_in_reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/support/reset_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">reset_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">reset_state[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/support/cpu_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cpu_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_state[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_ack" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_ack</obj_property>
+      <obj_property name="ObjectShortName">dlmb_ack</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/clke" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clke</obj_property>
+      <obj_property name="ObjectShortName">clke</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vram_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_addr[14:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vram_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/pixclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pixclk</obj_property>
+      <obj_property name="ObjectShortName">pixclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/hsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">hsync</obj_property>
+      <obj_property name="ObjectShortName">hsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vsync</obj_property>
+      <obj_property name="ObjectShortName">vsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_req</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_ready</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_write" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_write</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_write</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_done</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_addr[14:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_data_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_data_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_data_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_data_in[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_addr[14:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_data_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider66" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/h_counter" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">h_counter[10:0]</obj_property>
+      <obj_property name="ObjectShortName">h_counter[10:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/v_counter" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">v_counter[10:0]</obj_property>
+      <obj_property name="ObjectShortName">v_counter[10:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/v_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">v_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">v_addr[14:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vga_hsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_hsync</obj_property>
+      <obj_property name="ObjectShortName">vga_hsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vga_vsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_vsync</obj_property>
+      <obj_property name="ObjectShortName">vga_vsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vga_blank" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_blank</obj_property>
+      <obj_property name="ObjectShortName">vga_blank</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/hsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">hsync</obj_property>
+      <obj_property name="ObjectShortName">hsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/vsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vsync</obj_property>
+      <obj_property name="ObjectShortName">vsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">valid</obj_property>
+      <obj_property name="ObjectShortName">valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/h_in_box" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">h_in_box</obj_property>
+      <obj_property name="ObjectShortName">h_in_box</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/v_in_box" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">v_in_box</obj_property>
+      <obj_property name="ObjectShortName">v_in_box</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/in_box" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">in_box</obj_property>
+      <obj_property name="ObjectShortName">in_box</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/h_in_border" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">h_in_border</obj_property>
+      <obj_property name="ObjectShortName">h_in_border</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/v_in_border" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">v_in_border</obj_property>
+      <obj_property name="ObjectShortName">v_in_border</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/in_border" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">in_border</obj_property>
+      <obj_property name="ObjectShortName">in_border</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/pixclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pixclk</obj_property>
+      <obj_property name="ObjectShortName">pixclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/h_pos" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">h_pos[10:0]</obj_property>
+      <obj_property name="ObjectShortName">h_pos[10:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/ram_shift_load" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ram_shift_load</obj_property>
+      <obj_property name="ObjectShortName">ram_shift_load</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/preload" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">preload</obj_property>
+      <obj_property name="ObjectShortName">preload</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/ram_data_hold_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ram_data_hold_empty</obj_property>
+      <obj_property name="ObjectShortName">ram_data_hold_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/ram_data_hold_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ram_data_hold_req</obj_property>
+      <obj_property name="ObjectShortName">ram_data_hold_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/ram_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ram_req</obj_property>
+      <obj_property name="ObjectShortName">ram_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_req</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_ready</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/vga/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/cpu_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cpu_clk</obj_property>
+      <obj_property name="ObjectShortName">cpu_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_req</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_ready</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_addr[14:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_data_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_req</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_ready</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_write" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_write</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_write</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_done</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_addr[14:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_addr[14:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_data_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_data_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_data_in[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_cpu_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_cpu_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_cpu_data_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/vram_vga_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vram_vga_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vram_vga_data_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider103" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">state[1:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/pc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">pc[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/is_bge" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">is_bge</obj_property>
+      <obj_property name="ObjectShortName">is_bge</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_result_lt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_result_lt</obj_property>
+      <obj_property name="ObjectShortName">alu_result_lt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_result_zero" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_result_zero</obj_property>
+      <obj_property name="ObjectShortName">alu_result_zero</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/br_taken" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">br_taken</obj_property>
+      <obj_property name="ObjectShortName">br_taken</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_opera" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_opera[31:0]</obj_property>
+      <obj_property name="ObjectShortName">alu_opera[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_operb" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_operb[31:0]</obj_property>
+      <obj_property name="ObjectShortName">alu_operb[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_op_signed" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_op_signed</obj_property>
+      <obj_property name="ObjectShortName">alu_op_signed</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/niox_alu_inst/n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">n</obj_property>
+      <obj_property name="ObjectShortName">n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/niox_alu_inst/v" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">v</obj_property>
+      <obj_property name="ObjectShortName">v</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/niox_alu_inst/c" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c</obj_property>
+      <obj_property name="ObjectShortName">c</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/niox_alu_inst/signed_lt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">signed_lt</obj_property>
+      <obj_property name="ObjectShortName">signed_lt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/niox_alu_inst/unsigned_lt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">unsigned_lt</obj_property>
+      <obj_property name="ObjectShortName">unsigned_lt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/is_store" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">is_store</obj_property>
+      <obj_property name="ObjectShortName">is_store</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/is_stw" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">is_stw</obj_property>
+      <obj_property name="ObjectShortName">is_stw</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/is_stw_any" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">is_stw_any</obj_property>
+      <obj_property name="ObjectShortName">is_stw_any</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/wait_ext" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wait_ext</obj_property>
+      <obj_property name="ObjectShortName">wait_ext</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_ack" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_ack</obj_property>
+      <obj_property name="ObjectShortName">dlmb_ack</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dlmb_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_be" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_be[3:0]</obj_property>
+      <obj_property name="ObjectShortName">dlmb_be[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_datai" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_datai[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dlmb_datai[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_datao" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_datao[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dlmb_datao[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_sel" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_sel</obj_property>
+      <obj_property name="ObjectShortName">dlmb_sel</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/dlmb_we" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dlmb_we</obj_property>
+      <obj_property name="ObjectShortName">dlmb_we</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/regs_a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">regs_a[31:0]</obj_property>
+      <obj_property name="ObjectShortName">regs_a[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/regs_b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">regs_b[31:0]</obj_property>
+      <obj_property name="ObjectShortName">regs_b[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_opera" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_opera[31:0]</obj_property>
+      <obj_property name="ObjectShortName">alu_opera[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_operb" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_operb[31:0]</obj_property>
+      <obj_property name="ObjectShortName">alu_operb[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/alu_result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">alu_result[31:0]</obj_property>
+      <obj_property name="ObjectShortName">alu_result[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/pc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">pc[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">state[1:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider135" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_req</obj_property>
+      <obj_property name="ObjectShortName">sdram_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_ready</obj_property>
+      <obj_property name="ObjectShortName">sdram_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_write" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_write</obj_property>
+      <obj_property name="ObjectShortName">sdram_write</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_done</obj_property>
+      <obj_property name="ObjectShortName">sdram_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_addr[21:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_addr[21:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_data_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_data_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_data_in[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_data_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_state[6:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_state[6:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_disk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_disk</obj_property>
+      <obj_property name="ObjectShortName">decode_disk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_dram" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_dram</obj_property>
+      <obj_property name="ObjectShortName">decode_dram</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_io" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_io</obj_property>
+      <obj_property name="ObjectShortName">decode_io</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_ok" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_ok</obj_property>
+      <obj_property name="ObjectShortName">decode_ok</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_spy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_spy</obj_property>
+      <obj_property name="ObjectShortName">decode_spy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_tv" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_tv</obj_property>
+      <obj_property name="ObjectShortName">decode_tv</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/decode_unibus" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">decode_unibus</obj_property>
+      <obj_property name="ObjectShortName">decode_unibus</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">state[3:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/next_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">next_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">next_state[3:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/req_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">req_valid</obj_property>
+      <obj_property name="ObjectShortName">req_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus/req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">req</obj_property>
+      <obj_property name="ObjectShortName">req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_ack" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_ack</obj_property>
+      <obj_property name="ObjectShortName">bus_ack</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_data[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_datai" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_datai[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_datai[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_datao" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_datao[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bus_datao[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_decode" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_decode</obj_property>
+      <obj_property name="ObjectShortName">bus_decode</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_int" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_int</obj_property>
+      <obj_property name="ObjectShortName">bus_int</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_load" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_load</obj_property>
+      <obj_property name="ObjectShortName">bus_load</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_req</obj_property>
+      <obj_property name="ObjectShortName">bus_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/bus_access" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bus_access</obj_property>
+      <obj_property name="ObjectShortName">bus_access</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/sdr_access" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdr_access</obj_property>
+      <obj_property name="ObjectShortName">sdr_access</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/ram_access" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ram_access</obj_property>
+      <obj_property name="ObjectShortName">ram_access</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/rom_access" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rom_access</obj_property>
+      <obj_property name="ObjectShortName">rom_access</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/lpddr_calib_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_calib_done</obj_property>
+      <obj_property name="ObjectShortName">lpddr_calib_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/lpddr_rd_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_done</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/lpddr_rd_rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_rdy</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_resp_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_resp_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_resp_in[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_out[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/lpddr_reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_reset</obj_property>
+      <obj_property name="ObjectShortName">lpddr_reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/lpddr_wr_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_done</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/lpddr_wr_rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_rdy</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_state[6:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_state[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/rc/sdram_state_next" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_state_next[6:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_state_next[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider244" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[5:0]</obj_property>
+      <obj_property name="ObjectShortName">state[5:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">state[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/counting_bits" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">counting_bits</obj_property>
+      <obj_property name="ObjectShortName">counting_bits</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/bit_end" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bit_end</obj_property>
+      <obj_property name="ObjectShortName">bit_end</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/bit_middle" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bit_middle</obj_property>
+      <obj_property name="ObjectShortName">bit_middle</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/bitcount" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bitcount[7:0]</obj_property>
+      <obj_property name="ObjectShortName">bitcount[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/bit_time" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bit_time[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bit_time[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/mmc_bd/mmc/mmc_sclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_sclk</obj_property>
+      <obj_property name="ObjectShortName">mmc_sclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/sysclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sysclk</obj_property>
+      <obj_property name="ObjectShortName">sysclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider189" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/ram/sel_i" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sel_i</obj_property>
+      <obj_property name="ObjectShortName">sel_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/ram/sel_i_d" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sel_i_d</obj_property>
+      <obj_property name="ObjectShortName">sel_i_d</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/ram/we_i" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">we_i</obj_property>
+      <obj_property name="ObjectShortName">we_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/ram/ack_o" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ack_o</obj_property>
+      <obj_property name="ObjectShortName">ack_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/ram/clk_i" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_i</obj_property>
+      <obj_property name="ObjectShortName">clk_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/top_niox_tb/top/cpu/cpu/pc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">pc[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+</wave_config>

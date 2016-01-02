@@ -32,26 +32,27 @@ PLI_INT32 pli_mmc(void);
 extern void register_my_systfs(void); 
 extern void register_my_systfs(void);
 
-char *instnam_tab[10]; 
-int last_evh;
+static char *instnam_tab[10]; 
+static int last_evh;
 
-char last_sclk_bit;
-char last_cs_bit;
+static char last_sclk_bit;
+static char last_cs_bit;
 
-int running_cver;
-int debug;
+static int running_cver;
+static int debug;
 
 static struct state_s {
     unsigned short status;
     unsigned long long cmd_reg;
     int cmd_bits;
     int unselected_count;
-    int input;
     int mode;
     int initializing;
     int initializing_count;
     int do_state;
     int blksize;
+    int cs_deassert_wait;
+    int clk_posedge_wait;
 
     u8 resp[4];
     int resp_delay;
@@ -74,10 +75,11 @@ enum {
     M_POWERUP = -1,
     M_IDLE = 0,
     M_CMD = 1,
-    M_READ_RESP = 2,
-    M_READ = 3,
-    M_WRITE_RESP = 4,
-    M_WRITE = 5
+    M_CMD_RESP = 2,
+    M_READ_RESP = 3,
+    M_READ = 4,
+    M_WRITE_RESP = 5,
+    M_WRITE = 6
 };
 
 #define R1_IDLE			0x01
@@ -87,6 +89,8 @@ enum {
 #define R1_ERASE_SEQ_ERR	0x10
 #define R1_ADDR_ERR		0x20
 #define R1_PARM_ERR		0x40
+
+void mmc_set_mode(struct state_s *s, int mode);
 
 static int getadd_inst_id(vpiHandle mhref)
 {
@@ -126,7 +130,6 @@ do_mmc_setup(struct state_s *s)
         perror(disk_image_filename);
 
     s->status = 0;
-    s->input = 0;
     s->mode = M_POWERUP;
     s->blksize = 256;
     s->fifo_depth = 0;
@@ -167,8 +170,8 @@ do_mmc_read(struct state_s *s)
 static void
 do_mmc_write(struct state_s *s)
 {
-    if (0) vpi_printf("pli_mmc: %d (lba %d) (write)\n",
-                      s->lba*s->blksize, s->lba);
+    if (debug) vpi_printf("pli_mmc: %d (lba %d) (write)\n",
+                          s->lba*s->blksize, s->lba);
 
     vpi_printf("pli_mmc: write prep\n");
 
@@ -199,7 +202,6 @@ do_mmc_write_done(struct state_s *s)
 void mmc_resp(struct state_s *s, int len, char *resp, int delay)
 {
     int i;
-    s->input = 0;
     s->resp_size = len;
     s->resp_index = 0;
     s->resp_bit = 0;
@@ -207,7 +209,7 @@ void mmc_resp(struct state_s *s, int len, char *resp, int delay)
         s->resp[i] = resp[i];
     s->resp_delay = delay;
 
-    if (1) printf("pli_mmc: queue resp; size %d, delay %d\n", len, delay);
+    if (debug) printf("pli_mmc: queue resp; size %d, delay %d\n", len, delay);
 }
 
 void mmc_resp_r1(struct state_s *s, char r1, int delay)
@@ -220,12 +222,12 @@ void mmc_resp_r1(struct state_s *s, char r1, int delay)
 void mmc_read_fifo(struct state_s *s)
 {
     char d[1];
-    if (1) printf("pli_mmc: data[%d] -> %o (0x%02x)\n", s->fifo_rd, s->fifo[s->fifo_rd], s->fifo[s->fifo_rd]);
+    if (debug) printf("pli_mmc: data[%d] -> %o (0x%02x)\n", s->fifo_rd, s->fifo[s->fifo_rd], s->fifo[s->fifo_rd]);
     d[0] = s->fifo[s->fifo_rd];
     s->fifo_rd++;
     if (s->fifo_rd == s->fifo_depth) {
 //        do_mmc_read_done(s);
-        s->mode = M_CMD;
+        mmc_set_mode(s, M_CMD);
     }
 
     mmc_resp(s, 1, d, 0);
@@ -233,15 +235,50 @@ void mmc_read_fifo(struct state_s *s)
 
 void mmc_write_fifo(struct state_s *s)
 {
-    if (1) printf("pli_mmc: data[%d] <- 0x%08x\n", s->fifo_wr, (unsigned int)(s->cmd_reg & 0xff));
+    if (debug) printf("pli_mmc: data[%d] <- 0x%08x\n", s->fifo_wr, (unsigned int)(s->cmd_reg & 0xff));
     s->fifo[s->fifo_wr] = s->cmd_reg & 0xff;
     s->fifo_wr++;
     if (s->fifo_wr == s->fifo_depth) {
         do_mmc_write_done(s);
-        s->mode = M_CMD;
+        mmc_set_mode(s, M_CMD);
     }
 }
 
+char *mmc_mode_name(int mode)
+{
+    switch (mode) {
+    case M_POWERUP: return "M_POWERUP"; break;
+    case M_IDLE: return "M_IDLE"; break;
+    case M_CMD: return "M_CMD"; break;
+    case M_CMD_RESP: return "M_CMD_RESP"; break;
+    case M_READ_RESP: return "M_READ_RESP"; break;
+    case M_READ: return "M_READ"; break;
+    case M_WRITE_RESP: return "M_WRITE_RESP"; break;
+    case M_WRITE: return "M_WRITE"; break;
+    default: return "???"; break;
+    }
+}
+
+void mmc_set_mode(struct state_s *s, int mode)
+{
+    if (debug) printf("pli_mmc: mode %s->%s\n", mmc_mode_name(s->mode), mmc_mode_name(mode));
+    s->mode = mode;
+
+    if (mode == M_CMD) {
+        s->cmd_bits = 0;
+    }
+}
+
+int mmc_responding(struct state_s *s)
+{
+    if (s->mode == M_CMD_RESP || s->mode == M_READ_RESP || s->mode == M_WRITE_RESP)
+        return 1;
+
+    if (s->mode == M_READ)
+        return 1;
+
+    return 0;
+}
 
 /*
  *
@@ -262,6 +299,8 @@ PLI_INT32 pli_mmc(void)
     int di_asserted, do_asserted;
 
     if (0) vpi_printf("pli_mmc: entry\n");
+
+    debug = 2;
 
     href = vpi_handle(vpiSysTfCall, NULL); 
     if (href == NULL) {
@@ -329,7 +368,7 @@ PLI_INT32 pli_mmc(void)
     }
     last_sclk_bit = sclk_bit;
 
-    if (0) if (sclk_pos_edge || sclk_neg_edge)
+    if (debug > 2 && (sclk_pos_edge || sclk_neg_edge))
         printf("sclk_bit %c, sclk_edge %c\n",
                sclk_bit, sclk_pos_edge ? '+' : (sclk_neg_edge ? '-' : ' '));
 
@@ -347,19 +386,30 @@ PLI_INT32 pli_mmc(void)
     if (di_bit == '0') di_asserted = 0;
     if (di_bit == '1') di_asserted = 1;
 
-    if (0) {
-        if (sclk_pos_edge) vpi_printf("pli_mmc: sclk pos edge, di %d\n", di_asserted);
-        if (cs_edge) vpi_printf("pli_mmc: cs asserted %d\n", cs_asserted);
+    if (debug > 2) {
+        if (sclk_pos_edge) printf("pli_mmc: sclk pos edge, di %d\n", di_asserted);
+        if (sclk_neg_edge) printf("pli_mmc: sclk neg edge, di %d\n", di_asserted);
+    }
+
+    if (debug > 1) {
+	if (cs_edge && cs_asserted != 0) printf("pli_mmc: cs asserted\n");
+	if (cs_edge && cs_asserted == 0) printf("pli_mmc: cs deasserted\n");
     }
 
     if (cs_edge && cs_asserted) {
         s->cmd_reg = 0;
         s->cmd_bits = 0;
+        s->resp_bit = 0;
     }
 
-    if (cs_edge && !cs_asserted) {
+    if ((cs_edge && !cs_asserted) || !cs_asserted) {
         s->do_state = 0;
+        s->cs_deassert_wait = 0;
     }
+
+    //
+    if (s->cs_deassert_wait)
+        goto done;
 
     if (cs_asserted && (sclk_pos_edge == 0 && sclk_neg_edge == 0)) {
         if ((s->mode == M_READ_RESP || s->mode == M_WRITE_RESP) && s->resp_delay)
@@ -378,31 +428,36 @@ PLI_INT32 pli_mmc(void)
 #define CMD17	0x51
 #define CMD24	0x58
 
-        if (0) if (s->mode == M_CMD)
+        if (debug > 2 && s->mode == M_CMD)
             printf("pli_mmc: mode%d bits %d reg %12llx\n", s->mode, s->cmd_bits, s->cmd_reg);
 
         switch (s->mode) {
         case M_READ_RESP:
         case M_WRITE_RESP:
+            printf("pli_mmc: M_XXX_RESP, cmd_bits %d\n", s->cmd_bits);
             if (s->cmd_bits == 8) {
                 if (s->resp_delay > 0) {
                     s->resp_delay--;
-                    if (1) printf("pli_mmc: resp_delay %d\n", s->resp_delay);
+                    if (debug) printf("pli_mmc: resp_delay %d\n", s->resp_delay);
                 } else {
                     if (s->mode == M_READ_RESP) {
-                        s->mode = M_READ;
+                        mmc_set_mode(s, M_READ);
                         mmc_read_fifo(s);
                     }
                     if (s->mode == M_WRITE_RESP) {
-                        s->mode = M_WRITE;
+                        mmc_set_mode(s, M_WRITE);
                     }
                 }
+
+                s->cmd_bits = 0;
             }
             break;
 
         case M_READ:
             if (s->resp_size == 0) {
                 mmc_read_fifo(s);
+                if (s->fifo_rd == s->fifo_depth)
+                    s->cs_deassert_wait = 1;
             }
             break;
 
@@ -410,6 +465,7 @@ PLI_INT32 pli_mmc(void)
         case M_WRITE:
             if (s->cmd_bits == 8) {
                 mmc_write_fifo(s);
+                s->cmd_bits = 0;
             }
             break;
 
@@ -420,45 +476,52 @@ PLI_INT32 pli_mmc(void)
                 u8 parity = s->cmd_reg & 0xff;
                 u8 cmd = (s->cmd_reg >> 40) & 0xff;
 
-                if (1) printf("pli_mmc: cmd %02x %llx\n", cmd, s->cmd_reg);
+                if (debug) printf("pli_mmc: cmd %02x %llx\n", cmd, s->cmd_reg);
 
                 switch (cmd) {
                 case CMD0:// cmd0
                     if (parity == 0x95) {
-                        if (1) printf("pli_mmc: CMD0\n");
+                        if (debug) printf("pli_mmc: CMD0\n");
                         if (cs_asserted)
-                            s->mode = M_CMD;
+                            //mmc_set_mode(s, M_CMD_RESP);
+                        mmc_set_mode(s, M_CMD_RESP);
                         s->initializing = 0;
                         mmc_resp_r1(s, R1_IDLE, 0);
                     }
                     break;
-                case CMD1:// cmd1
-                    if (1) printf("pli_mmc: CMD1\n");
+                case CMD1:
+                    if (debug) printf("pli_mmc: CMD1\n");
                     s->initializing = 1;
                     s->initializing_count = 0;
+                    mmc_set_mode(s, M_CMD_RESP);
                     mmc_resp_r1(s, R1_IDLE, 0);
                     break;
                 case CMD16:
                     s->blksize = (s->cmd_reg >> 8) & 0xffff;
-                    if (1) printf("pli_mmc: CMD16 blksize=%d\n", s->blksize);
+                    if (debug) printf("pli_mmc: CMD16 blksize=%d\n", s->blksize);
+                    mmc_set_mode(s, M_CMD_RESP);
                     mmc_resp_r1(s, 0, 0);
                     break;
                 case CMD17:
-                    if (1) printf("pli_mmc: CMD17\n");
+                    if (debug) printf("pli_mmc: CMD17\n");
                     s->lba = (s->cmd_reg >> 8) & 0xffffffff;
                     do_mmc_read(s);
                     mmc_resp_r1(s, 0, 5);
-                    s->mode = M_READ_RESP;
+                    mmc_set_mode(s, M_READ_RESP);
                     break;
                 case CMD24:
-                    if (1) printf("pli_mmc: CMD24\n");
+                    if (debug) printf("pli_mmc: CMD24\n");
                     s->lba = (s->cmd_reg >> 8) & 0xffffffff;
                     do_mmc_write(s);
                     mmc_resp_r1(s, 0, 5*8);
-                    s->mode = M_WRITE_RESP;
+                    mmc_set_mode(s, M_WRITE_RESP);
                     break;
                 }
 
+                //wrong
+                //s->cs_deassert_wait = 1;
+                s->cmd_bits = 0;
+                s->clk_posedge_wait = 1;
                 goto done;
             }
             break;
@@ -466,41 +529,39 @@ PLI_INT32 pli_mmc(void)
     }
 
     if (sclk_pos_edge && !cs_asserted && di_asserted) {
-        s->input = 1;
         s->unselected_count++;
-        if (0) printf("pli_mmc: unselected_count %d\n", s->unselected_count);
+        if (debug > 1) printf("pli_mmc: unselected_count %d\n", s->unselected_count);
         if (s->unselected_count >= 74) {
             if (s->mode != M_IDLE) printf("pli_mmc: going idle\n");
-            s->mode = M_IDLE;
+            mmc_set_mode(s, M_IDLE);
         }
     }
 
     do_asserted = s->do_state;
 
-    if (!s->input) {
+    if (mmc_responding(s)) {
         if (sclk_pos_edge && cs_asserted) {
+            if (debug > 2)
+                printf("pli_mmc: responding, pos (size %d delay %d)\n", s->resp_size, s->resp_delay);
 
             if (s->initializing && s->resp_size == 0) {
                 s->initializing_count++;
                 if (s->initializing_count > 2)
                     s->initializing = 0;
-                if (1) printf("pli_mmc: initializing %d\n", s->initializing_count);
+                printf("pli_mmc: initializing %d\n", s->initializing_count);
                 mmc_resp_r1(s, s->initializing ? R1_IDLE : 0, 0);
             }
         }
 
-        if (sclk_neg_edge && cs_asserted) {
-            if (s->resp_size == 0)
-                s->input = 1;
-            else {
+        if ((sclk_neg_edge && cs_asserted) || (cs_edge && cs_asserted)) {
+            if (s->resp_size == 0) {
+                mmc_set_mode(s, M_CMD);
+            } else {
                 if (s->resp_delay == 0) {
                     if (s->resp[s->resp_index] & (1 << (7 - s->resp_bit)))
                         do_asserted = 1;
                     else
                         do_asserted = 0;
-
-                    if (debug) printf("pli_mmc: resp, index/size/bit=%d/%d/%d, do=%d\n",
-                                      s->resp_index, s->resp_size, s->resp_bit, do_asserted);
 
                     s->resp_bit++;
                     if (s->resp_bit == 8) {
@@ -520,6 +581,13 @@ done:
     outval.format = vpiIntVal;
     outval.value.integer = do_asserted ? 1 : 0;
     vpi_put_value(doref, &outval, NULL, vpiNoDelay);
+
+    if (s->do_state != do_asserted && debug > 2) {
+        s_vpi_time t;
+        t.type = vpiScaledRealTime;
+        vpi_get_time(NULL, &t);
+        printf("pli_mmc: change do %d (was %d), time=%10.0f\n", do_asserted, s->do_state, t.real);
+    }
 
     s->do_state = do_asserted;
 

@@ -1,6 +1,10 @@
 /*
- * top for running with cver
+ * top for running cpu + spy with cver
  */
+
+//`define use_spy_driver
+`define use_spy_port
+//`define use_pli_ide
 
 //`define patch_rw_test // test rw
 `define debug_vcd
@@ -10,15 +14,22 @@
 
 //`define debug_xbus
 //`define debug_vmem
-`define debug_md
-`define debug_vma
+//`define debug_md
+//`define debug_vma
 
 `define build_test
 
 `include "rtl.v"
 
 `include "ram_s3board.v"
-`include "debug-spy-driver.v"
+
+`ifdef use_spy_driver
+ `include "debug-spy-driver.v"
+`endif
+
+`ifdef use_spy_port
+`include "debug-spy-serial.v"
+`endif
 
 `timescale 1ns / 1ns
 
@@ -33,7 +44,10 @@ module test;
    wire [15:0] spyin;
    wire [15:0] spyout;
    wire        dbread, dbwrite;
-   wire [3:0]  eadr;
+   wire [4:0]  eadr;
+   wire [3:0] 	 spy_reg;
+   wire 	 spy_rd;
+   wire 	 spy_wr;
 
    wire [15:0] 	ide_data_bus;
    wire [15:0] 	ide_data_in;
@@ -77,6 +91,7 @@ module test;
    wire 	 bd_rd;
    wire 	 bd_wr;
    wire 	 bd_iordy;
+   wire [11:0] 	 bd_state;
 
    wire [14:0] 	 vram_vga_addr;
    wire [31:0] 	 vram_vga_data_out;
@@ -98,6 +113,9 @@ module test;
    wire [15:0] 	 sram2_out;
    wire 	 sram1_ce_n, sram1_ub_n, sram1_lb_n;
    wire 	 sram2_ce_n, sram2_ub_n, sram2_lb_n;
+
+   wire 	 rs232_rxd;
+   wire 	 rs232_txd;
 
    //
    reg [4:0] slow;
@@ -137,14 +155,17 @@ module test;
 	      .dbread(dbread),
 	      .dbwrite(dbwrite),
 	      .eadr(eadr),
+	      .spy_reg(spy_reg),
+	      .spy_rd(spy_rd),
+	      .spy_wr(spy_wr),
 
 	      .pc_out(pc),
 	      .state_out(state),
+	      .disk_state_out(disk_state),
+	      .bus_state_out(bus_state),
 	      .machrun_out(machrun),
 	      .prefetch_out(prefetch),
 	      .fetch_out(fetch),
-	      .disk_state_out(disk_state),
-	      .bus_state_out(bus_state),
      
 	      .mcr_addr(mcr_addr),
 	      .mcr_data_out(mcr_data_out),
@@ -180,6 +201,7 @@ module test;
 	      .bd_rd(bd_rd),
 	      .bd_wr(bd_wr),
 	      .bd_iordy(bd_iordy),
+	      .bd_state_in(bd_state),
 
 	      .kb_data(kb_data),
 	      .kb_ready(kb_ready),
@@ -278,6 +300,7 @@ module test;
 		   .ram2_ub_n(sram2_ub_n),
 		   .ram2_lb_n(sram2_lb_n));
 
+`ifdef use_spy_driver
    spy_port_test spy_port(
 		     .sysclk(sysclk),
 		     .clk(clk1x),
@@ -290,7 +313,52 @@ module test;
 		     .dbwrite(dbwrite),
 		     .eadr(eadr)
 		     );
+`endif
 
+`ifdef use_spy_port
+   spy_port spy_port(
+		     .sysclk(sysclk),
+		     .clk(clk1x),
+		     .reset(reset),
+		     .rs232_rxd(rs232_rxd),
+		     .rs232_txd(rs232_txd),
+		     .spy_in(spyout),
+		     .spy_out(spyin),
+		     .dbread(dbread),
+		     .dbwrite(dbwrite),
+		     .eadr(eadr),
+   		     .bd_cmd(),
+		     .bd_start(),
+		     .bd_bsy(1'b0),
+		     .bd_rdy(1'b0),
+		     .bd_err(1'b0),
+		     .bd_addr(),
+		     .bd_data_in(16'b0),
+		     .bd_data_out(),
+		     .bd_rd(),
+		     .bd_wr(),
+		     .bd_iordy(1'b0),
+		     .bd_state(bd_state)
+		     );
+
+   spy_port_driver spy_port_driver(
+				   .sysclk(sysclk),
+				   .clk(clk1x),
+				   .reset(reset),
+				   .rs232_rxd(rs232_rxd),
+				   .rs232_txd(rs232_txd),
+				   .spy_in(spyin),
+				   .spy_out(spyout),
+				   .dbread(dbread),
+				   .dbwrite(dbwrite),
+				   .eadr(eadr),
+				   .tx_req(spy_port.ld_tx_req),
+				   .tx_ack(spy_port.ld_tx_ack),
+				   .tx_data(spy_port.tx_data)
+				   );
+   
+`endif
+   
    integer     addr;
    integer     debug_level;
    integer     dumping;
@@ -368,6 +436,7 @@ module test;
 	#10 sysclk = 1;
      end
 
+`ifdef use_pli_ide
    // ide
    assign ide_data_bus = ~ide_diow ? ide_data_out : 16'bz;
 
@@ -377,31 +446,35 @@ module test;
      begin
 	$pli_ide(ide_data_bus, ide_dior, ide_diow, ide_cs, ide_da);
      end
-
+`endif
+   
    //
    // debug
    //
    always @(posedge cpu.clk)
+     if (cpu.run || cpu.step)
      begin
 	if (cpu.state == 6'b000001)
 	  cycles = cycles + 1;
 
 	case (cpu.state)
-  6'b000000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-  6'b000001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-//  6'b000010: $display("%0o %o read   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-//  6'b000100: $display("%0o %o alu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-//  6'b001000: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-//  6'b010000: $display("%0o %o mmu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
-//  6'b100000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b000000: $display("%0o %o reset  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b000001: $display("%0o %o decode lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b000010: $display("%0o %o read   lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b000100: $display("%0o %o alu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b001000: $display("%0o %o write  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b010000: $display("%0o %o mmu    lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
+	  6'b100000: $display("%0o %o fetch  lc=%o; %t",cpu.lpc,cpu.ir,cpu.lc,$time);
 	endcase
 
+`ifdef xxx
 	if (cpu.state == 6'b000001)
 	$display("    A=%x M=%x, MD=%x, VMA=%x, ob=%x %b alu=%x nop=%b %b%b",
 		 cpu.a, cpu.m, cpu.md, cpu.vma, cpu.ob, cpu.osel, cpu.alu, cpu.nop,
 		 cpu.inop, cpu.nop11);
 //	$display("    %b",
 //		 {cpu.irbyte,cpu.irdisp,cpu.irjump,cpu.iralu});
+`endif
 	  
 `ifdef xxx
 	if (cycles > 25 && (cpu.lpc > 7 && cpu.lpc < 14'o50) &&

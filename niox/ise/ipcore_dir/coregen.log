@@ -1,0 +1,81 @@
+Welcome to Xilinx CORE Generator.
+Help system initialized.
+The IP Catalog has been reloaded.
+Loaded all available family support information.
+Opening project file /files/code/cpus/caddr/niox/ise/ipcore_dir/coregen.cgp.
+Closed project file.
+Opening project file /files/code/cpus/caddr/ise-lx45/ipcore_dir/coregen.cgp.
+WARNING:sim:991 - The project IP instance 'chipscope_ila_mmc_bd' for IP 'ILA
+   (ChipScope Pro - Integrated Logic Analyzer) v1.05.a' was generated with a
+   different version of the IP than is currently in the IP Catalog. It was
+   originally generated using IP with the packaged timestamp '2013-03-26+22:44';
+   the IP in the current catalog has a different packaged timestamp
+   '2012-12-18+02:47'. This mismatch is due to changes made to the IP in the
+   user repositories. It may affect some functionality of the IP, if there are
+   differences between these two versions of the IP.
+Recustomize and Generate (Under Original Project Settings)INFO:sim:172 - Generating IP...
+Customizing IP...
+Release 14.4 - Xilinx CORE Generator IP GUI Launcher P.49d (lin)
+Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved.
+Finished Customizing.
+Generating IP...
+WARNING:sim:89 - A core named <chipscope_ila_mmc_bd> already exists in the
+   output directory. Output products for this core may be overwritten.
+Configuring files for chipscope_ila_mmc_bd root...
+Gathering HDL files for chipscope_ila_mmc_bd root...
+Creating XST project for chipscope_ila_mmc_bd...
+Creating XST script file for chipscope_ila_mmc_bd...
+Creating XST instantiation file for chipscope_ila_mmc_bd...
+Running XST for chipscope_ila_mmc_bd...
+XST: HDL Parsing
+XST: HDL Elaboration
+XST: HDL Synthesis
+XST: Advanced HDL Synthesis
+XST: Low Level Synthesis
+XST: Design Summary
+Not generating VHDL wrapper
+Generating Verilog wrapper
+Skipping VHDL instantiation template for chipscope_ila_mmc_bd...
+Creating ISE instantiation template for chipscope_ila_mmc_bd...
+Finished Generation.
+Generating IP instantiation template...
+Generating ASY schematic symbol...
+INFO:sim:949 - Finished generation of ASY schematic symbol.
+Generating metadata file...
+Generating ISE project...
+XCO file found: chipscope_ila_mmc_bd.xco
+XMDF file found: chipscope_ila_mmc_bd_xmdf.tcl
+Adding
+/files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.asy
+-view all -origin_type imported
+Adding
+/files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.ngc
+-view all -origin_type created
+Checking file
+"/files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.ngc"
+for project device match ...
+File
+"/files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.ngc"
+device information matches project device.
+Adding /files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.v
+-view all -origin_type created
+INFO:HDLCompiler:1845 - Analyzing Verilog file
+   "/files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.v"
+   into library work
+INFO:ProjectMgmt - Parsing design hierarchy completed successfully.
+Adding
+/files/code/cpus/caddr/ise-lx45/ipcore_dir/tmp/_cg/chipscope_ila_mmc_bd.veo
+-view all -origin_type imported
+INFO:TclTasksC:2116 - The automatic calculation of top has been turned-off.
+   Please set the new top explicitly by running the "project set top" command.
+   To re-calculate the new top automatically, set the "Auto Implementation Top"
+   property to true.
+Top level has been set to "/chipscope_ila_mmc_bd"
+Generating README file...
+Generating FLIST file...
+INFO:sim:948 - Finished FLIST file generation.
+Launching README viewer...
+Moving files to output directory...
+Finished moving files to output directory
+Saved CGP file for project 'coregen'.
+Closed project file.

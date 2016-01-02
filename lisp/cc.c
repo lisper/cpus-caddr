@@ -11,6 +11,7 @@ typedef unsigned short u16;
 
 int fd;
 int debug;
+int verbose;
 
 #define WRITE 1
 
@@ -18,6 +19,7 @@ int debug;
 #define rd_spy_ir_low		0
 #define rd_spy_ir_med		1
 #define rd_spy_ir_high		2
+#define rd_spy_scratch		3
 #define rd_spy_opc		4
 #define rd_spy_pc		5
 #define rd_spy_ob_low		6
@@ -30,6 +32,12 @@ int debug;
 #define rd_spy_a_high		015
 #define rd_spy_stat_low		016
 #define rd_spy_stat_high	017
+#define rd_spy_md_low		020
+#define rd_spy_md_high		021
+#define rd_spy_vma_low		022
+#define rd_spy_vma_high		023
+#define rd_spy_disk		026
+#define rd_spy_bd		027
 /* writing */
 #define wr_spy_ir_low		0
 #define wr_spy_ir_med		1
@@ -37,6 +45,11 @@ int debug;
 #define wr_spy_clk		3
 #define wr_spy_opc_control	4
 #define wr_spy_mode		5
+#define wr_spy_scratch		7
+#define wr_spy_md_low		010
+#define wr_spy_md_high		011
+#define wr_spy_vma_low		012
+#define wr_spy_vma_high		013
 
 // IR FIELDS
 #define	CONS_IR_OP 05302
@@ -163,44 +176,71 @@ int debug;
 #define	CONS_DISP_RPN_BITS 01603
 #define	CONS_DISP_PARITY_BIT 02101
 
+u32 cc_read_md(void);
+
 
 int cc_send(unsigned char *b, int len)
 {
 	int i, ret;
+	char bb[5];
 
+#if 0
+	ret = write(fd, b, len);
+	return len;
+#else
 	/* send slowly so as not to confuse hardware */
 	for (i = 0; i < len; i++) {
 		ret = write(fd, b+i, 1);
-//		usleep(1000*100);
-//		usleep(1000*10);
-		usleep(1);
+		if (ret != 1) perror("write");
+		tcflush(fd, TCOFLUSH);
+		usleep(50);
+		usleep(2000);
 	}
+
+	usleep(10000);
 	return len;
+#endif
 }
 
 
 u16
-cc_get(int reg)
+reg_get(int base, int reg)
 {
 	unsigned char buffer[64];
 	unsigned char nibs[4];
-	int ret, i, mask, loops;
+	int ret, i, mask, loops, off;
 	u16 v;
 
-	buffer[0] = 0x80 | (reg & 0xf);
+again:
+	buffer[0] = base | (reg & 0x1f);
 	if (debug) printf("send %02x\n", buffer[0]);
 	cc_send(buffer, 1);
-	usleep(1000*250);
+	usleep(1000*100);
 
 	memset(buffer, 0, 64);
 	loops = 0;
+	off = 0;
 	while (1) {
-		ret = read(fd, buffer, 64);
-		if (ret > 0) break;
-		if (errno == 11) {
-			sleep(1);
+		ret = read(fd, buffer+off, 64-off);
+		if (0) {
+			printf("ret %d, errno %d\n", ret, errno);
+			if (ret > 0) {
+				int i;
+				for (i = 0; i < ret; i++)
+					printf("%02x ", buffer[i]);
+				printf("\n");
+			}
+		}
+
+		if (ret > 0) off += ret;
+		if (off == 4) break;
+		if (ret < 0 && errno == 11) {
+			//sleep(1);
+			//usleep(1000*100);
+			usleep(100);
+
 			loops++;
-			if (loops > 5) break;
+			if (loops > 5) goto again/*break*/;
 			continue;
 		}
 	}
@@ -211,8 +251,8 @@ cc_get(int reg)
 		       buffer[0], buffer[1], buffer[2], buffer[3]);
 	}
 
-	if (ret < 4) {
-		printf("spy register read failed (ret=%d, errno=%d)\n", ret, errno);
+	if (off < 4) {
+		printf("spy register read failed (ret=%d, off=%d, errno=%d)\n", ret, off, errno);
 		return -1;
 	}
 
@@ -260,7 +300,7 @@ cc_get(int reg)
 }
 
 int
-cc_set(int reg, int v)
+reg_set(int base, int reg, int v)
 {
 	unsigned char buffer[64];
 	int ret;
@@ -269,7 +309,7 @@ cc_set(int reg, int v)
 	buffer[1] = 0x40 | ((v >> 8) & 0xf);
 	buffer[2] = 0x50 | ((v >> 4) & 0xf);
 	buffer[3] = 0x60 | ((v >> 0) & 0xf);
-	buffer[4] = 0x90 | (reg & 0xf);
+	buffer[4] = base | (reg & 0x1f);
 	if (debug) {
 		printf("writing, fd=%d\n", fd);
 		printf("%02x %02x %02x %02x %02x\n",
@@ -279,6 +319,31 @@ cc_set(int reg, int v)
 	if (debug) printf("ret %d\n", ret);
 	if (ret != 5) printf("cc_set: write error%d\n", ret);
 	return 0;
+}
+
+u16
+cc_get(int reg)
+{
+	return reg_get(0x80, reg);
+}
+
+int
+cc_set(int reg, int v)
+{
+	return reg_set(0xa0, reg, v);
+}
+
+
+u16
+mmc_get(int reg)
+{
+	return reg_get(0xc0, reg);
+}
+
+int
+mmc_set(int reg, int v)
+{
+	return reg_set(0xd0, reg, v);
 }
 
 int
@@ -320,6 +385,12 @@ cc_read_obus(void)
 }
 
 u32
+cc_read_obus_(void)
+{
+	return _cc_read_pair(025, 024);
+}
+
+u32
 cc_read_a_bus(void)
 {
 	return _cc_read_pair(rd_spy_a_high, rd_spy_a_low);
@@ -344,11 +415,18 @@ cc_read_pc(void)
 }
 
 u16
+cc_read_scratch(void)
+{
+	return cc_get(rd_spy_scratch);
+}
+
+u32
 cc_read_status(void)
 {
 	u16 v1, v2, v3;
 	v1 = cc_get(rd_spy_flag_1);
 	v2 = cc_get(rd_spy_flag_2);
+	//printf("v1 %04x v2 %04x\n", v1, v2);
 	v3 = cc_get(rd_spy_ir_low);
 	/* Hardware reads JC-TRUE incorrectly */
 	if (v3 & 0100)
@@ -359,16 +437,24 @@ cc_read_status(void)
 int
 cc_write_diag_ir(u64 ir)
 {
-	if (debug) disassemble_ucode_loc(0, ir);
-	cc_set(wr_spy_ir_high, (u16)(ir >> 32));
-	cc_set(wr_spy_ir_med, (u16)((ir >> 16) & 0xffff));
-	cc_set(wr_spy_ir_low, (u16)((ir >>  0) & 0xffff));
+	int tries;
+
+	if (debug || verbose) disassemble_ucode_loc(0, ir);
+	cc_set(wr_spy_ir_high, (u16)((ir >> 32) & 0xffff));
+	cc_set(wr_spy_ir_med,  (u16)((ir >> 16) & 0xffff));
+	cc_set(wr_spy_ir_low,  (u16)((ir >>  0) & 0xffff));
+
+	cc_set(wr_spy_ir_high, (u16)((ir >> 32) & 0xffff));
+	cc_set(wr_spy_ir_med,  (u16)((ir >> 16) & 0xffff));
+	cc_set(wr_spy_ir_low,  (u16)((ir >>  0) & 0xffff));
+
+	return 0;
 }
 
 int
 cc_write_ir(u64 ir)
 {
-	if (debug) printf("ir %llo (0x%016llx)\n", ir, ir);
+	if (debug || verbose) printf("ir %llo (0x%016llx)\n", ir, ir);
 	cc_write_diag_ir(ir);
 	return cc_noop_debug_clock();
 }
@@ -376,26 +462,47 @@ cc_write_ir(u64 ir)
 int
 cc_execute_r(u64 ir)
 {
-	if (debug) printf("ir %llo (0x%016llx)\n", ir, ir);
+	int ret;
+	if (debug || verbose) printf("ir %llo (0x%016llx)\n", ir, ir);
+
+again:
 	cc_write_diag_ir(ir);
 	cc_noop_debug_clock();
-return cc_debug_clock();
+#if 1
+	if (cc_read_ir() != ir) {
+		printf("ir reread failed; retry\n");
+		goto again;
+	}
+#endif
+
+	ret = cc_debug_clock();
+	return ret;
 }
 
 int
 cc_execute_w(u64 ir)
 {
-	if (debug) printf("ir %llo (0x%016llx)\n", ir, ir);
+	int ret;
+	if (debug || verbose) printf("ir %llo (0x%016llx)\n", ir, ir);
+
+again:
 	cc_write_diag_ir(ir);
 	cc_noop_debug_clock();	// PUT IT INTO IR, IT WILL START EXECUTING
+	if (cc_read_ir() != ir) {
+		printf("ir reread failed; retry\n");
+		goto again;
+	}
 	cc_clock();		// CLOCK THAT INSTRUCTION, GARBAGE TO IR
-	return cc_noop_clock();	// CLOCK MACHINE AGAIN TO CLEAR PASS AROUND PATH, LOAD IR
+	ret = cc_noop_clock();	// CLOCK MACHINE AGAIN TO CLEAR PASS AROUND PATH, LOAD IR
 				// WITH INSTRUCTION JUMPED TO, ETC.
+	return ret;
+
 }
 
 int
 cc_execute(int op, u64 ir)
 {
+	if (debug) disassemble_ucode_loc(0, ir);
 	if (op == WRITE) {
 		return cc_execute_w(ir);
 	}
@@ -436,6 +543,7 @@ ir_pair(int field, u32 val)
 	return ir;
 }
 
+#if 0
 cc_write_md_1s(void)
 {
 	cc_execute(WRITE,
@@ -464,7 +572,8 @@ cc_write_md_shifting(u32 val)
 		   ir_pair(CONS_IR_FUNC_DEST, CONS_FUNC_DEST_MD));
 
 	for (i = 31, n = val; i >= 0; i--, n <<= 1) {
-		if (debug) printf("n %08x, bit %d\n", n, (n & 0x80000000) == 0);
+		if (debug) printf("n %08x, bit %d\n", n, (n & 0x80000000) == 0); 
+		else { printf("."); fflush(stdout); }
 		if ((n & 0x80000000) == 0) {
 			cc_execute(0/*WRITE*/,
 				   ir_pair(CONS_IR_OB, CONS_OB_ALU) |
@@ -490,42 +599,6 @@ cc_write_md(u32 md)
 }
 
 u32
-cc_read_a_mem(u32 adr)
-{
-	cc_execute(0,
-		   ir_pair(CONS_IR_A_SRC, adr) | 	//PUT IT ONTO THE OBUS
-		   ir_pair(CONS_IR_ALUF, CONS_ALU_SETA) |
-		   ir_pair(CONS_IR_OB, CONS_OB_ALU));
-	return cc_read_obus();
-}
-
-u32 cc_read_md(void);
-
-u32
-cc_write_a_mem(u32 loc, u32 val)
-{
-	cc_write_md(val);
-	if (cc_read_md() != val) {
-		printf("cc_write_a_mem; md readback error\n");
-	}
-	cc_execute(WRITE,
-		   ir_pair(CONS_IR_M_SRC, CONS_M_SRC_MD) |	//MOVE IT TO DESIRED PLACE
-		   ir_pair(CONS_IR_ALUF, CONS_ALU_SETM) |
-		   ir_pair(CONS_IR_OB, CONS_OB_ALU) |
-		   ir_pair(CONS_IR_A_MEM_DEST, CONS_A_MEM_DEST_INDICATOR + loc));
-}
-
-u32
-cc_read_m_mem(u32 adr)
-{
-	cc_execute(0,
-		   ir_pair(CONS_IR_M_SRC, adr) | 	//PUT IT ONTO THE OBUS
-		   ir_pair(CONS_IR_ALUF, CONS_ALU_SETM) |
-		   ir_pair(CONS_IR_OB, CONS_OB_ALU));
-	return cc_read_obus();
-}
-
-u32
 cc_read_md(void)
 {
 	return cc_read_m_mem(CONS_M_SRC_MD);
@@ -543,11 +616,100 @@ cc_write_vma(u32 vma)
 
 	return 0;
 }
+#endif
+
+u32
+cc_read_md(void)
+{
+	return _cc_read_pair(rd_spy_md_high, rd_spy_md_low);
+}
+
+int
+cc_write_md(u32 md)
+{
+	cc_set(wr_spy_md_high, (u16)(md >> 16) & 0xffff);
+	cc_set(wr_spy_md_low,  (u16)(md >>  0) & 0xffff);
+
+	while (1) {
+		u32 v;
+		v = cc_read_md();
+		if (v == md)
+			break;
+		
+		printf("md readback failed, retry got %x want %x\n", v, md);
+		cc_set(wr_spy_md_high, (u16)(md >> 16) & 0xffff);
+		cc_set(wr_spy_md_low,  (u16)(md >>  0) & 0xffff);
+	}
+	
+}
 
 u32
 cc_read_vma(void)
 {
-	return cc_read_m_mem(CONS_M_SRC_VMA);
+//	return cc_read_m_mem(CONS_M_SRC_VMA);
+	return _cc_read_pair(rd_spy_vma_high, rd_spy_vma_low);
+}
+
+int
+cc_write_vma(u32 vma)
+{
+	cc_set(wr_spy_vma_high, (u16)(vma >> 16) & 0xffff);
+	cc_set(wr_spy_vma_low,  (u16)(vma >>  0) & 0xffff);
+
+	while (cc_read_vma() != vma) {
+		printf("vma readback failed, retry\n");
+		cc_set(wr_spy_vma_high, (u16)(vma >> 16) & 0xffff);
+		cc_set(wr_spy_vma_low,  (u16)(vma >>  0) & 0xffff);
+	}
+	
+}
+
+
+cc_write_md_1s(void)
+{
+	cc_write_md(0xffffffff);
+}
+
+cc_write_md_0s(void)
+{
+	cc_write_md(0x00000000);
+}
+
+u32
+cc_read_a_mem(u32 adr)
+{
+	cc_execute(0,
+		   ir_pair(CONS_IR_A_SRC, adr) | 	//PUT IT ONTO THE OBUS
+		   ir_pair(CONS_IR_ALUF, CONS_ALU_SETA) |
+		   ir_pair(CONS_IR_OB, CONS_OB_ALU));
+	return cc_read_obus();
+}
+
+u32
+cc_write_a_mem(u32 loc, u32 val)
+{
+	u32 v2;
+
+	cc_write_md(val);
+	v2 = cc_read_md();
+	if (v2 != val) {
+		printf("cc_write_a_mem; md readback error (got=%o wanted=%o)\n", v2, val);
+	}
+	cc_execute(WRITE,
+		   ir_pair(CONS_IR_M_SRC, CONS_M_SRC_MD) |	//MOVE IT TO DESIRED PLACE
+		   ir_pair(CONS_IR_ALUF, CONS_ALU_SETM) |
+		   ir_pair(CONS_IR_OB, CONS_OB_ALU) |
+		   ir_pair(CONS_IR_A_MEM_DEST, CONS_A_MEM_DEST_INDICATOR + loc));
+}
+
+u32
+cc_read_m_mem(u32 adr)
+{
+	cc_execute(0,
+		   ir_pair(CONS_IR_M_SRC, adr) | 	//PUT IT ONTO THE OBUS
+		   ir_pair(CONS_IR_ALUF, CONS_ALU_SETM) |
+		   ir_pair(CONS_IR_OB, CONS_OB_ALU));
+	return cc_read_obus();
 }
 
 int
@@ -600,10 +762,23 @@ cc_report_basic_regs(void)
 	printf("M  = %011o (%08x)\n", M, M);
 	PC = cc_read_pc();
 	printf("PC = %011o (%08x)\n", PC, PC);
-//	MD = cc_read_md();
-//	printf("MD = %011o (%08x)\n", MD, MD);
-//	VMA= cc_read_vma();
-//	printf("VMA= %011o (%08x)\n", VMA, VMA);
+	MD = cc_read_md();
+	printf("MD = %011o (%08x)\n", MD, MD);
+	VMA= cc_read_vma();
+	printf("VMA= %011o (%08x)\n", VMA, VMA);
+
+	{
+		u32 disk, bd, mmc;
+		disk = cc_get(rd_spy_disk);
+		bd = cc_get(rd_spy_bd);
+		mmc = bd >> 6;
+		bd &= 0x3f;
+
+		printf("disk-state %d (0x%04x)\n", disk, disk);
+		printf("bd-state   %d (0x%04x)\n", bd, bd);
+		printf("mmc-state  %d (0x%04x)\n", mmc, mmc);
+	}
+	
 	return 0;
 }
 
@@ -615,6 +790,151 @@ cc_report_pc(u32 *ppc)
 	printf("PC = %011o (%08x)\n", PC, PC);
 	*ppc = PC;
 	return 0;
+}
+
+int
+cc_report_pc_and_md(u32 *ppc)
+{
+	u32 PC, MD;
+	PC = cc_read_pc();
+	MD = cc_read_md();
+	printf("PC=%011o (%08x) MD=%011o (%08x)\n", PC, PC, MD, MD);
+	*ppc = PC;
+	return 0;
+}
+
+int
+cc_report_pc_and_ir(u32 *ppc)
+{
+	u32 PC;
+	u64 ir;
+	PC = cc_read_pc();
+	ir = cc_read_ir();
+	printf("PC=%011o (%08x) ir=%llo ", PC, PC, ir);
+	disassemble_ucode_loc(0, ir);
+
+	*ppc = PC;
+	return 0;
+}
+
+int
+cc_report_pc_md_ir(u32 *ppc)
+{
+	u32 PC, MD;
+	u64 ir;
+	PC = cc_read_pc();
+	MD = cc_read_md();
+	ir = cc_read_ir();
+	printf("PC=%011o MD=%011o (%08x) ir=%llo ", PC, MD, MD, ir);
+	disassemble_ucode_loc(0, ir);
+
+	*ppc = PC;
+	return 0;
+}
+
+
+int
+cc_report_status(void)
+{
+	u32 s, f1, f2;
+	s = cc_read_status();
+	f1 = s >> 16;
+	f2 = s & 0xffff;
+
+	printf("flags1: %04x (", f1);
+	if (f1 & (1 <<15)) printf("waiting ");
+	if (f1 & (1 <<12)) printf("promdisable ");
+	if (f1 & (1 <<11)) printf("stathalt ");
+	if (f1 & (1 <<10)) printf("err ");
+	if (f1 & (1 << 9)) printf("ssdone ");
+	if (f1 & (1 << 8)) printf("srun ");
+	printf(") ");
+
+	printf("flags2: %04x (", f2);
+	if (f2 & (1 << 2)) printf("jcond ");
+	if (f2 & (1 << 3)) printf("vmaok ");
+	if (f2 & (1 << 4)) printf("nop ");
+	printf(") ");
+}
+
+int 
+cc_pipe(void)
+{
+	u64 isn;
+	int adr, ret;
+
+	for (adr = 0; adr < 8; adr++) {
+
+	printf("addr %o:\n", adr);
+	isn = 
+		ir_pair(CONS_IR_M_SRC, adr) | 	//PUT IT ONTO THE OBUS
+		ir_pair(CONS_IR_ALUF, CONS_ALU_SETM) |
+		ir_pair(CONS_IR_OB, CONS_OB_ALU);
+
+	printf("%llo ", isn);
+	disassemble_ucode_loc(0, isn);
+
+	cc_write_diag_ir(isn);
+	cc_noop_debug_clock();
+	printf(" obus1 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+	
+	ret = cc_debug_clock();
+	printf(" obus2 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+	ret = cc_debug_clock();
+	printf(" obus3 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+//	ret = cc_debug_clock();
+	cc_clock();
+	printf(" obus4 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+//	ret = cc_debug_clock();
+	cc_clock();
+	printf(" obus5 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+	}
+
+	return 0;
+}
+
+int
+cc_pipe2(void)
+{
+	int r;
+	u64 isn;
+	u32 val, v2;
+	for (r = 0; r < 8; r++) {
+		printf("val %o:\n", r);
+		cc_write_md(r);
+		v2 = cc_read_md();
+		if (v2 != r) {
+			printf("cc_pipe2; md readback error (got=%o wanted=%o)\n", v2, r);
+		}
+
+		isn = 
+			ir_pair(CONS_IR_M_SRC, CONS_M_SRC_MD) |	//MOVE IT TO DESIRED PLACE
+			ir_pair(CONS_IR_ALUF, CONS_ALU_SETM) |
+			ir_pair(CONS_IR_OB, CONS_OB_ALU) |
+			ir_pair(CONS_IR_M_MEM_DEST, r);
+
+		printf("%llo ", isn);
+		disassemble_ucode_loc(0, isn);
+
+		cc_write_diag_ir(isn);
+		cc_noop_debug_clock();
+		printf(" obus1 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+		cc_debug_clock();
+		printf(" obus2 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+		cc_debug_clock();
+		printf(" obus3 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+		cc_debug_clock();
+		printf(" obus4 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+
+		cc_debug_clock();
+		printf(" obus5 %o %o %o\n", cc_read_obus(), cc_read_obus_(), cc_read_m_bus());
+	}
 }
 
 u64 setup_map_inst[] = {
@@ -696,9 +1016,110 @@ cc_report_ide_regs(void)
 	printf("a[6]=%0o\n", cc_read_a_mem(6));
 }
 
+int
+_test_scratch(u16 v)
+{
+	u16 s1, s2;
 
-//char serial_devicename = "/dev/ttyUSB1";
-char *serial_devicename = "/dev/ttyS5";
+	s1 = cc_read_scratch();
+	cc_set(wr_spy_scratch, v);
+	s2 = cc_read_scratch();
+	printf("write 0%o; scratch %o -> %o (0x%x) ", v, s1, s2, s2);
+
+	if (s2 == v) {
+		printf("ok\n");
+	} else {
+		printf("BAD\n");
+		s2 = cc_read_scratch();
+		printf(" reread; scratch %o -> %o (0x%x) ", s1, s2, s2);
+
+		if (s2 == v) {
+			printf("ok\n");
+		} else {
+			printf("BAD\n");
+			s1 = cc_read_scratch();
+			cc_set(wr_spy_scratch, v);
+			s2 = cc_read_scratch();
+			printf("  rewrite 0%o; scratch %o -> %o (0x%x) ", v, s1, s2, s2);
+			if (s2 == v) {
+				printf("ok\n");				
+			} else {
+				printf("BAD\n");
+				return -1;
+			}
+			
+		}
+		
+	}
+
+	return 0;
+}
+
+static int vv = 0;
+
+int
+cc_test_scratch(void)
+{
+	_test_scratch(01234);
+	_test_scratch(04321);
+	_test_scratch(0);
+	_test_scratch(07777);
+	_test_scratch(0123456);
+	_test_scratch(0x2222);
+	_test_scratch(++vv);
+}
+
+_test_ir(u64 isn)
+{
+	u64 iv;
+	
+	printf("test ir %llo ", isn);
+	
+	cc_write_ir(isn);
+	iv = cc_read_ir();
+	if (iv == isn) {
+		printf("ok\n");
+	} else {
+		printf("bad (want 0x%llx got 0x%llx)\n", isn, iv);
+		printf(" reread; ");
+		iv = cc_read_ir();
+		if (iv == isn) {
+			printf("ok\n");
+		} else {
+			printf("bad\n");
+			printf(" rewrite; ");
+			cc_write_ir(isn);
+			iv = cc_read_ir();
+			if (iv == isn) {
+				printf("ok\n");
+			} else {
+				printf("bad\n");
+				return -1;
+			}
+		}
+		
+	}
+
+	return 0;
+}
+
+
+int
+cc_test_ir(void)
+{
+	_test_ir(0);
+	_test_ir(1);
+	_test_ir(0x000022220000);
+	_test_ir(0x011133332222);
+	_test_ir(2);
+	_test_ir(0x011155552222);
+	return 0;
+}
+
+
+char *serial_devicename1 = "/dev/ttyUSB1";
+char *serial_devicename2 = "/dev/ttyUSB2";
+//char *serial_devicename = "/dev/ttyS5";
 
 
 int
@@ -709,11 +1130,16 @@ main(int argc, char *argv[])
 
 	if (argc > 1) debug++;
 
-	fd = open(serial_devicename, O_RDWR | O_NONBLOCK);
-	printf("fd %d\n", fd);
+	fd = open(serial_devicename1, O_RDWR | O_NONBLOCK);
+	if (debug) printf("fd %d\n", fd);
 	if (fd < 0) {
-		perror(serial_devicename);
-		exit(1);
+		perror(serial_devicename1);
+
+		fd = open(serial_devicename2, O_RDWR | O_NONBLOCK);
+		if (fd < 0) {
+			perror(serial_devicename2);
+			exit(1);
+		}
 	}
 
 	/* get current port settings */
@@ -724,7 +1150,7 @@ main(int argc, char *argv[])
 	newtio = oldtio;
 
 	cfmakeraw(&newtio);
-	cfsetspeed(&newtio, B9600);
+	cfsetspeed(&newtio, B115200/*B9600*/);
 
 	/* set new port settings for canonical input processing  */
 	newtio.c_cflag |= CS8 | CLOCAL | CREAD;
@@ -756,14 +1182,29 @@ main(int argc, char *argv[])
 		}
 
 		switch (c) {
+		case 'p':
+			cc_pipe();
+			break;
+
+		case 'q':
+			cc_pipe2();
+		break;
+
 		case 'g':
 			cc_go();
+			break;
+
+		case 'c':
+			cc_single_step();
+			cc_report_status();
+			cc_report_pc_and_ir(&PC);
 			break;
 
 		case 's': /* step */
 			for (i = 0; i < arg; i++) {
 //			cc_single_step();
 				cc_clock();
+				cc_report_status();
 				cc_report_pc(&PC);
 			}
 			break;
@@ -772,7 +1213,10 @@ main(int argc, char *argv[])
 			printf("run until PC=%o\n", arg);
 			while (1) {
 				cc_clock();
-				cc_report_pc(&PC);
+				//cc_report_pc(&PC);
+				//cc_report_pc_and_md(&PC);
+				//cc_report_pc_and_ir(&PC);
+				cc_report_pc_md_ir(&PC);
 				if (PC == arg)
 					break;
 			}
@@ -780,7 +1224,13 @@ main(int argc, char *argv[])
 
 		case 'h': /* halt */
 			cc_stop();
+			cc_report_status();
+			printf("\n");
 			cc_report_basic_regs();
+			break;
+
+		case 'S':
+			cc_test_scratch();
 			break;
 
 		case 'r':
@@ -792,10 +1242,10 @@ main(int argc, char *argv[])
 			break;
 
 		case 'R':
-			for (r = 0; r < 020; r++) {
+			for (r = 0; r < 027; r++) {
 				u16 v;
 				v = cc_get(r);
-				printf("spy reg %o = %06o\n", r, v);
+				printf("spy reg %o = %06o (0x%x)\n", r, v, v);
 			}
 			break;
 
@@ -813,11 +1263,7 @@ main(int argc, char *argv[])
 			break;
 
 		case 'i':
-			cc_write_diag_ir(04000100042310050ULL);
-			printf("ir %016llo\n", cc_read_ir());
-
-			cc_execute_r(04000100042310050ULL);
-			printf("ir %016llo\n", cc_read_ir());
+			cc_test_ir();
 			break;
 
 		case 'v':
@@ -827,39 +1273,58 @@ main(int argc, char *argv[])
 
 		case 'd':
 			cc_write_md_1s();
-			printf("MD=%011o\n", cc_read_md());
+			printf("write md ones  MD=%011o\n", cc_read_md());
 
 			cc_write_md_0s();
-			printf("MD=%011o\n", cc_read_md());
+			printf("write md zeros MD=%011o\n", cc_read_md());
 
 			cc_write_md(01234567);
-			printf("MD=%011o\n", cc_read_md());
+			printf("write md 01234567 MD=%011o\n", cc_read_md());
 
 			cc_write_md(07654321);
-			printf("MD=%011o\n", cc_read_md());
+			printf("write md 07654321 MD=%011o\n", cc_read_md());
+
+			cc_write_vma(0);
+			printf("write vma 0 VMA=%011o\n", cc_read_vma());
+
+			cc_write_vma(01234567);
+			printf("write vma 01234567 VMA=%011o\n", cc_read_vma());
+
 			break;
 
 		case 'm':
 			//  (alu) SETA a=2 m=0 m[0] C=0 alu-> ->VMA,start-read ,m[6] 
+			cc_write_a_mem(2, 0);
 			cc_execute_r(04000100042310050ULL);
 			v = cc_read_md();
 			printf("@0 MD=%011o (0x%x)\n", v, v);
 			break;
 
 		case 'G':
-			for (i = 0; i < 16; i++) {
+			for (i = 0; i < 4; i++) {
 				cc_write_a_mem(2, i);
+verbose = 1;
 				cc_execute_r(04000100042310050ULL);
+verbose = 0;
 				v = cc_read_md();
 				printf("@%o MD=%011o (0x%x)\n", i, v, v);
 			}
+			if (0)
 			for (i = 0200; i < 0220; i++) {
 				cc_write_a_mem(2, i);
 				cc_execute_r(04000100042310050ULL);
 				v = cc_read_md();
 				printf("@%o MD=%011o (0x%x)\n", i, v, v);
 			}
+
+			for (i = 0776; i < 01000; i++) {
+				cc_write_a_mem(2, i);
+				cc_execute_r(04000100042310050ULL);
+				v = cc_read_md();
+				printf("@%o MD=%011o (0x%x)\n", i, v, v);
+			}
 			break;
+
 		case 'a':
 			// (byte) a=2 m=m[3] dpb pos=7, width=1 ->VMA,start-read ,m[6] 
 			cc_execute_w(04600101442330007ULL);
@@ -899,10 +1364,37 @@ main(int argc, char *argv[])
 			printf("A[0] = %011o\n", cc_read_a_mem(0));
 			printf("A[1] = %011o\n", cc_read_a_mem(1));
 			printf("A[2] = %011o\n", cc_read_a_mem(2));
+			printf("A[3] = %011o\n", cc_read_a_mem(3));
 			break;
 
-		case 'q':
-			done = 1;
+//		case 'q':
+//			done = 1;
+//			break;
+
+		case '/':
+			switch (line[1]) {
+			case 'r':
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(1));
+				break;
+			case 'i':
+				mmc_set(0, 0x0 | (1 << 2));
+				break;
+			case 'b':
+				mmc_set(0, 0x1 | (1 << 2));
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(0));
+				break;
+			case 'd':
+				mmc_set(0, 1 << 3);
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(0));
+				printf("%04x\n", mmc_get(0));
+				break;
+			}
 			break;
 		}
 	}

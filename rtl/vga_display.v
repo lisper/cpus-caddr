@@ -11,7 +11,8 @@ module vga_display(clk,
 		   vga_blu,
 		   vga_grn,
 		   vga_hsync,
-		   vga_vsync
+		   vga_vsync,
+		   vga_blank
 		   );
 
    input clk;
@@ -28,6 +29,7 @@ module vga_display(clk,
    output 	 vga_grn;
    output 	 vga_hsync;
    output 	 vga_vsync;
+   output 	 vga_blank;
 
 // 1280x1024
 // 768x896
@@ -187,6 +189,7 @@ module vga_display(clk,
    // negative sync
    assign vga_vsync = ~vsync;
    assign vga_hsync = ~hsync;
+   assign vga_blank = ~valid;
    
    // -----------------------------------------------------------------------
    //
@@ -217,6 +220,7 @@ module vga_display(clk,
 
    reg 	      ram_req;
    reg 	      ram_data_hold_empty;
+   wire       ram_data_hold_req;
    
    wire       ram_shift_load;
    wire       preload, preload1, preload2;
@@ -225,19 +229,24 @@ module vga_display(clk,
    reg 	      pixel;
 
    // grab vram_data when ready
-   always @(posedge clk)
+   always @(posedge pixclk/*clk*/)
      if (reset)
        ram_data_hold <= 0;
      else
-       if (vram_ready)
+       if (vram_ready && ram_data_hold_empty)
 	 ram_data_hold <= vram_data;
 
    // ask for new vram_data when hold empty
-   always @(posedge clk)
+   always @(posedge pixclk/*clk*/)
      if (reset)
        ram_req <= 0;
      else
-       ram_req <= ram_data_hold_empty;
+       ram_req <= ram_data_hold_req && ram_data_hold_empty;
+//       if (ram_data_hold_req && ram_data_hold_empty)
+//	 ram_req <= 1'b1;
+//       else
+//	 if (~ram_data_hold_empty)
+//	   ram_req <= 1'b0;
 
    // pixel shift register   
    always @(posedge pixclk)
@@ -289,6 +298,9 @@ module vga_display(clk,
 
    assign ram_shift_load = (h_pos[4:0] == 5'h1e) || preload;
 
+   assign ram_data_hold_req = (h_pos[4:0] >= 5'h0f) ||
+			      (h_counter >= (H_BOX_OFFSET - 16) && h_counter < H_BOX_OFFSET);
+   
    // 32 = 0x20
    // h_pos = 0..2ff / 32 = 0..017
    assign vram_addr = v_addr;

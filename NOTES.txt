@@ -1,0 +1,9 @@
+
+chipscope:
+
+/files/code/xvcd/xvcd &
+/opt/Xilinx/14.4/ISE_DS/ISE/bin/lin/analyzer 
+
+setup:
+
+xilinx_xvc host=127.0.0.1:2542 disableversioncheck=true

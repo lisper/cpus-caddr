@@ -1,0 +1,5 @@
+Fri Nov 22 18:48:34 2013
+
+Upgraded ise_2kx5_dpram from Block Memory Generator 6.1 to Block Memory Generator 7.3
+
+No changes made to parameter values.

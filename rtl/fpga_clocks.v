@@ -2,6 +2,18 @@
  * fpga clock generation
  */
 
+//`define pixclk_dcm
+//`define clk100_dcm
+
+//`define fixed_dcm_12Mhz
+//`define no_dcm
+
+//`define switch_clock
+//`define fixed_clock_6mhz
+//`define fixed_clock_12mhz
+`define fixed_clock_25mhz
+//`define fixed_clock_50mhz
+   
 module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 		   sysclk_buf, clk50, clk100, clk1x, pixclk);
 
@@ -25,17 +37,6 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
 
    always @(posedge clk100)
      switches <= slideswitch;
-   
-`define pixclk_dcm
-`define clk100_dcm
-
-//`define fixed_dcm_12Mhz
-//`define no_dcm
-
-//`define switch_clock
-//`define fixed_clock_12mhz
-`define fixed_clock_25mhz
-//`define fixed_clock_50mhz
    
 `ifdef pixclk_dcm
    // DCM - pixclk
@@ -165,6 +166,28 @@ module fpga_clocks(sysclk, slideswitch, switches, dcm_reset,
      clk12 = ~clk12;
 
    BUFG CLK1X_BUFGT (.I(clk12), .O(clk1x));
+`endif
+
+`ifdef fixed_clock_6mhz
+   reg clk25, clk12, clk6;
+
+   initial
+     begin
+	clk6 = 0;
+	clk12 = 0;
+	clk25 = 0;
+     end
+
+   always @(posedge clk50)
+     clk25 = ~clk25;
+
+   always @(posedge clk25)
+     clk12 = ~clk12;
+
+   always @(posedge clk12)
+     clk6 = ~clk6;
+
+   BUFG CLK1X_BUFGT (.I(clk6), .O(clk1x));
 `endif
 
 `ifdef fixed_dcm_12Mhz

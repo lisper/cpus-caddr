@@ -1,0 +1,136 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Mon Feb 10 13:55:30 2014
+[*]
+[dumpfile] "/files/code/cpus/caddr/niox/verif/top_niox_tb.vcd"
+[dumpfile_mtime] "Mon Feb 10 13:38:46 2014"
+[dumpfile_size] 72297087
+[savefile] "/files/code/cpus/caddr/niox/verif/top_niox_tb.gtkw"
+[timestart] 16193992700
+[size] 1242 639
+[pos] -1 -1
+*-16.943884 16194220000 10040000 11480000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] top_niox_tb.
+[treeopen] top_niox_tb.top.
+[treeopen] top_niox_tb.top.cpu.
+[treeopen] top_niox_tb.top.cpu.bus.
+[sst_width] 224
+[signals_width] 265
+[sst_expanded] 1
+[sst_vpaned_height] 166
+@28
+top_niox_tb.top.cpu.reset
+top_niox_tb.top.cpu.clk
+top_niox_tb.top.cpu.cpu.rst
+top_niox_tb.top.cpu.cpu.clk
+top_niox_tb.top.support.sysclk
+@24
+top_niox_tb.top.support.cpu_state[2:0]
+top_niox_tb.top.support.reset_state[2:0]
+@28
+top_niox_tb.top.support.reset
+top_niox_tb.top.cpu.cpu.clk
+@22
+top_niox_tb.top.cpu.cpu.pc[31:0]
+top_niox_tb.top.cpu.cpu.next_pc[31:0]
+@28
+top_niox_tb.top.cpu.cpu.fetch
+top_niox_tb.top.cpu.cpu.ldst
+top_niox_tb.top.cpu.rom_decode
+top_niox_tb.top.cpu.ram_decode
+top_niox_tb.top.cpu.bus_decode
+top_niox_tb.top.cpu.fetch
+@22
+top_niox_tb.top.cpu.dlmb_addr[31:0]
+@28
+top_niox_tb.top.cpu.rom.ack
+top_niox_tb.top.cpu.cpu.invalid[1:0]
+top_niox_tb.top.cpu.cpu.pc_en
+top_niox_tb.top.cpu.ram.ack_o
+top_niox_tb.top.cpu.ram.sel_i
+top_niox_tb.top.cpu.ram.we_i
+@22
+top_niox_tb.top.cpu.ram.addr_i[31:0]
+top_niox_tb.top.cpu.ram.data_i[31:0]
+top_niox_tb.top.cpu.ram.data_o[31:0]
+@28
+top_niox_tb.top.cpu.cpu.reg_wr
+@22
+top_niox_tb.top.cpu.cpu.regs_a[31:0]
+top_niox_tb.top.cpu.cpu.regs_b[31:0]
+top_niox_tb.top.cpu.cpu.alu_result[31:0]
+top_niox_tb.top.cpu.cpu.sr_result[31:0]
+top_niox_tb.top.cpu.cpu.extdata[31:0]
+top_niox_tb.top.cpu.cpu.regs_ctrl[31:0]
+top_niox_tb.top.cpu.cpu.next_pc_add[31:0]
+top_niox_tb.top.cpu.cpu.next_pc_br_ofs[31:0]
+top_niox_tb.top.cpu.cpu.simm32[31:0]
+@28
+top_niox_tb.top.cpu.cpu.br_taken
+@200
+-
+@28
+top_niox_tb.top.cpu.clk
+top_niox_tb.top.cpu.cpu.niox_regs_inst.wen
+@22
+top_niox_tb.top.cpu.cpu.niox_regs_inst.waddr[4:0]
+top_niox_tb.top.cpu.cpu.niox_regs_inst.wdata[31:0]
+top_niox_tb.top.cpu.cpu.niox_regs_inst.raddra[4:0]
+top_niox_tb.top.cpu.cpu.niox_regs_inst.rdataa[31:0]
+top_niox_tb.top.cpu.cpu.niox_regs_inst.raddrb[4:0]
+top_niox_tb.top.cpu.cpu.niox_regs_inst.rdatab[31:0]
+@200
+-
+@28
+top_niox_tb.top.cpu.cpu.is_beq
+top_niox_tb.top.cpu.cpu.is_bge
+top_niox_tb.top.cpu.cpu.is_bgeu
+top_niox_tb.top.cpu.cpu.is_blt
+top_niox_tb.top.cpu.cpu.is_bltu
+top_niox_tb.top.cpu.cpu.is_bne
+top_niox_tb.top.cpu.cpu.is_br
+@22
+top_niox_tb.top.cpu.cpu.pc[31:0]
+@28
+top_niox_tb.top.cpu.cpu.alu_op_cmp
+top_niox_tb.top.cpu.cpu.isx_nextpc
+top_niox_tb.top.cpu.cpu.reg_wr
+@200
+-
+@29
+top_niox_tb.top.cpu.bus.disk.clk
+@24
+top_niox_tb.top.cpu.bus.disk.state[4:0]
+top_niox_tb.top.cpu.bus.disk.state_next[4:0]
+@22
+top_niox_tb.top.cpu.bus.disk.wc[7:0]
+top_niox_tb.top.cpu.bus.disk.dma_data_hold[31:0]
+top_niox_tb.top.cpu.bus.disk.bd_data_out[15:0]
+@200
+-
+@28
+top_niox_tb.top.mmc_bd.mmc_cs
+top_niox_tb.top.mmc_bd.mmc_di
+top_niox_tb.top.mmc_bd.mmc_do
+top_niox_tb.top.mmc_bd.mmc_sclk
+top_niox_tb.top.mmc_bd.mmc_init
+top_niox_tb.top.mmc_bd.mmc_done
+@22
+top_niox_tb.top.mmc_bd.mmc_in[7:0]
+@28
+top_niox_tb.top.mmc_bd.mmc_hispeed
+@22
+top_niox_tb.top.mmc_bd.data_hold[15:0]
+@28
+top_niox_tb.top.mmc_bd.mmc_rd
+top_niox_tb.top.mmc_bd.mmc_wr
+@24
+top_niox_tb.top.mmc_bd.state[5:0]
+@28
+top_niox_tb.top.mmc_bd.bd_rd
+top_niox_tb.top.mmc_bd.bd_rdy
+top_niox_tb.top.mmc_bd.bd_start
+top_niox_tb.top.mmc_bd.bd_iordy
+top_niox_tb.top.mmc_bd.bd_bsy
+[pattern_trace] 1
+[pattern_trace] 0

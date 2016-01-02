@@ -1,0 +1,65 @@
+
+
+CORE Generator Options:
+   Target Device              : xc6slx45-csg324
+   Speed Grade                : -3
+   HDL                        : verilog
+   Synthesis Tool             : Foundation_ISE
+
+MIG Output Options:
+   Component Name             : mig_32bit
+   No of Controllers          : 1
+   Hardware Test Bench           : disabled
+
+    
+/*******************************************************/
+/*                  Controller 3                       */
+/*******************************************************/
+Controller Options : 
+   Memory                  : LPDDR
+   Interface               : NATIVE
+   Design Clock Frequency  : 5000 ps (200.00 MHz)
+   Memory Type             : Components
+   Memory Part             : MT46H32M16XXXX-5
+   Equivalent Part(s)      : MT46H32M16LFBF-5
+   Row Address             : 13
+   Bank Address            : 2
+   Data Mask               : enabled
+
+Memory Options :
+   Burst Length                       : 4(010)
+   CAS Latency                        : 3
+   Partial-Array Self Refresh         : Full Array
+   Operation                          : Normal AR Operation 
+   Drive Strength                     : Full-Strength
+
+User Interface Parameters :
+   Configuration Type     : Two 32-bit bi-directional and four 32-bit unidirectional ports
+   Ports Selected         : Port0, Port1, Port2, Port3, Port4, Port5
+   Memory Address Mapping : ROW_BANK_COLUMN
+
+   Arbitration Algorithm  : Round Robin
+
+   Arbitration            : 
+      Time Slot0 : 012345
+      Time Slot1 : 123450
+      Time Slot2 : 234501
+      Time Slot3 : 345012
+      Time Slot4 : 450123
+      Time Slot5 : 501234
+      Time Slot6 : 012345
+      Time Slot7 : 123450
+      Time Slot8 : 234501
+      Time Slot9 : 345012
+      Time Slot10: 450123
+      Time Slot11: 501234
+
+FPGA Options :
+   Class for Address and Control       : II
+   Class for Data                      : II
+   Memory Interface Pin Termination    : EXTERN_TERM
+   DQ/DQS                              : 25 Ohms
+   Bypass Calibration                  : enabled
+   Debug Signals for Memory Controller : Disable
+   Input Clock Type                    : Single-Ended 
+    

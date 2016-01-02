@@ -2,6 +2,10 @@
  * $Id$
  */
 
+`ifdef SIMULATON
+ `define debug
+`endif
+
 module xbus_ram (
 		 clk, reset,
 		 addr, datain, dataout,
@@ -30,13 +34,24 @@ module xbus_ram (
    output 	 sdram_write;
    input 	 sdram_done;
 
+`ifdef debug
+   integer debug;
+   integer debug_decode;
+
+   initial
+     begin
+	debug = 0;
+	debug_decode = 0;
+     end
+`endif
+   
    // need some dram address space at the end 
    // which is decoded but does not read/write...
    assign 	 decode = addr < 22'o11000000 ? 1'b1: 1'b0;
 
-`ifdef debug_decode
+`ifdef debug
    always @(posedge clk)
-     if (decode)
+     if (decode && debug_decode != 0)
        $display("xbus-ram: decode addr=%o; %t", addr, $time);
 `endif
    
@@ -50,13 +65,26 @@ module xbus_ram (
    assign sdram_data_out = datain;
    assign dataout = sdram_data_in;
 
-`ifdef debug_decode
+`ifdef debug
    always @(posedge clk)
-     if (sdram_req || sdram_write)
+     if ((sdram_req || sdram_write) && debug_decode != 0)
        begin
 	  $display("xbus-ram: sdram decode req %b%b addr=%o; datain=%o dataout=%o %t",
 		   sdram_req, sdram_write, addr, datain, dataout, $time);
        end
+`endif
+
+`ifdef debug
+   always @(posedge clk)
+     begin
+	if (sdram_req && debug != 0)
+	     $display("xbus-ram: sdram read addr=0x%x data=0x%x; %t",
+		      addr, dataout, $time);
+
+	if (sdram_write && debug != 0)
+	     $display("xbus-ram: sdram write addr=0x%x data=0x%x; %t",
+		      addr, datain, $time);
+     end
 `endif
 
 endmodule

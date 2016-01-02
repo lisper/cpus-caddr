@@ -1,0 +1,5 @@
+Fri Nov 22 18:50:09 2013
+
+Upgraded ise_32x19_dpram from Block Memory Generator 6.1 to Block Memory Generator 7.3
+
+No changes made to parameter values.

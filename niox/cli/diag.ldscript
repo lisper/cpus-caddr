@@ -1,0 +1,19 @@
+ENTRY(_start)
+SECTIONS {
+	 . = 0x0;
+	 .text : { *(.text) }
+	 . = 0x10000;
+	 .rodata : { *(.rodata .rodata.*) }
+	 .rwdata : {
+	 	*(.got)
+	 	*(.data)
+		_gp = ABSOLUTE(.);
+		*(.sdata)
+	 }
+	 __bss_start__ = .;
+	 .bss : {
+		*(.bss)
+		*(.sbss)
+	 }
+	 __bss_end__ = .;
+}

@@ -1,0 +1,193 @@
+mmc_block_dev: bd_start! bd_cmd 10
+mmc_block_dev: state  4
+mmc_block_dev: bd_start! bd_cmd 10
+mmc_block_dev: state 29
+mmc_block_dev: reset
+mmc_block_dev: reset
+mmc_block_dev: reset
+mmc_block_dev: reset
+mmc_block_dev: state 30
+mmc_block_dev: reset0
+mmc_block_dev: reset0
+mmc_block_dev: state 31
+mmc_block_dev: reset1
+mmc_block_dev: reset1
+mmc_block_dev: state 32
+mmc_block_dev: reset2 (mmc_done=1,mmc_out=00)
+mmc_block_dev: reset2 (mmc_done=0,mmc_out=00)
+mmc_block_dev: reset2 (mmc_done=0,mmc_out=01)
+mmc_block_dev: reset2 (mmc_done=1,mmc_out=01)
+mmc_block_dev: state 33
+mmc_block_dev: reset2 (mmc_done=1,mmc_out=01)
+mmc_block_dev: reset3
+mmc_block_dev: reset3
+mmc_block_dev: reset3
+mmc_block_dev: state 34
+mmc_block_dev: reset4
+mmc_block_dev: reset4
+mmc_block_dev: reset4
+mmc_block_dev: state 35
+mmc_block_dev: reset5 (mmc_out=01)
+mmc_block_dev: reset5 (mmc_out=01)
+mmc_block_dev: reset5 (mmc_out=00)
+mmc_block_dev: reset5 (mmc_out=01)
+mmc_block_dev: reset5 (mmc_out=01)
+mmc_block_dev: state 36
+mmc_block_dev: state 34
+mmc_block_dev: reset4
+mmc_block_dev: reset4
+mmc_block_dev: reset4
+mmc_block_dev: state 35
+mmc_block_dev: reset5 (mmc_out=01)
+mmc_block_dev: reset5 (mmc_out=01)
+mmc_block_dev: reset5 (mmc_out=00)
+mmc_block_dev: reset5 (mmc_out=00)
+mmc_block_dev: state 37
+mmc_block_dev: reset6
+mmc_block_dev: reset6
+mmc_block_dev: reset6
+mmc_block_dev: state 38
+mmc_block_dev: state 39
+mmc_block_dev: state 40
+mmc_block_dev: state 41
+mmc_block_dev: state  4
+mmc_block_dev: state  5
+mmc_block_dev: init1
+mmc_block_dev: init1
+mmc_block_dev: state  6
+mmc_block_dev: init2; mmc_out 00
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out ff
+mmc_block_dev: init2; mmc_out 00
+mmc_block_dev: state  7
+mmc_block_dev: init2; mmc_out 00
+mmc_block_dev: init3
+mmc_block_dev: init3
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 2222
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=00
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 4444
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=01
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 6666
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=02
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 5678
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=03
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 4321
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=04
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=05
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=06
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=07
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=08
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=09
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=0a
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=0b
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=0c
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=0d
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=0e
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=0f
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22
+mmc_block_dev: s_write2 wc=10
+mmc_block_dev: state 20
+mmc_block_dev: data_hold 0000
+mmc_block_dev: state 21
+mmc_block_dev: state 22

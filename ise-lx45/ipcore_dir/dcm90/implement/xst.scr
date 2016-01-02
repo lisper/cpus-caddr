@@ -1,0 +1,9 @@
+run
+-ifmt MIXED
+-top dcm90_exdes
+-p xc6slx45-csg324-3
+-ifn xst.prj
+-ofn dcm90_exdes
+-keep_hierarchy soft 
+-equivalent_register_removal no 
+-max_fanout 65535

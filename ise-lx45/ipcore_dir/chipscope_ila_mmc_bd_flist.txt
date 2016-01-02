@@ -1,0 +1,18 @@
+# Output products list for <chipscope_ila_mmc_bd>
+_xmsgs/pn_parser.xmsgs
+chipscope_ila_mmc_bd.asy
+chipscope_ila_mmc_bd.cdc
+chipscope_ila_mmc_bd.constraints/chipscope_ila_mmc_bd.ucf
+chipscope_ila_mmc_bd.constraints/chipscope_ila_mmc_bd.xdc
+chipscope_ila_mmc_bd.gise
+chipscope_ila_mmc_bd.ncf
+chipscope_ila_mmc_bd.ngc
+chipscope_ila_mmc_bd.ucf
+chipscope_ila_mmc_bd.v
+chipscope_ila_mmc_bd.veo
+chipscope_ila_mmc_bd.xco
+chipscope_ila_mmc_bd.xdc
+chipscope_ila_mmc_bd.xise
+chipscope_ila_mmc_bd_flist.txt
+chipscope_ila_mmc_bd_readme.txt
+chipscope_ila_mmc_bd_xmdf.tcl

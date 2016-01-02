@@ -40,12 +40,12 @@ static struct state_s {
     unsigned long long cmd_reg;
     int cmd_bits;
     int unselected_count;
-    int input;
     int mode;
     int initializing;
     int initializing_count;
     int do_state;
     int blksize;
+    int cs_deassert_wait;
 
     u8 resp[4];
     int resp_delay;
@@ -68,10 +68,11 @@ enum {
     M_POWERUP = -1,
     M_IDLE = 0,
     M_CMD = 1,
-    M_READ_RESP = 2,
-    M_READ = 3,
-    M_WRITE_RESP = 4,
-    M_WRITE = 5
+    M_CMD_RESP = 2,
+    M_READ_RESP = 3,
+    M_READ = 4,
+    M_WRITE_RESP = 5,
+    M_WRITE = 6
 };
 
 #define R1_IDLE			0x01
@@ -81,6 +82,8 @@ enum {
 #define R1_ERASE_SEQ_ERR	0x10
 #define R1_ADDR_ERR		0x20
 #define R1_PARM_ERR		0x40
+
+void mmc_set_mode(struct state_s *s, int mode);
 
 static void
 do_mmc_setup(struct state_s *s)
@@ -100,7 +103,6 @@ do_mmc_setup(struct state_s *s)
         perror(disk_image_filename);
 
     s->status = 0;
-    s->input = 0;
     s->mode = M_POWERUP;
     s->blksize = 256;
     s->fifo_depth = 0;
@@ -173,7 +175,6 @@ do_mmc_write_done(struct state_s *s)
 void mmc_resp(struct state_s *s, int len, char *resp, int delay)
 {
     int i;
-    s->input = 0;
     s->resp_size = len;
     s->resp_index = 0;
     s->resp_bit = 0;
@@ -199,7 +200,7 @@ void mmc_read_fifo(struct state_s *s)
     s->fifo_rd++;
     if (s->fifo_rd == s->fifo_depth) {
 //        do_mmc_read_done(s);
-        s->mode = M_CMD;
+        mmc_set_mode(s, M_CMD);
     }
 
     mmc_resp(s, 1, d, 0);
@@ -212,14 +213,43 @@ void mmc_write_fifo(struct state_s *s)
     s->fifo_wr++;
     if (s->fifo_wr == s->fifo_depth) {
         do_mmc_write_done(s);
-        s->mode = M_CMD;
+        mmc_set_mode(s, M_CMD);
     }
 }
 
 
-/*
- *
- */
+char *mmc_mode_name(int mode)
+{
+    switch (mode) {
+    case M_POWERUP: return (char *)"M_POWERUP"; break;
+    case M_IDLE: return (char *)"M_IDLE"; break;
+    case M_CMD: return (char *)"M_CMD"; break;
+    case M_CMD_RESP: return (char *)"M_CMD_RESP"; break;
+    case M_READ_RESP: return (char *)"M_READ_RESP"; break;
+    case M_READ: return (char *)"M_READ"; break;
+    case M_WRITE_RESP: return (char *)"M_WRITE_RESP"; break;
+    case M_WRITE: return (char *)"M_WRITE"; break;
+    default: return (char *)"???"; break;
+    }
+}
+
+void mmc_set_mode(struct state_s *s, int mode)
+{
+    if (debug) printf("pli_mmc: mode %s->%s\n", mmc_mode_name(s->mode), mmc_mode_name(mode));
+    s->mode = mode;
+}
+
+int mmc_responding(struct state_s *s)
+{
+    if (s->mode == M_CMD_RESP || s->mode == M_READ_RESP || s->mode == M_WRITE_RESP)
+        return 1;
+
+    if (s->mode == M_READ)
+        return 1;
+
+    return 0;
+}
+
 /*
  *
  */
@@ -289,11 +319,16 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
     if (cs_edge && cs_asserted) {
         s->cmd_reg = 0;
         s->cmd_bits = 0;
+        s->resp_bit = 0;
     }
 
     if (cs_edge && !cs_asserted) {
         s->do_state = 0;
+        s->cs_deassert_wait = 0;
     }
+
+    if (s->cs_deassert_wait)
+        goto done;
 
     if (cs_asserted && (sclk_pos_edge == 0 && sclk_neg_edge == 0)) {
         if ((s->mode == M_READ_RESP || s->mode == M_WRITE_RESP) && s->resp_delay)
@@ -322,21 +357,26 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
                 if (s->resp_delay > 0) {
                     s->resp_delay--;
                     if (debug) printf("dpi_mmc: resp_delay %d\n", s->resp_delay);
+                    if (s->resp_delay == 0)
+                        s->cs_deassert_wait = 1;
                 } else {
                     if (s->mode == M_READ_RESP) {
-                        s->mode = M_READ;
+                        mmc_set_mode(s, M_READ);
                         mmc_read_fifo(s);
+                        s->cs_deassert_wait = 1;
                     }
                     if (s->mode == M_WRITE_RESP) {
-                        s->mode = M_WRITE;
+                        mmc_set_mode(s, M_WRITE);
                     }
                 }
+                s->cmd_bits = 0;
             }
             break;
 
         case M_READ:
             if (s->resp_size == 0) {
                 mmc_read_fifo(s);
+                s->cs_deassert_wait = 1;
             }
             break;
 
@@ -361,7 +401,8 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
                     if (parity == 0x95) {
                         if (debug) printf("dpi_mmc: CMD0\n");
                         if (cs_asserted)
-                            s->mode = M_CMD;
+//                            mmc_set_mode(s, M_CMD);
+                        mmc_set_mode(s, M_CMD_RESP);
                         s->initializing = 0;
                         mmc_resp_r1(s, R1_IDLE, 0);
                     }
@@ -370,11 +411,13 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
                     if (debug) printf("dpi_mmc: CMD1\n");
                     s->initializing = 1;
                     s->initializing_count = 0;
+                    mmc_set_mode(s, M_CMD_RESP);
                     mmc_resp_r1(s, R1_IDLE, 0);
                     break;
                 case CMD16:
                     s->blksize = (s->cmd_reg >> 8) & 0xffff;
                     if (debug) printf("dpi_mmc: CMD16 blksize=%d\n", s->blksize);
+                    mmc_set_mode(s, M_CMD_RESP);
                     mmc_resp_r1(s, 0, 0);
                     break;
                 case CMD17:
@@ -382,17 +425,21 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
                     s->lba = (s->cmd_reg >> 8) & 0xffffffff;
                     do_mmc_read(s);
                     mmc_resp_r1(s, 0, 5);
-                    s->mode = M_READ_RESP;
+                    mmc_set_mode(s, M_READ_RESP);
                     break;
                 case CMD24:
                     if (debug) printf("dpi_mmc: CMD24\n");
                     s->lba = (s->cmd_reg >> 8) & 0xffffffff;
                     do_mmc_write(s);
                     mmc_resp_r1(s, 0, 5*8);
-                    s->mode = M_WRITE_RESP;
+                    mmc_set_mode(s, M_WRITE_RESP);
                     break;
                 }
 
+                //wrong
+                //s->cs_deassert_wait = 1;
+                s->cmd_bits = 0;
+                s->clk_posedge_wait = 1;
                 goto done;
             }
             break;
@@ -400,18 +447,17 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
     }
 
     if (sclk_pos_edge && !cs_asserted && di_asserted) {
-        s->input = 1;
         s->unselected_count++;
         if (debug > 1) printf("dpi_mmc: unselected_count %d\n", s->unselected_count);
         if (s->unselected_count >= 74) {
             if (s->mode != M_IDLE) printf("dpi_mmc: going idle\n");
-            s->mode = M_IDLE;
+            mmc_set_mode(s, M_IDLE);
         }
     }
 
     do_asserted = s->do_state;
 
-    if (!s->input) {
+    if (mmc_responding(s)) {
         if (sclk_pos_edge && cs_asserted) {
 
             if (s->initializing && s->resp_size == 0) {
@@ -423,10 +469,10 @@ void dpi_mmc(int m_di, int* m_do, int m_cs, int m_sclk)
             }
         }
 
-        if (sclk_neg_edge && cs_asserted) {
-            if (s->resp_size == 0)
-                s->input = 1;
-            else {
+        if ((sclk_neg_edge && cs_asserted) || (cs_edge && cs_asserted)) {
+            if (s->resp_size == 0) {
+                mmc_set_mode(s, M_CMD);
+	    } else {
                 if (s->resp_delay == 0) {
                     if (s->resp[s->resp_index] & (1 << (7 - s->resp_bit)))
                         do_asserted = 1;

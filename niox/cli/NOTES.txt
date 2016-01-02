@@ -1,0 +1,109 @@
+Memory map
+
+ 22 bit address space
+   00000000-
+   16777777  dram
+
+   17000000-
+   17377777  xbus
+ 
+   17400000-
+   17777777  unibus
+
+ ------------------------
+
+ xbus:
+   17000000- tv frame buffer
+   17051777
+
+   17200000  tv color frame buffer
+
+   17377760 tv
+   17377770 disk
+
+   17740000 unknown
+
+   17772000 i/o board
+   17773000 unibus
+
+   17777700 unknown
+
+ unibus:
+   17400000  color?
+   17760000  tv
+
+   17764000-
+   17764077  i/o board
+   17764140 chaos
+
+   17766000-
+   17766036  spy
+
+   17766012 mode register
+
+   17766040 unibus int status
+   17766044 unibus err status
+
+   17766100-
+   17766110  two machine lashup
+
+   17766140-
+   17766176  unibus map
+ 
+
+octal     hex		hex bus word addres	hex nios byte address	what
+00000000		0000_0000					ram
+
+17000000 1705177	003c_0000 003c_53ff	00f0_0000		tv frame buffer
+
+17200000					color fram ebuffer
+
+17377760 					tv registers
+
+17377770		003d_fff8		00f7_ffe0		disk
+
+17772000  					i/o board
+
+17773000 		003f_f600		unibus
+
+----
+
+bad:
+
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         00002a0c  00000000  00000000  00001000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .rodata       000004a8  00010000  00010000  00004000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  2 .rwdata       000004f8  000104a8  000104a8  000044a8  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .bss          000008b4  000109a0  000109a0  000049a0  2**2
+                  ALLOC
+  4 .comment      00000023  00000000  00000000  000049a0  2**0
+                  CONTENTS, READONLY
+
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         000029ac  00000000  00000000  00001000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .rodata       00000458  00010000  00010000  00004000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  2 .rwdata       000004ec  00010458  00010458  00004458  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .bss          000008b4  00010944  00010944  00004944  2**2
+                  ALLOC
+  4 .comment      00000023  00000000  00000000  00004944  2**0
+                  CONTENTS, READONLY
+
+good:
+
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         000025e8  00000000  00000000  00001000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .rodata       000003e8  00010000  00010000  00004000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  2 .rwdata       000004e0  000103e8  000103e8  000043e8  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .bss          000008b4  000108c8  000108c8  000048c8  2**2
+                  ALLOC
+  4 .comment      00000023  00000000  00000000  000048c8  2**0
+                  CONTENTS, READONLY

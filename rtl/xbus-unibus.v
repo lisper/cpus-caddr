@@ -3,6 +3,10 @@
  * $Id$
  */
 
+`ifndef DBG_DLY
+`define DBG_DLY
+`endif
+
 module xbus_unibus(
 		   reset, clk,
 		   addr, datain, dataout,

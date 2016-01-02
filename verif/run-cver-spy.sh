@@ -1,5 +1,4 @@
+#!/bin/sh
 
-PLI=+loadvpi=../pli/ide/pli_ide.so:vpi_compat_bootstrap
-
-cver $PLI +incdir+../rtl run-top-spy.v
+cver +define+SIMULATION=1 +define+debug=1 +incdir+../rtl run-spy.v
 

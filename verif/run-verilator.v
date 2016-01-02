@@ -11,6 +11,7 @@
 //`define build_debug_s3
 `define build_debug_lx45
 //`define debug_patch_disk_copy
+`define debug_vmem
   
 //`include "defs.v"
 `include "rtl.v"

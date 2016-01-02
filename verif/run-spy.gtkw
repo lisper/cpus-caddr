@@ -1,0 +1,51 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Sun Mar 16 16:30:25 2014
+[*]
+[dumpfile] "/files/code/cpus/caddr/verif/run-spy.vcd"
+[dumpfile_mtime] "Sun Mar 16 16:29:33 2014"
+[dumpfile_size] 4588555
+[savefile] "/files/code/cpus/caddr/verif/run-spy.gtkw"
+[timestart] 483792
+[size] 1309 600
+[pos] -1 -1
+*-9.077414 484920 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] run_spy.
+[treeopen] run_spy.spy_port.
+[sst_width] 224
+[signals_width] 217
+[sst_expanded] 1
+[sst_vpaned_height] 151
+@28
+run_spy.spy_port.clk
+run_spy.spy_port.reset
+run_spy.spy_port.dbread
+run_spy.spy_port.dbwrite
+@22
+run_spy.spy_port.eadr[4:0]
+run_spy.spy_port.spy_in[15:0]
+run_spy.spy_port.spy_out[15:0]
+@28
+run_spy.spy_port.respond
+@22
+run_spy.spy_port.spyu_state[3:0]
+@200
+-
+@28
+run_spy.spy_port.spy_uart.rx_in
+run_spy.spy_port.spy_uart.rx_bit_middle
+@22
+run_spy.spy_port.spy_uart.rx_bit_cnt[3:0]
+run_spy.spy_port.spy_uart.rx_bit_time[15:0]
+run_spy.spy_port.spy_uart.rx_reg[7:0]
+@28
+run_spy.spy_port.spy_uart.rx_busy
+run_spy.spy_port.spy_uart.rx_start_bit
+run_spy.spy_port.spy_uart.rx_ack
+run_spy.spy_port.spy_uart.rx_empty
+@22
+run_spy.spy_port.spy_uart.rx_data[7:0]
+@25
+run_spy.spy_port.spy_uart.rx_ld_state[1:0]
+[pattern_trace] 1
+[pattern_trace] 0

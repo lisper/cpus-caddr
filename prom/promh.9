@@ -1,0 +1,754 @@
+;;; CADR PROM Microcode.			-*-Fundamental-*-
+
+;;; There are many places in this code in which cycles are wasted.
+;;; This is to make the code clearer, since it is far more important
+;;; that code in a PROM be bug-free than that the boot sequence be
+;;; 150 nanoseconds faster.
+
+;;; Still to be done is the feature for loading microcode off the Chaos net.
+
+(PROGN (PRINT '(TYPE T IF FOR PROM NIL FOR RAM))
+       (SETQ PROM (READ))
+(SETQ PROMH '(
+
+(LOCALITY M-MEM)
+
+M-GARBAGE	(0)
+M-HUNOZ		(0)
+M-ZERO		(0)
+M-ONES		(0)
+
+M-A		(0)
+M-B		(0)
+M-C		(0)
+M-D		(0)
+
+M-TEMP-1	(0)
+M-TEMP-2	(0)
+
+M-MICR-OFFSET	(0)
+
+(LOCALITY A-MEM)
+
+A-GARBAGE	(0)
+A-HUNOZ		(0)
+A-ZERO		(0)
+A-ONES		(0)
+
+A-A		(0)
+A-B		(0)
+A-C		(0)
+A-D		(0)
+
+A-TEMP-1	(0)
+A-TEMP-2	(0)
+
+A-MICR-OFFSET	(0)
+
+(LOC 40)
+
+;;; Constants.
+A-1		(0)
+A-2		(0)
+A-3		(0)
+A-4		(0)
+A-5		(0)
+A-11		(0)
+A-40		(0)
+A-400		(0)
+A-20000		(0)
+A-3560		(0)
+A-DISK-ERROR	(0)
+A-DISK-RECAL	(0)
+
+;;; Disk Characteristics (from label)
+A-NCYLS		(0)	;Total number of cylinders
+A-NHEADS	(0)	;Number of data heads (i.e. tracks per cylinder)
+A-NBLKS		(0)	;Number of blocks ("sectors") per track
+A-HEADS-TIMES-BLOCKS	(0)	;Number of blocks per cylinder
+A-DISK-REGS	(0)	;Virtual address of disk control registers
+A-MICR-ORIGIN	(0)	;Base disk address of microcode partition
+A-MICR-ADDRESS	(0)	;Address of next block of microcode partition
+A-MICR-N-BLOCKS	(0)	;Remaining blocks of microcode partition
+A-TEM1		(0)	;Temporary used in division
+
+(LOCALITY I-MEM)
+
+(IF PROM (LOC 0))
+(IF PROM BEG)
+(IF PROM (JUMP GO))
+
+(LOC 6)
+I-MEM-LOC-6			;Define this symbol in either case.
+(IF PROM   (JUMP-NOT-EQUAL-XCT-NEXT Q-R A-ZERO I-MEM-LOC-6)) ;This code also appears in the RAM
+(IF PROM  ((Q-R) ADD Q-R A-ONES))
+(IF PROM I-MEM-LOC-10)
+(IF PROM   (JUMP HALT-CONS I-MEM-LOC-10))	;Foo, should be in RAM by now
+(IF PROM (ERROR-TABLE FAILED-TO-JUMP-INTO-RAM))
+
+(IF (NOT PROM) (LOC 27000))
+(IF (NOT PROM) BEG)
+(IF (NOT PROM) (JUMP GO))
+
+;;; Error halts:
+;;; Put a NO-OP before each error halt so that they will be at even addresses
+;;; and the 2 possible values in the PC lights will agree except for the low bit.
+
+	(NO-OP)
+ERROR-BAD-BIT
+	(JUMP HALT-CONS ERROR-BAD-BIT)
+    (ERROR-TABLE ERROR-BAD-BIT)
+
+	(NO-OP)
+ERROR-ADD-LOSES
+	(JUMP HALT-CONS ERROR-ADD-LOSES)
+    (ERROR-TABLE ERROR-ADD-LOSES)
+
+	(NO-OP)
+ERROR-A-MEM
+	(JUMP HALT-CONS ERROR-A-MEM)
+    (ERROR-TABLE ERROR-A-MEM)
+
+	(NO-OP)
+ERROR-M-MEM
+	(JUMP HALT-CONS ERROR-M-MEM)
+    (ERROR-TABLE ERROR-M-MEM)
+
+	(NO-OP)
+ERROR-LEVEL-1-MAP
+	(JUMP HALT-CONS ERROR-LEVEL-1-MAP)
+    (ERROR-TABLE ERROR-LEVEL-1-MAP)
+
+	(NO-OP)
+ERROR-PAGE-FAULT
+	(JUMP HALT-CONS ERROR-PAGE-FAULT)
+    (ERROR-TABLE ERROR-PAGE-FAULT)
+
+	(NO-OP)
+ERROR-BAD-LABEL
+	(JUMP HALT-CONS ERROR-BAD-LABEL)
+    (ERROR-TABLE ERROR-BAD-LABEL)
+
+	(NO-OP)
+ERROR-NO-MICR
+	(JUMP HALT-CONS ERROR-NO-MICR)
+    (ERROR-TABLE ERROR-NO-MICR)
+
+	(NO-OP)
+ERROR-BAD-SECTION-TYPE
+	(JUMP HALT-CONS ERROR-BAD-SECTION-TYPE)
+    (ERROR-TABLE ERROR-BAD-SECTION-TYPE)
+
+	(NO-OP)
+ERROR-BAD-ADDRESS
+	(JUMP HALT-CONS ERROR-BAD-ADDRESS)
+    (ERROR-TABLE ERROR-BAD-ADDRESS)
+
+	(NO-OP)
+ERROR-END-OF-PARTITION
+	(JUMP HALT-CONS ERROR-END-OF-PARTITION)
+    (ERROR-TABLE ERROR-END-OF-PARTITION)
+
+	(NO-OP)
+ERROR-DISK-ERROR
+	(JUMP HALT-CONS ERROR-DISK-ERROR)
+    (ERROR-TABLE ERROR-DISK-ERROR)
+
+	(NO-OP)
+ERROR-DIVIDE-BY-ZERO
+	(JUMP HALT-CONS ERROR-DIVIDE-BY-ZERO)
+    (ERROR-TABLE ERROR-DIVIDE-BY-ZERO)
+
+	(NO-OP)
+ERROR-PDL-BUFFER
+	(JUMP HALT-CONS ERROR-PDL-BUFFER)
+    (ERROR-TABLE ERROR-PDL-BUFFER)
+
+;;; Program starts here.  Create M-ZERO and M-ONES, and check the hardware a little.
+GO	((M-ZERO Q-R) SETZ)		;Make all zeros.  Result to Q-R, not to depend on M mem
+
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 0) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 1) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 2) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 3) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 4) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 5) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 6) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 7) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 10) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 11) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 12) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 13) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 14) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 15) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 16) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 17) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 20) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 21) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 22) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 23) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 24) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 25) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 26) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 27) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 30) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 31) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 32) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 33) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 34) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 35) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 36) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 37) Q-R ERROR-BAD-BIT)
+
+	((M-ONES Q-R) SETO)		;Make all ones, in Q-R not to trust M Mem
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 0) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 1) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 2) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 3) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 4) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 5) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 6) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 7) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 10) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 11) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 12) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 13) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 14) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 15) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 16) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 17) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 20) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 21) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 22) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 23) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 24) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 25) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 26) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 27) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 30) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 31) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 32) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 33) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 34) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 35) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 36) Q-R ERROR-BAD-BIT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 37) Q-R ERROR-BAD-BIT)
+;;; ALU and Shifter don't drop or pick bits.
+;;; Test M-mem, A-mem, and M=A logic
+	(JUMP-NOT-EQUAL Q-R A-ONES ERROR-A-MEM)
+	(JUMP-NOT-EQUAL M-ONES A-ONES ERROR-M-MEM)
+	((Q-R) SETZ)
+	(JUMP-NOT-EQUAL Q-R A-ZERO ERROR-A-MEM)
+	(JUMP-NOT-EQUAL M-ZERO A-ZERO ERROR-M-MEM)
+;;; See if all carries in ALU really carry.
+	((Q-R) ADD M-ONES A-ZERO ALU-CARRY-IN-ONE)
+	(JUMP-NOT-EQUAL Q-R A-ZERO ERROR-ADD-LOSES)
+;;; Another simple carry test
+	((Q-R) ADD M-ONES A-ONES)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 0) Q-R ERROR-ADD-LOSES)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 1) Q-R ERROR-ADD-LOSES)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 37) Q-R ERROR-ADD-LOSES)
+;;; Prepare to test pdl buffer.  Care required since no pass-around path.
+	((C-PDL-BUFFER-POINTER-PUSH) M-ZERO)
+	((C-PDL-BUFFER-POINTER-PUSH) M-ONES)
+;;; This verifies that -1 + -1 is -2 and also tests the byte hardware a little
+	((MD) (BYTE-FIELD 37 1) Q-R A-ONES)
+	(JUMP-NOT-EQUAL MD A-ONES ERROR-ADD-LOSES)
+;;; Foo, the byte hardware could be tested a little bit better than that!
+	(JUMP-NOT-EQUAL C-PDL-BUFFER-POINTER-POP A-ONES ERROR-PDL-BUFFER)
+	(JUMP-NOT-EQUAL C-PDL-BUFFER-POINTER-POP A-ZERO ERROR-PDL-BUFFER)
+
+;;; Clear all memories to make sure they contain good parity
+;;; But don't bash the M-ZERO and M-ONES constants.
+	((M-HUNOZ) DPB M-ONES (BYTE-FIELD 1 5) A-ZERO)	;40, size of M memory
+	((MD) DPB M-ONES (BYTE-FIELD 1 2) A-ZERO)	;4, lowest location to clear
+CLEAR-M-MEMORY
+	((M-HUNOZ) ADD M-HUNOZ A-ONES)	;Note that M-HUNOZ is used, to get good par in it
+	((OA-REG-LOW) DPB M-HUNOZ (BYTE-FIELD 5 14.) A-ZERO)	;M destination
+	((M-GARBAGE) M-ZERO)
+	(JUMP-NOT-EQUAL MD A-HUNOZ CLEAR-M-MEMORY)
+
+	((M-HUNOZ) DPB M-ONES (BYTE-FIELD 1 5) A-ZERO)	;40, size of M memory
+CLEAR-A-MEMORY
+	((OA-REG-LOW) DPB M-HUNOZ (BYTE-FIELD 10. 14.) A-ZERO)	;A destination
+	((A-GARBAGE) M-ZERO)
+	((M-HUNOZ) M+A+1 M-HUNOZ A-ZERO)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 10.) M-HUNOZ CLEAR-A-MEMORY)
+
+;;; Construct useful constants.
+MAKE-CONSTANTS
+	((A-1)   DPB M-ONES (BYTE-FIELD 1 0) A-ZERO)
+	((A-2)   DPB M-ONES (BYTE-FIELD 1 1) A-ZERO)
+	((A-3)   DPB M-ONES (BYTE-FIELD 2 0) A-ZERO)
+	((A-4)   DPB M-ONES (BYTE-FIELD 1 2) A-ZERO)
+	((A-5)   DPB M-ONES (BYTE-FIELD 1 2) A-1)
+	((A-11)  DPB M-ONES (BYTE-FIELD 1 3) A-1)
+	((A-40)  DPB M-ONES (BYTE-FIELD 1 5) A-ZERO)
+	((A-400) DPB M-ONES (BYTE-FIELD 1 8) A-ZERO)
+	((A-20000) DPB M-ONES (BYTE-FIELD 1 13.) A-ZERO)
+	((A-3560) DPB M-ONES (BYTE-FIELD 3 4) A-ZERO)
+	((A-3560) DPB M-ONES (BYTE-FIELD 3 8) A-3560)
+	;;; A-DISK-RECAL / 10001005
+	((A-DISK-RECAL) DPB M-ONES (BYTE-FIELD 1 9) A-5)
+	((A-DISK-RECAL) DPB M-ONES (BYTE-FIELD 1 21.) A-DISK-RECAL)
+	;;; A-DISK-ERROR/ 47777360
+	((A-DISK-ERROR) DPB M-ONES (BYTE-FIELD 04. 04.) A-ZERO)
+	((A-DISK-ERROR) DPB M-ONES (BYTE-FIELD 12. 09.) A-DISK-ERROR)
+	((A-DISK-ERROR) DPB M-ONES (BYTE-FIELD 01. 23.) A-DISK-ERROR)
+
+;;; Clear some more memories
+	((PDL-BUFFER-POINTER M-A)	;2000, size of pdl buffer
+		DPB M-ONES (BYTE-FIELD 1 10.) A-ZERO)
+CLEAR-PDL-BUFFER
+	((C-PDL-BUFFER-POINTER-PUSH) M-ZERO)
+	((M-A) ADD M-A A-ONES)
+	(JUMP-NOT-EQUAL M-A A-ZERO CLEAR-PDL-BUFFER)
+
+	((M-A) A-40)			;Size of SPC stack
+CLEAR-SPC-MEMORY
+	((MICRO-STACK-DATA-PUSH) SETZ)
+	((M-A) ADD M-A A-ONES)
+	(JUMP-NOT-EQUAL M-A A-ZERO CLEAR-SPC-MEMORY)
+
+	((MD) SETZ)
+CLEAR-LEVEL-1-MAP
+	((VMA-WRITE-MAP M-B) DPB M-ONES (BYTE-FIELD 1 26.) A-ZERO)	;Clear level-1 map
+	((MD) ADD MD A-20000)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 24.) MD CLEAR-LEVEL-1-MAP)
+
+	((MD) SETZ)
+CLEAR-LEVEL-2-MAP
+	((M-A) (BYTE-FIELD 5 13.) MD)		;What to write in level-1 map
+	((VMA-WRITE-MAP) DPB M-A (BYTE-FIELD 5 27.) A-B) ;Make level-1 map point at level-2
+	((VMA-WRITE-MAP) DPB M-ONES (BYTE-FIELD 1 25.) A-ZERO)	;Clear level-2 map
+	((MD) ADD MD A-400)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 24.) MD CLEAR-LEVEL-2-MAP)
+
+	((M-A MD) SETZ)
+(IF (NOT PROM)
+	((M-B) DPB M-ONES (BYTE-FIELD 3 9) A-ZERO) )	;27000 RAM version only
+(IF (NOT PROM)
+        ((M-B) DPB M-ONES (BYTE-FIELD 1 13.) A-B))
+CLEAR-I-MEMORY
+	((OA-REG-LOW) DPB MD (BYTE-FIELD 14. 12.) A-ZERO)
+	(WRITE-I-MEM M-A A-A)
+	((MD) ADD MD A-1)
+(IF PROM
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 14.) MD CLEAR-I-MEMORY) ;PROM, clear 16K
+	(JUMP-LESS-THAN MD A-B CLEAR-I-MEMORY) )                 ;RAM, clear to limit
+
+	((M-A MD) DPB M-ONES (BYTE-FIELD 1 17.) A-ZERO)	;0 with good parity
+CLEAR-D-MEMORY
+	((OA-REG-LOW) DPB MD (BYTE-FIELD 11. 12.) A-ZERO)
+	(DISPATCH WRITE-DISPATCH-RAM (BYTE-FIELD 0 0) (I-ARG (A-MEM-LOC A-A)))
+	((MD) ADD MD A-1)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 11.) MD CLEAR-D-MEMORY)
+
+;;; The size of the disk is not known until the label is read in and parsed.
+;;; In order to make the disk operations win, we have to initialize the
+;;; size parameters to something reasonable; it doesn't matter what they
+;;; are exactly since only blocks 0 and 1 will be dealt with.
+FUDGE-INITIAL-DISK-PARAMETERS
+	((A-NBLKS) A-3)
+	((A-HEADS-TIMES-BLOCKS) A-3)
+
+;;; Generate RESET on the I/O busses
+	((INTERRUPT-CONTROL) DPB M-ONES		;RESET THE BUS INTERFACE AND I/O DEVS
+		(BYTE-FIELD 1 28.) A-ZERO)
+	((M-A) A-400)				;RESET FOR ABOUT 80 MICROSECONDS
+RST	(JUMP-NOT-EQUAL-XCT-NEXT M-A A-ZERO RST)
+       ((M-A) SUB M-A A-1)
+	((INTERRUPT-CONTROL) DPB M-ONES		;CLEAR RESET, SET HALFWORD-MODE,
+		(BYTE-FIELD 1 27.) A-ZERO)	;AND ENABLE INTERRUPTS
+
+;;; Set up the map.  First, write a 0 into the first location of the level
+;;; one map.  This is the only location we use.  Read back to be safe.
+SET-UP-THE-MAP
+	((MD) SETZ)
+	((VMA-WRITE-MAP) DPB M-ONES (BYTE-FIELD 1 26.) A-ZERO)
+	(NO-OP)			;Map gets written during this cycle
+	((M-A) MEMORY-MAP-DATA)
+	((M-B) (BYTE-FIELD 5 24.) M-A)
+	(JUMP-NOT-EQUAL M-B A-ZERO ERROR-LEVEL-1-MAP)
+
+;;; Set up four pages:
+;;;  Page 0: Mapped to the first page of main memory.
+;;;  Page 1: Mapped to the disk control registers.
+;;;  Page 2: Mapped to the debug (spy) interface registers at 766000 .
+;;;  Page 3: Mapped to the second page of main memory. (system communication area)
+;;; M-A holds the bits to write the level 1 map with r/w access, MD has zero initially.
+SET-UP-FOUR-PAGES
+	((M-A VMA-WRITE-MAP) DPB M-ONES (BYTE-FIELD 4 22.) A-ZERO);Sets bit 24 which is ignored
+
+	((M-B) DPB M-ONES (BYTE-FIELD 11 0) A-A)
+	((MD) A-400)
+	((VMA-WRITE-MAP) DPB M-ONES (BYTE-FIELD 4 12) A-B)	;M-A + 36777
+	((A-DISK-REGS) DPB M-ONES (BYTE-FIELD 7 2) A-ZERO)	;Virt Addr 774
+
+	((MD) ADD MD A-400)
+	((M-B) DPB M-ONES (BYTE-FIELD 2 1) A-A)			;6
+	((VMA-WRITE-MAP) DPB M-ONES (BYTE-FIELD 12 4) A-B)	;M-A + 37766
+
+	((MD) ADD MD A-400)
+	((VMA-WRITE-MAP) DPB M-ONES (BYTE-FIELD 1 0) A-A)	;M-A + 1
+	(NO-OP)
+
+	((VMA) SETO)			;Make sure page 0 has good parity
+PAGE-0-PARITY-FIX			;so the disk doesn't barf out when we save it
+	((VMA-START-READ) ADD VMA A-1)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+			;Next instruction mustn't be ((VMA-START-WRITE) VMA).
+	((WRITE-MEMORY-DATA-START-WRITE) READ-MEMORY-DATA)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(JUMP-LESS-THAN VMA A-400 PAGE-0-PARITY-FIX) ;This does one extra location, too bad.
+
+;;; Now turn on parity checking
+;;; Writing 4 in Unibus location 766012, which is at virtual address 1005,
+;;; turns on ERROR-STOP-ENABLE.  If we aren't really in a PROM, we write 44
+;;; which also turns on (leaves on) PROM-DISABLE.
+(IF PROM
+	((MD) A-4)					;PROM
+	((MD) DPB M-ONES (BYTE-FIELD 1 5) A-4) )	;RAM
+	((VMA-START-WRITE) DPB M-ONES (BYTE-FIELD 1 9) A-5)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+
+;;; Initialize the disk.
+	(CALL DISK-RECALIBRATE)
+
+;;; In order to not clobber core, save a page (page 0) of physical
+;;; memory on disk.  Block 1 is allocated to us for this purpose.
+SAVE-A-PAGE
+	((M-A) DPB M-ONES (BYTE-FIELD 1 18.) A-ZERO)	;Delay for 0.1 second in case
+SAPDLY	(JUMP-NOT-EQUAL-XCT-NEXT M-A A-ZERO SAPDLY)	; something random is happening
+       ((M-A) SUB M-A A-1)
+	((M-TEMP-1) A-1)
+	(CALL-XCT-NEXT DISK-WRITE)
+       ((M-A) SETZ)
+	((M-TEMP-1) A-1)				;Now do a read-compare
+	(CALL-XCT-NEXT DISK-OP-LOW)
+       ((M-TEMP-2) DPB M-ONES (BYTE-FIELD 1 3) A-ZERO)	;OP 10 = read-compare
+	((M-TEMP-1) AND READ-MEMORY-DATA A-DISK-ERROR)
+	(JUMP-NOT-EQUAL M-TEMP-1 A-ZERO SAVE-A-PAGE)	;Got an error on readback, retry
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 22.) READ-MEMORY-DATA SAVE-A-PAGE)	;R/C failed
+
+;;; Read the label (block 0) into physical memory page 0, get disk
+;;; parameters, and find out where the MICR partition is.
+READ-LABEL
+	((M-TEMP-1) SETZ)
+	(CALL-XCT-NEXT DISK-READ)
+       ((M-A) SETZ)
+
+	;; M-B/ LABL = 114 102 101 114 = 11420440514
+	((M-B) DPB M-ONES (BYTE-FIELD 2 02.) A-ZERO)
+	((M-B) DPB M-ONES (BYTE-FIELD 1 06.) A-B)
+	((M-B) DPB M-ONES (BYTE-FIELD 1 08.) A-B)
+	((M-B) DPB M-ONES (BYTE-FIELD 1 14.) A-B)
+	((M-B) DPB M-ONES (BYTE-FIELD 1 17.) A-B)
+	((M-B) DPB M-ONES (BYTE-FIELD 1 22.) A-B)
+	((M-B) DPB M-ONES (BYTE-FIELD 2 26.) A-B)
+	((M-B) DPB M-ONES (BYTE-FIELD 1 30.) A-B)
+
+DECODE-LABEL
+	((VMA-START-READ M-C) A-ZERO)		;0
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)	;First location of label must be ascii LABL
+	(JUMP-NOT-EQUAL READ-MEMORY-DATA A-B ERROR-BAD-LABEL)
+	((VMA-START-READ M-C) ADD M-C A-1)	;1
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)	;Second location of label must be version 1.
+	(JUMP-NOT-EQUAL READ-MEMORY-DATA A-1 ERROR-BAD-LABEL)
+	((VMA-START-READ M-C) ADD M-C A-1)	;2
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((A-NCYLS) READ-MEMORY-DATA)
+	((VMA-START-READ M-C) ADD M-C A-1)	;3
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((A-NHEADS) READ-MEMORY-DATA)
+	((VMA-START-READ M-C) ADD M-C A-1)	;4
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((A-NBLKS) READ-MEMORY-DATA)
+	((VMA-START-READ M-C) ADD M-C A-1)	;5
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((A-HEADS-TIMES-BLOCKS) READ-MEMORY-DATA)
+	((VMA-START-READ M-C) ADD M-C A-1)	;6
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((M-B) READ-MEMORY-DATA)
+	((VMA-START-READ M-C)			;200
+		DPB M-ONES (BYTE-FIELD 1 7) A-ZERO)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((M-D) READ-MEMORY-DATA)		;M-D gets number of partitions
+	((VMA-START-READ M-C) ADD M-C A-1)	;201
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((M-A) READ-MEMORY-DATA)		;M-A gets words per partition descriptor
+	((M-C) ADD M-C A-1)			;202 (start of partition table)
+
+
+	;; M-B/ Name of microload partition.
+	;; M-C/ Address of partition descriptor.
+	;; M-D/ Number of partitions
+	;; M-A/ Number of words per partition descriptor.
+SEARCH-LABEL
+	(JUMP-EQUAL M-D A-ZERO ERROR-NO-MICR)
+	((VMA-START-READ) M-C)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(JUMP-EQUAL READ-MEMORY-DATA A-B FOUND-PARTITION)
+	((M-C) ADD M-C A-A)
+	(JUMP-XCT-NEXT SEARCH-LABEL)
+       ((M-D) SUB M-D A-1)
+
+FOUND-PARTITION
+	((VMA-START-READ M-C) ADD M-C A-1)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((A-MICR-ADDRESS) READ-MEMORY-DATA)
+	((A-MICR-ORIGIN) A-MICR-ADDRESS)
+	((VMA-START-READ) ADD M-C A-1)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((A-MICR-N-BLOCKS) READ-MEMORY-DATA)
+	((M-MICR-OFFSET) A-400)	;So will read in a new page first off
+
+;;; Process one section.  Each section starts with three words:
+;;; The section type, the initial address, and the number of locations.
+;;; These are gotten into M-B, M-C, and M-D; then the section type is
+;;; "dispatched" on.
+;;; Section codes are:
+;;; 1 = I-MEM, 2 = D-MEM, 3 = MAIN-MEM, 4 = A-M-MEM
+PROCESS-SECTION
+	(CALL GET-NEXT-WORD)
+	(CALL-XCT-NEXT GET-NEXT-WORD)
+       ((M-B) M-A)
+	(CALL-XCT-NEXT GET-NEXT-WORD)
+       ((M-C) M-A)
+	((M-D) M-A)
+	(JUMP-EQUAL M-B A-1 PROCESS-I-MEM-SECTION)
+	(JUMP-EQUAL M-B A-2 PROCESS-D-MEM-SECTION)
+	(JUMP-EQUAL M-B A-3 PROCESS-MAIN-MEM-SECTION)
+	(JUMP-EQUAL M-B A-4 PROCESS-A-MEM-SECTION)
+	(JUMP ERROR-BAD-SECTION-TYPE)
+
+PROCESS-I-MEM-SECTION
+	(JUMP-EQUAL M-D A-ZERO PROCESS-SECTION)
+	((M-A) (BYTE-FIELD 18. 14.) M-C)
+	(JUMP-NOT-EQUAL M-A A-ZERO ERROR-BAD-ADDRESS)
+	(CALL-XCT-NEXT GET-NEXT-WORD)
+       ((M-D) SUB M-D A-1)
+	(CALL-XCT-NEXT GET-NEXT-WORD)
+       ((M-B) M-A)
+	;;; Now the first word of the instruction is in A-B, second word is in M-A,
+	;;; and the address in I-MEM is in M-C.
+	((OA-REG-LOW) DPB M-C (BYTE-FIELD 14. 12.) A-ZERO)
+	(WRITE-I-MEM M-A A-B)
+	(JUMP-XCT-NEXT PROCESS-I-MEM-SECTION)
+       ((M-C) ADD M-C A-1)
+
+PROCESS-D-MEM-SECTION
+	(JUMP-EQUAL M-D A-ZERO PROCESS-SECTION)
+	((M-A) (BYTE-FIELD 21. 11.) M-C)
+	(JUMP-NOT-EQUAL M-A A-ZERO ERROR-BAD-ADDRESS)
+	(CALL-XCT-NEXT GET-NEXT-WORD)
+       ((M-D) SUB M-D A-1)
+	;;; Now M-A has the contents and M-C has the address.
+	((OA-REG-LOW) DPB M-C (BYTE-FIELD 11. 12.) A-ZERO)
+	(DISPATCH WRITE-DISPATCH-RAM (BYTE-FIELD 0 0) (I-ARG (A-MEM-LOC A-A)))
+	(JUMP-XCT-NEXT PROCESS-D-MEM-SECTION)
+       ((M-C) ADD M-C A-1)
+
+PROCESS-MAIN-MEM-SECTION
+	(CALL GET-NEXT-WORD)
+	;;; M-C/ Number of blocks.
+	;;; M-D/ Address of first block, relative to beginning of partition.
+	;;; M-A/ Physical memory address of first word.
+	((M-B) ADD M-D A-MICR-ORIGIN)
+MAIN-MEM-LOOP
+	(JUMP-EQUAL M-C A-ZERO PROCESS-SECTION)
+	(CALL-XCT-NEXT DISK-READ)
+       ((M-TEMP-1) M-B)
+	((M-B) ADD M-B A-1)
+	((M-A) ADD M-A A-400)
+	(JUMP-XCT-NEXT MAIN-MEM-LOOP)
+       ((M-C) SUB M-C A-1)
+
+PROCESS-A-MEM-SECTION
+	((PDL-BUFFER-POINTER) SUB M-C A-1)
+A-MEM-LOOP
+	(JUMP-EQUAL M-D A-ZERO DONE-LOADING)
+	((M-A) (BYTE-FIELD 22. 10.) M-C)
+	(JUMP-NOT-EQUAL M-A A-ZERO ERROR-BAD-ADDRESS)
+	(CALL-XCT-NEXT GET-NEXT-WORD)
+       ((M-D) SUB M-D A-1)
+	(JUMP-XCT-NEXT A-MEM-LOOP)
+       ((C-PDL-BUFFER-POINTER-PUSH) M-A)
+
+DONE-LOADING
+;;; Read back page 0 of physical memory, which we saved on block 1.
+	((M-TEMP-1) A-1)
+	(CALL-XCT-NEXT DISK-READ)
+       ((M-A) SETZ)
+	((Q-R) A-400)			;Set up constant needed below.
+	((MD) DPB M-ONES (BYTE-FIELD 1 5) A-4)	;44
+	((VMA) DPB M-ONES (BYTE-FIELD 1 9) A-5) ;1005
+
+;;; Copy the PDL buffer into A/M memory.
+	((PDL-BUFFER-INDEX) SETZ)
+FILL-M-LOOP
+	((OA-REG-LOW) DPB PDL-BUFFER-INDEX (BYTE-FIELD 5 14.) A-ZERO)
+	((M-GARBAGE) C-PDL-BUFFER-INDEX)
+	((PDL-BUFFER-INDEX) M+1 PDL-BUFFER-INDEX)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 5) PDL-BUFFER-INDEX FILL-M-LOOP)
+FILL-A-LOOP
+	((OA-REG-LOW) DPB PDL-BUFFER-INDEX (BYTE-FIELD 10. 14.) A-ZERO)
+	((A-GARBAGE) C-PDL-BUFFER-INDEX)
+	((PDL-BUFFER-INDEX) M+1 PDL-BUFFER-INDEX)
+	(JUMP-NOT-EQUAL PDL-BUFFER-INDEX A-ZERO FILL-A-LOOP)
+;;; Turn off the PROM and enter the real world.
+;;; Writing 44 in Unibus location 766012, which is at virtual address 1005,
+;;; will turn on ERROR-STOP-ENABLE and PROM-DISABLE.  The 2 programs (PROM and RAM)
+;;; share a common loop at location 6 to wait for this Unibus cycle to happen.
+;;; Note that Q-R, MD, and VMA are already set up.
+
+JUMP-TO-6
+	(JUMP-XCT-NEXT I-MEM-LOC-6)
+       ((VMA-START-WRITE) VMA)		;Well, we can't check for page fault here
+
+GET-NEXT-WORD
+;;; Get the next word of the MICR partition into M-A.  A-MICR-ADDRESS
+;;; contains the number of the next page to be read in from it.
+;;; A-MICR-N-BLOCKS has the number of remaining pages in it.
+;;; M-MICR-OFFSET has the physical address of the next word.
+;;; Clobbers M-TEMP-1, M-TEMP-2, Q-R.
+	(JUMP-GREATER-OR-EQUAL M-MICR-OFFSET A-400 GET-NEXT-PAGE)
+	((VMA-START-READ) M-MICR-OFFSET)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(POPJ-AFTER-NEXT (M-A) READ-MEMORY-DATA)
+       ((M-MICR-OFFSET) ADD M-MICR-OFFSET A-1)
+
+GET-NEXT-PAGE
+	((M-MICR-OFFSET) SETZ)
+	(JUMP-GREATER-OR-EQUAL M-ZERO A-MICR-N-BLOCKS ERROR-END-OF-PARTITION)
+	((A-MICR-N-BLOCKS) ADD M-ONES A-MICR-N-BLOCKS)	;Subtract 1
+	((M-TEMP-1) A-MICR-ADDRESS)
+	(CALL-XCT-NEXT DISK-READ)
+       ((M-A) SETZ)
+	(JUMP-XCT-NEXT GET-NEXT-WORD)
+       ((A-MICR-ADDRESS) M+A+1 M-ZERO A-MICR-ADDRESS)
+
+;;; Disk commands.
+
+;;; Initialize the disk drive.  First, wait for it to be on-line.
+;;; Then do a fault clear and a recalibrate.  Then wait for the
+;;; drive to become ready.
+;;; Clobbers M-A, M-TEMP-1, M-TEMP-2.
+DISK-RECALIBRATE
+	((VMA-START-READ) A-DISK-REGS)		;Wait for control ready
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 0) READ-MEMORY-DATA DISK-RECALIBRATE)
+	((WRITE-MEMORY-DATA) A-ZERO)		;Select unit 0
+	((VMA) A-DISK-REGS)
+	((VMA-START-WRITE) ADD VMA A-2)		;Disk Address reg
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((VMA-START-READ) A-DISK-REGS)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(JUMP-IF-BIT-SET (BYTE-FIELD 1 9.) READ-MEMORY-DATA DISK-RECALIBRATE)	;Off-line
+    (ERROR-TABLE AWAIT-DISK-ON-LINE)		;Hangs near here until drive is on-line
+	((M-A) SETZ)
+	((M-TEMP-1) SETZ)
+	((M-TEMP-2) A-5)
+	(CALL-XCT-NEXT DISK-OP)
+       ((M-TEMP-2) DPB M-ONES (BYTE-FIELD 1 8) A-TEMP-2)	;405 Fault Clear
+	((M-TEMP-1) SETZ)
+	(CALL-XCT-NEXT DISK-OP)
+       ((M-TEMP-2) A-DISK-RECAL)
+AWAIT-DRIVE-READY 
+	((VMA-START-READ) A-DISK-REGS)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	((M-TEMP-2) AND READ-MEMORY-DATA A-3560)	;Bits 4,5,6,8,9,10
+	(JUMP-NOT-EQUAL M-TEMP-2 A-ZERO AWAIT-DRIVE-READY)
+    (ERROR-TABLE AWAIT-DRIVE-READY)		;Hangs near here until drive is OK
+	(POPJ)
+
+;;; Read one block.
+;;; Takes disk block number in M-TEMP-1, phys. mem. address in M-A
+;;; Does not clobber M-A.
+;;; Clobbers M-TEMP-1, M-TEMP-2, Q-R.
+DISK-READ
+	(JUMP-XCT-NEXT DISK-OP)
+       ((M-TEMP-2) SETZ)
+
+;;; Write one block.
+;;; Takes disk block number in M-TEMP-1, phys. mem. address in M-A
+;;; Does not clobber M-A.
+;;; Clobbers M-TEMP-1, M-TEMP-2, Q-R.
+DISK-WRITE
+	((M-TEMP-2) A-11)
+	; drops in.
+
+DISK-OP
+	(CALL DISK-OP-LOW)
+	((M-TEMP-1) AND READ-MEMORY-DATA A-DISK-ERROR)
+	(JUMP-NOT-EQUAL M-TEMP-1 A-ZERO ERROR-DISK-ERROR)
+	(POPJ)
+
+DISK-OP-LOW
+	;; Wait for the disk controller to be ready.
+	((VMA-START-READ) A-DISK-REGS)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 0) READ-MEMORY-DATA DISK-OP)
+    (ERROR-TABLE AWAIT-DISK-CONTROL-READY)	;Hangs near here if control hung or absent
+	
+	;; Write a CCW word to the last loc of sys. comm. area.
+	((MD) SELECTIVE-DEPOSIT M-A (BYTE-FIELD 16. 8.) A-ZERO)
+	((VMA-START-WRITE) DPB M-ONES (BYTE-FIELD 10. 0) A-ZERO)	;Virt Addr 1777
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+
+	;; Write the COMMAND register from M-TEMP-2.
+	((MD) M-TEMP-2)
+	((VMA-START-WRITE) A-DISK-REGS)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	
+	;; Write the CLP register.
+	((MD) DPB M-ONES (BYTE-FIELD 9 0) A-ZERO)	;Phys Addr 777 = Virt Addr 1777
+	((VMA-START-WRITE) ADD VMA A-1)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+
+DISK-OP-CONTINUED
+	;; Convert block number in M-TEMP-1 to DISK ADDRESS word.
+	;; Write the DISK ADDRESS register.
+	(CALL-XCT-NEXT DIV)
+       ((M-TEMP-2) A-HEADS-TIMES-BLOCKS)
+        ((MD) DPB Q-R (BYTE-FIELD 12. 16.) A-ZERO)
+	(CALL-XCT-NEXT DIV)
+       ((M-TEMP-2) A-NBLKS)
+	((M-TEMP-1) DPB Q-R (BYTE-FIELD 8 8) A-TEMP-1)
+	((MD) IOR MD A-TEMP-1)
+	((VMA-START-WRITE) ADD VMA A-1)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+
+	;; Write the START register.
+	((VMA-START-WRITE) ADD VMA A-1)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+
+	;; Wait for operation to complete.
+DISK-WAIT	
+	((VMA-START-READ) A-DISK-REGS)
+	(JUMP-IF-PAGE-FAULT ERROR-PAGE-FAULT)
+	(JUMP-IF-BIT-CLEAR (BYTE-FIELD 1 0) READ-MEMORY-DATA DISK-WAIT)
+    (ERROR-TABLE AWAIT-DISK-DONE)		;Hangs near here while waiting for disk
+	(POPJ)
+
+;;; Divide two numbers.  This routine taken from UCADR 108.
+;;; Dividend in M-TEMP-1, divisor in M-TEMP-2
+;;; Quotient In Q-R, remainder in M-TEMP-1
+;;; Clobbers A-TEM1.
+
+DIV	(JUMP-GREATER-OR-EQUAL-XCT-NEXT M-TEMP-1 A-ZERO DIV1)
+       ((A-TEM1 Q-R) M-TEMP-1)
+	((Q-R) SUB M-ZERO A-TEM1)
+DIV1	((M-TEMP-1) DIVIDE-FIRST-STEP M-ZERO A-TEMP-2)
+DIV1A	(JUMP-IF-BIT-SET (BYTE-FIELD 1 0) Q-R ERROR-DIVIDE-BY-ZERO)
+(REPEAT 31. ((M-TEMP-1) DIVIDE-STEP M-TEMP-1 A-TEMP-2))
+	((M-TEMP-1) DIVIDE-LAST-STEP M-TEMP-1 A-TEMP-2)
+	(JUMP-LESS-OR-EQUAL-XCT-NEXT M-ZERO A-TEM1 DIV2)
+       ((M-TEMP-1) DIVIDE-REMAINDER-CORRECTION-STEP M-TEMP-1 A-TEMP-2)
+	((M-TEMP-1) SUB M-ZERO A-TEMP-1)
+DIV2	((A-TEM1) XOR M-TEMP-2 A-TEM1)
+	(POPJ-LESS-OR-EQUAL M-ZERO A-TEM1)
+	(POPJ-AFTER-NEXT
+	 (A-TEM1) Q-R)
+       ((Q-R) SUB M-ZERO A-TEM1)
+)))

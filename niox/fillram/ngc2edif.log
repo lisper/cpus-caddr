@@ -1,0 +1,75 @@
+Release 14.4 - ngc2edif P.49d (lin)
+Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved.
+Reading design ../ise/top_niox.ngc ...
+WARNING:NetListWriters:298 - No output is written to top_niox.xncf, ignored.
+Processing design ...
+   Preping design's networks ...
+   Preping design's macros ...
+WARNING:NetListWriters:306 - Signal bus ps2_support/kb_data<15 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus ps2_support/ms_x<11 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus ps2_support/ms_y<11 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus bd_state<10 : 7> on block top_niox is
+   not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus
+   rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_ter
+   m_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/_n2056<8 : 1>
+   on block top_niox is not reconstructed, because there are some missing bus
+   signals.
+WARNING:NetListWriters:306 - Signal bus
+   rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_ter
+   m_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/STATE<5 : 0>
+   on block top_niox is not reconstructed, because there are some missing bus
+   signals.
+WARNING:NetListWriters:306 - Signal bus
+   rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_ter
+   m_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/RstCounter<9
+   : 0> on block top_niox is not reconstructed, because there are some missing
+   bus signals.
+WARNING:NetListWriters:306 - Signal bus
+   rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_ter
+   m_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/IODRPCTRLR_ME
+   MCELL_ADDR<7 : 0> on block top_niox is not reconstructed, because there are
+   some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus
+   rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_ter
+   m_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/iodrp_control
+   ler/memcell_addr_reg<7 : 0> on block top_niox is not reconstructed, because
+   there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus
+   rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_ter
+   m_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/iodrp_mcb_con
+   troller/memcell_addr_reg<7 : 0> on block top_niox is not reconstructed,
+   because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus ps2_support/mouse/m_b2<5 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus ps2_support/keyboard/data<15 : 0> on
+   block top_niox is not reconstructed, because there are some missing bus
+   signals.
+WARNING:NetListWriters:306 - Signal bus
+   ps2_support/keyboard/scancode_convert/keycode<8 : 0> on block top_niox is not
+   reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus cpu/dlmb_datai<15 : 7> on block top_niox
+   is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus cpu/bus/unibus/dataout<10 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus cpu/bus/disk/n0389[16:0]<9 : 6> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus cpu/bus/io/iob_key_scan<16 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus cpu/bus/io/mouse_y<11 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus cpu/bus/io/mouse_x<11 : 0> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus
+   cpu/bus/unibus/GND_19_o_offset[5]_mux_24_OUT<10 : 0> on block top_niox is not
+   reconstructed, because there are some missing bus signals.
+WARNING:NetListWriters:306 - Signal bus
+   ps2_support/keyboard/scancode_convert/scancode_rom/data<8 : 2> on block
+   top_niox is not reconstructed, because there are some missing bus signals.
+  finished :Prep
+Writing EDIF netlist file ./top_niox.edf ...
+ngc2edif: Total memory usage is 39004 kilobytes
+

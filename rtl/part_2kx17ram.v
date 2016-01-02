@@ -80,7 +80,7 @@ module part_2kx17dpram(reset,
    assign q_a = out_a;
    assign q_b = out_b;
 
-`ifdef debug
+//`ifdef debug
    integer 	 i, debug;
 
    initial
@@ -89,7 +89,7 @@ module part_2kx17dpram(reset,
 	for (i = 0; i < 2048; i=i+1)
           ram[i] = 17'b0;
      end
-`endif
+//`endif
 
    always @(posedge clk_a)
      if (wren_a)

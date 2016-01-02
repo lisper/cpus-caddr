@@ -3,6 +3,8 @@
 // $Id$
 //
 
+`ifndef __CVER__
+
 `define debug
 `define debug_state
 
@@ -56,3 +58,6 @@ module debug_block_dev(clk, reset,
      end
 
 endmodule // debug_block_dev
+
+`endif //  `ifndef __CVER__
+

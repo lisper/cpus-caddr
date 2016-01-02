@@ -1,0 +1,50 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Fri Jan  3 15:48:46 2014
+[*]
+[dumpfile] "/files/code/cpus/caddr/verif/run-mmc.vcd"
+[dumpfile_mtime] "Fri Jan  3 15:47:11 2014"
+[dumpfile_size] 5970455
+[savefile] "/files/code/cpus/caddr/verif/run-mmc.sav"
+[timestart] 878700
+[size] 1264 661
+[pos] -298 -216
+*-15.115102 511060 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_mmc.
+[sst_width] 224
+[signals_width] 296
+[sst_expanded] 1
+[sst_vpaned_height] 173
+@28
+test_mmc.clk
+test_mmc.reset
+@22
+test_mmc.mmc.clk
+test_mmc.mmc.init
+test_mmc.mmc.rd
+test_mmc.mmc.wr
+test_mmc.mmc.send
+@28
+test_mmc.mmc.done
+@22
+test_mmc.mmc.state[3:0]
+test_mmc.mmc.bit_time[15:0]
+@28
+test_mmc.mmc.bit_middle
+test_mmc.mmc.bit_end
+@22
+test_mmc.mmc.data_in[7:0]
+test_mmc.mmc.data_out[7:0]
+@23
+test_mmc.mmc.bitcount[7:0]
+@200
+-
+@28
+test_mmc.mmc_sclk
+test_mmc.mmc_cs
+test_mmc.mmc_di
+test_mmc.mmc_do
+@200
+-
+[pattern_trace] 1
+[pattern_trace] 0

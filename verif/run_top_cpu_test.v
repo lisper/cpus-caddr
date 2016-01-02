@@ -7,6 +7,9 @@
 `define debug
 `define DBG_DLY #0
 
+//`define mmc_pli
+`define mmc_model
+
 `include "top_tb.v"
 `include "cpu_test.v"
 `include "cpu_test_data.v"
@@ -214,6 +217,16 @@ module run_top;
 	#10 sysclk = 0;
 	#10 sysclk = 1;
      end
+
+`ifdef mmc_model
+   mmc_model mmc_card(
+		      .spiClk(mmc_sclk),
+		      .spiDataIn(mmc_do),
+		      .spiDataOut(mmc_di),
+		      .spiCS_n(mmc_cs)
+		      );
+`endif
+
 
 endmodule
 

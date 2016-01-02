@@ -60,8 +60,16 @@
  * 
  */
 
+`ifdef SIMULATION
+ `define debug
+`endif
+
+`ifndef DBG_DLY
+`define DBG_DLY
+`endif
+
 module busint(mclk, reset,
-	      addr, busin, busout, spyin, spyout,
+	      addr, busin, busout, spyin, spyout, spyreg, spyrd, spywr,
 	      req, ack, write, load,
 	      interrupt,
 
@@ -72,7 +80,7 @@ module busint(mclk, reset,
 	      vram_req, vram_ready, vram_write, vram_done,
 
 	      bd_cmd, bd_start, bd_bsy, bd_rdy, bd_err, bd_addr,
-	      bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy,
+	      bd_data_in, bd_data_out, bd_rd, bd_wr, bd_iordy, bd_state_in,
 
 	      kb_data, kb_ready,
 	      ms_x, ms_y, ms_button, ms_ready,
@@ -88,7 +96,10 @@ module busint(mclk, reset,
    
    output [31:0] busout;
    output [15:0] spyout;
-
+   output [3:0]	 spyreg;
+   output 	 spyrd;
+   output 	 spywr;
+   
    input 	 req, write;
    output 	 ack, load, interrupt;
    
@@ -103,6 +114,7 @@ module busint(mclk, reset,
    output 	 bd_rd;
    output 	 bd_wr;
    input 	 bd_iordy;
+   input [11:0]  bd_state_in;
 
    output 	 promdisable;
    output [4:0]  disk_state;
@@ -147,11 +159,25 @@ module busint(mclk, reset,
    reg [5:0] 	timeout_count;
  	
    //
+`ifdef debug
+   integer debug_xbus/* verilator public_flat */;
+   integer debug_bus/* verilator public_flat */;
+   integer debug_detail/* verilator public_flat */;
+
+   initial
+     begin
+	debug_xbus = 0;
+	debug_bus = 0;
+	debug_detail = 0;
+     end
+`endif
+
+   //
    wire 	decode_ok;
-   wire 	decode_dram, decode_disk, decode_tv, decode_io, decode_unibus;
+   wire 	decode_dram, decode_disk, decode_tv, decode_io, decode_unibus, decode_spy;
 
    wire 	ack;
-   wire 	ack_dram, ack_disk, ack_tv, ack_io, ack_unibus;
+   wire 	ack_dram, ack_disk, ack_tv, ack_io, ack_unibus, ack_spy;
 // synthesis attribute keep dram_reqin true;
 // synthesis attribute keep dram_writein true;
 // synthesis attribute keep ack_dram true;
@@ -175,6 +201,7 @@ module busint(mclk, reset,
    wire [31:0] 	dataout_tv;
    wire [31:0] 	dataout_io;
    wire [31:0] 	dataout_unibus;
+   wire [31:0] 	dataout_spy;
 
    
    wire [21:0] 	addrout_disk;
@@ -246,7 +273,8 @@ module busint(mclk, reset,
 		   .bd_rd(bd_rd),
 		   .bd_wr(bd_wr),
 		   .bd_iordy(bd_iordy),
-
+		   .bd_state_in(bd_state_in),
+		   
 		   .disk_state(disk_state)
 		  );
 
@@ -306,11 +334,28 @@ module busint(mclk, reset,
 		       .timeout(timed_out)
 		       );
 
+   xbus_spy spy (
+		 .clk(mclk),
+		 .reset(reset),
+		 .addr(addr),
+		 .datain(busin),
+		 .dataout(dataout_spy),
+		 .req(req_valid),
+		 .write(write),
+		 .ack(ack_spy),
+		 .decode(decode_spy),
+		 .spyin(spyin),
+		 .spyout(spyout),
+		 .spyreg(spyreg),
+		 .spywr(spywr),
+		 .spyrd(spyrd)
+	       );
+
    assign decode_ok = decode_dram | decode_disk | decode_tv |
-		      decode_io | decode_unibus;
+		      decode_io | decode_unibus | decode_spy;
    
    
-   assign device_ack = ack_dram | ack_disk | ack_tv | ack_io | ack_unibus |
+   assign device_ack = ack_dram | ack_disk | ack_tv | ack_io | ack_unibus | ack_spy |
 		       timed_out;
    
 //   assign ack = state == BUS_REQ && device_ack;
@@ -330,22 +375,23 @@ module busint(mclk, reset,
 		  (req & decode_tv & ~write) ? dataout_tv :
 		  (req & decode_io & ~write) ? dataout_io :
 		  (req & decode_unibus & ~write) ? dataout_unibus :
+		  (req & decode_spy & ~write) ? dataout_spy :
 		  (req & timed_out & ~write) ? 32'h00000000 :
 		  32'hffffffff;
 
-`ifdef debug_xbus
+`ifdef debug
   always @(posedge mclk)
     begin
-       if (req)
+       if (req && debug_xbus != 0)
 	 if (write)
 	   begin
-              `DBG_DLY $display("xbus: write @%o <- %o; %t",
-				addr, busin, $time);
+              `DBG_DLY $display("xbus: write @%o <- %o (0x%x); %t",
+				addr, busin, busin, $time);
 	   end
 	 else
 	   begin
-              `DBG_DLY $display("xbus: read @%o -> %o; %t",
-				addr, busout, $time);
+              `DBG_DLY $display("xbus: read @%o -> %o (0x%x); %t",
+				addr, busout, busout, $time);
 	   end
     end
 `endif
@@ -384,18 +430,18 @@ module busint(mclk, reset,
        begin
 	  state <= next_state;
 
-`ifdef debug_bus
-	  if (next_state != state && next_state == BUS_REQ)
+`ifdef debug
+	  if (next_state != state && next_state == BUS_REQ && debug_bus != 0)
 	    begin
 	       $display("busint: BUS_REQ addr %o (decode %b); %t",
 			addr,
-			{decode_dram, decode_disk, decode_tv, decode_io, decode_unibus},
+			{decode_dram, decode_disk, decode_tv, decode_io, decode_unibus, decode_spy},
 			$time);
 	    end
 `endif
 	  
-`ifdef debug_detail_xx
-	  if (next_state != state)
+`ifdef debug
+	  if (next_state != state && debug_detail > 1)
 	    begin
 	       case (next_state)
 		 BUS_REQ:   $display("busint: BUS_REQ   addr %o; %t",
@@ -413,8 +459,8 @@ module busint(mclk, reset,
 	    end
 `endif
 
-`ifdef debug_detail
-	  if (next_state != state)
+`ifdef debug
+	  if (next_state != state && debug_detail != 0)
 	  case (next_state)
 	    BUS_REQ:
 	      begin
@@ -422,14 +468,14 @@ module busint(mclk, reset,
 			  req, write, decode_dram);
 		 $display("busint: REQ req %b dram_reqin %b dram_writein %b",
 			  req, dram_reqin, dram_writein);
-		 $display("busint: REQ req %b ack %b; acks %b %b %b %b %b",
+		 $display("busint: REQ req %b ack %b; acks %b %b %b %b %b %b",
 			  req, device_ack, 
-			  ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
+			  ack_dram, ack_disk, ack_tv, ack_io, ack_unibus, ack_spy);
 	      end
 	    BUS_WAIT:
-	      $display("busint: WAIT req %b ack %b; acks %b %b %b %b %b",
+	      $display("busint: WAIT req %b ack %b; acks %b %b %b %b %b %b",
 		       req, device_ack, 
-		       ack_dram, ack_disk, ack_tv, ack_io, ack_unibus);
+		       ack_dram, ack_disk, ack_tv, ack_io, ack_unibus, ack_spy);
 	    BUS_SLAVE:
 	      begin
 		 #1 $display("busint: SLAVE addr %o; %t", dram_addr, $time);
@@ -496,7 +542,5 @@ module busint(mclk, reset,
        $display("busint: timeout; addr %o; %t", addr, $time);
 `endif
 
-   assign spyout = 16'b0;
-   
 endmodule
      

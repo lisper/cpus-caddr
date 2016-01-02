@@ -1,0 +1,273 @@
+CONFIG VCCAUX = "3.3" ;
+
+#NET "sysclk"           LOC = "H17"  | IOSTANDARD = LVTTL;
+#NET "sysclk" TNM_NET = "clkin" ;
+#TIMESPEC "TS_clkin" = PERIOD "clkin" 20000 ps INPUT_JITTER 200 ps;
+
+NET "sysclk"           LOC = "H17"  | IOSTANDARD = LVCMOS33;
+NET "sysclk" TNM_NET = "clkin" ;
+TIMESPEC "TS_clkin" = PERIOD "clkin" 20 ns HIGH 50%;
+
+# FTDI FT2232-chB used as USB UART
+NET "usb_txd"        LOC = "A10"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+NET "usb_rxd"        LOC = "A11"  | IOSTANDARD = LVTTL | PULLUP;
+#NET "usb_rts"        LOC = "C10"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+#NET "usb_cts"        LOC = "A9"   | IOSTANDARD = LVTTL | PULLUP;
+
+# sd-card SPI interface
+#NET "mmc_di"          LOC = "B4"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "mmc_cs"          LOC = "A2"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "mmc_do"          LOC = "B3"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "mmc_sclk"        LOC = "A3"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 ;
+NET "mmc_di"          LOC = "B4"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 ;
+NET "mmc_cs"          LOC = "A2"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 ;
+NET "mmc_do"          LOC = "B3"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 ;
+NET "mmc_sclk"        LOC = "A3"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 ;
+
+# leds
+NET "led<0>"          LOC = "V16"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ; # green @ HDMI 
+NET "led<1>"          LOC = "U16"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ; # red @ HDMI
+NET "led<2>"          LOC = "A16"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ; # green @ MSD
+NET "led<3>"          LOC = "A15"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ; # red @ MSD
+NET "led<4>"          LOC = "A12"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ; # red @ USB
+
+# switch
+NET "switch"          LOC = "N14"  | IOSTANDARD = LVTTL | PULLDOWN ;
+
+# PMOD
+NET "vga_hsync"       LOC = "D9"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "vga_vsync"       LOC = "C8"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "vga_r"           LOC = "D6"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "vga_g"           LOC = "C4"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "vga_b"           LOC = "B11"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "ps2_clk"         LOC = "C9"   | IOSTANDARD = LVTTL | PULLUP;
+NET "ps2_data"        LOC = "D8"   | IOSTANDARD = LVTTL | PULLUP;
+
+# Wing C0/C1
+NET "ms_ps2_clk"      LOC = "F16"  | IOSTANDARD = LVTTL | PULLUP ;
+NET "ms_ps2_data"     LOC = "F17"  | IOSTANDARD = LVTTL | PULLUP ;
+
+## Add jitter uncertainy to clock...
+#SYSTEM_JITTER = 0.2 ns;
+
+# LPDDR signals
+#NET "rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
+#NET "rc/lpddr_intf/c3_pll_lock" TIG;
+##INST "rc/lpddr_intf/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
+
+NET  "mcb3_dram_dq[*]"  IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_a[*]"   IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_ba[*]"  IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_dqs"    IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_udqs"   IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_ck"     IOSTANDARD = DIFF_MOBILE_DDR ;
+NET  "mcb3_dram_ck_n"   IOSTANDARD = DIFF_MOBILE_DDR ;
+NET  "mcb3_dram_cke"    IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_ras_n"  IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_cas_n"  IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_we_n"   IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_dm"     IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_dram_udm"    IOSTANDARD = MOBILE_DDR ;
+NET  "mcb3_rzq"         IOSTANDARD = MOBILE_DDR ;
+
+NET  "mcb3_dram_a[0]"   LOC = "J7" ;
+NET  "mcb3_dram_a[10]"  LOC = "F4" ;
+NET  "mcb3_dram_a[11]"  LOC = "D3" ;
+NET  "mcb3_dram_a[12]"  LOC = "G6" ;
+NET  "mcb3_dram_a[1]"   LOC = "J6" ;
+NET  "mcb3_dram_a[2]"   LOC = "H5" ;
+NET  "mcb3_dram_a[3]"   LOC = "L7" ;
+NET  "mcb3_dram_a[4]"   LOC = "F3" ;
+NET  "mcb3_dram_a[5]"   LOC = "H4" ;
+NET  "mcb3_dram_a[6]"   LOC = "H3" ;
+NET  "mcb3_dram_a[7]"   LOC = "H6" ;
+NET  "mcb3_dram_a[8]"   LOC = "D2" ;
+NET  "mcb3_dram_a[9]"   LOC = "D1" ;
+NET  "mcb3_dram_ba[0]"  LOC = "F2" ;
+NET  "mcb3_dram_ba[1]"  LOC = "F1" ;
+NET  "mcb3_dram_cas_n"  LOC = "K5" ;
+NET  "mcb3_dram_ck"     LOC = "G3" ;
+NET  "mcb3_dram_ck_n"   LOC = "G1" ;
+NET  "mcb3_dram_cke"    LOC = "H7" ;
+NET  "mcb3_dram_dm"     LOC = "K3" ;
+NET  "mcb3_dram_dq[0]"  LOC = "L2" ;
+NET  "mcb3_dram_dq[10]" LOC = "N2" ;
+NET  "mcb3_dram_dq[11]" LOC = "N1" ;
+NET  "mcb3_dram_dq[12]" LOC = "T2" ;
+NET  "mcb3_dram_dq[13]" LOC = "T1" ;
+NET  "mcb3_dram_dq[14]" LOC = "U2" ;
+NET  "mcb3_dram_dq[15]" LOC = "U1" ;
+NET  "mcb3_dram_dq[1]"  LOC = "L1" ;
+NET  "mcb3_dram_dq[2]"  LOC = "K2" ;
+NET  "mcb3_dram_dq[3]"  LOC = "K1" ;
+NET  "mcb3_dram_dq[4]"  LOC = "H2" ;
+NET  "mcb3_dram_dq[5]"  LOC = "H1" ;
+NET  "mcb3_dram_dq[6]"  LOC = "J3" ;
+NET  "mcb3_dram_dq[7]"  LOC = "J1" ;
+NET  "mcb3_dram_dq[8]"  LOC = "M3" ;
+NET  "mcb3_dram_dq[9]"  LOC = "M1" ;
+NET  "mcb3_dram_dqs"    LOC = "L4" ;
+NET  "mcb3_dram_ras_n"  LOC = "L5" ;
+
+NET  "mcb3_dram_udm"    LOC = "K4" ;
+NET  "mcb3_dram_udqs"   LOC = "P2" ;
+NET  "mcb3_dram_we_n"   LOC = "E3" ;
+
+NET  "mcb3_rzq"         LOC = "N4" ;
+
+# TMDS signals
+NET "tmds(0)"        LOC = "T6"   | IOSTANDARD = TMDS_33 ; # Blue
+NET "tmdsb(0)"       LOC = "V6"   | IOSTANDARD = TMDS_33 ;
+NET "tmds(1)"        LOC = "U7"   | IOSTANDARD = TMDS_33 ; # Red
+NET "tmdsb(1)"       LOC = "V7"   | IOSTANDARD = TMDS_33 ;
+NET "tmds(2)"        LOC = "U8"   | IOSTANDARD = TMDS_33 ; # Green
+NET "tmdsb(2)"       LOC = "V8"   | IOSTANDARD = TMDS_33 ;
+NET "tmds(3)"        LOC = "U5"   | IOSTANDARD = TMDS_33 ; # Clock
+NET "tmdsb(3)"       LOC = "V5"   | IOSTANDARD = TMDS_33 ;
+
+#---------------------------------------------------------------------------------------------------
+
+# EDID
+#NET "edid_sda"       LOC = "T9"   | IOSTANDARD = I2C ;
+#NET "edid_scl"       LOC = "V9"   | IOSTANDARD = I2C ;
+
+#NET "hdmi_det"       LOC = "R8"   | IOSTANDARD = LVTTL ;
+
+# JTAG
+#NET "jtag_tms"       LOC = "B18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+#NET "jtag_tck"       LOC = "A17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+#NET "jtag_tdi"       LOC = "D15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+#NET "jtag_tdo"       LOC = "D16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+
+# SPI Flash
+#NET "flash_miso"     LOC = "R13"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ; 
+#NET "flash_mosi"     LOC = "T13"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ; 
+#NET "flash_cs"       LOC = "V3"   | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP  ; 
+#NET "flash_sck"      LOC = "R15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+#NET "flash_wp"       LOC = "T14"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "flash_hold"     LOC = "V14"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+
+# FTDI FT2232-chB used as USB Asynchronnous FIFO
+#NET "usb_data<0>"    LOC = "A11"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<1>"    LOC = "A10"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<2>"    LOC = "C10"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<3>"    LOC = "A9"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<4>"    LOC = "B9"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<5>"    LOC = "A8"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<6>"    LOC = "B8"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_data<7>"    LOC = "A7"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#
+#NET "usb_rxf"        LOC = "C7"   | IOSTANDARD = LVTTL;
+#NET "usb_txe"        LOC = "A6"   | IOSTANDARD = LVTTL;
+#NET "usb_rd"         LOC = "B6"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_wr"         LOC = "A5"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+#NET "usb_siwua"      LOC = "C5"   | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 8 ;
+
+# audio
+#NET "audio_l"        LOC = "R7"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "audio_r"        LOC = "T7"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+
+# sd-card SDIO interface
+#NET "sd_dat<0>"      LOC = "B4"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "sd_dat<1>"      LOC = "A4"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "sd_dat<2>"      LOC = "B2"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "sd_dat<3>"      LOC = "A2"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "sd_cmd"         LOC = "B3"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 | PULLUP ;
+#NET "sd_clk"         LOC = "A3"   | IOSTANDARD = SDIO | SLEW = FAST | DRIVE = 8 ;
+
+# PMOD
+#NET "PMOD1_IO1"      LOC = "D9"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD1_IO2"      LOC = "C8"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD1_IO3"      LOC = "D6"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD1_IO4"      LOC = "C4"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD2_IO1"      LOC = "B11"  | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD2_IO2"      LOC = "C9"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD2_IO3"      LOC = "D8"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+#NET "PMOD2_IO4"      LOC = "C6"   | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+
+#LVDS_33 on PMOD 
+#NET "LVDS1_P"         LOC = "D9"   | IOSTANDARD = LVDS_33 ; # PMOD1_IO1
+#NET "LVDS1_N"         LOC = "C9"   | IOSTANDARD = LVDS_33 ; # PMOD2_IO2
+#NET "LVDS2_P"         LOC = "D8"   | IOSTANDARD = LVDS_33 ; # PMOD2_IO3
+#NET "LVDS2_N"         LOC = "C8"   | IOSTANDARD = LVDS_33 ; # PMOD1_IO2
+#NET "LVDS3_P"         LOC = "D6"   | IOSTANDARD = LVDS_33 ; # PMOD1_IO3
+#NET "LVDS3_N"         LOC = "C6"   | IOSTANDARD = LVDS_33 ; # PMOD2_IO4
+
+# Wings
+#NET "Wing_A15"       LOC = "D18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A14"       LOC = "F18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A13"       LOC = "H18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A12"       LOC = "H15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A11"       LOC = "J16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A10"       LOC = "K17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A9"        LOC = "K15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A8"        LOC = "L17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A7"        LOC = "L15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A6"        LOC = "M16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A5"        LOC = "N17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A4"        LOC = "N16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A3"        LOC = "P16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A2"        LOC = "P17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A1"        LOC = "T17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_A0"        LOC = "U18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+
+#NET "Wing_B15"       LOC = "U17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B14"       LOC = "T18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B13"       LOC = "P18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B12"       LOC = "P15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B11"       LOC = "N15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B10"       LOC = "N18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B9"        LOC = "M18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B8"        LOC = "L16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B7"        LOC = "L18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B6"        LOC = "K16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B5"        LOC = "K18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B4"        LOC = "J18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B3"        LOC = "H16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B2"        LOC = "G18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B1"        LOC = "E18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_B0"        LOC = "C18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+
+#NET "Wing_C15"       LOC = "L12"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C14"       LOC = "K12"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C13"       LOC = "K13"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C12"       LOC = "K14"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C11"       LOC = "H12"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C10"       LOC = "G13"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C9"        LOC = "J13"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C8"        LOC = "H13"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C7"        LOC = "H14"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C6"        LOC = "F14"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C5"        LOC = "G14"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C4"        LOC = "F15"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C3"        LOC = "G16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C2"        LOC = "E16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C1"        LOC = "F16"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+#NET "Wing_C0"        LOC = "F17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST | PULLUP ;
+
+
+# DCM/PLL/BUFPLL positions
+##############################################################################
+#INST "PCLK_GEN_INST" LOC = "DCM_X0Y3"; 
+#INST "dvid/clocking_inst/pll_base_inst" LOC = "PLL_ADV_X0Y3";
+##INST "dvid/clocking_inst/dcm_sp_inst"   LOC = "DCM_X0Y3"; 
+#INST "dvid/PLL_OSERDES"   LOC = "PLL_ADV_X0Y1";
+
+#INST "dvid/ioclk_buf"     LOC = "BUFPLL_X1Y0";
+
+#PIN "fpga_clocks/clk50alt_bufg.O" CLOCK_DEDICATED_ROUTE = FALSE;
+
+#INST "dvid/OBUFDS_blue" LOCK = "";
+#INST "dvid/OBUFDS_green" LOCK = "";
+#INST "dvid/OBUFDS_red" LOCK = "";
+#INST "dvid/OBUFDS_clock" LOCK = "";
+
+#INST "dvid/dvid_inst/oserdes_blue" LOCK = "";
+#INST "dvid/dvid_inst/oserdes_green" LOCK = "";
+#INST "dvid/dvid_inst/oserdes_red" LOCK = "";
+
+#PIN "dvid/ioclk_buf.IOCLK" CLOCK_DEDICATED_ROUTE = FALSE;
+#PIN "dvid/dvid_inst/oserdes_blue/oserdes_m.CLK0" CLOCK_DEDICATED_ROUTE = FALSE;
+#PIN "dvid/dvid_inst/oserdes_green/oserdes_m.CLK0" CLOCK_DEDICATED_ROUTE = FALSE;
+#PIN "dvid/dvid_inst/oserdes_red/oserdes_m.CLK0" CLOCK_DEDICATED_ROUTE = FALSE;
+#PIN "dvid/dvid_inst/oserdes_clock/oserdes_m.CLK0" CLOCK_DEDICATED_ROUTE = FALSE;

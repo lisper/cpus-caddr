@@ -1,0 +1,2 @@
+COMPILED_SDF_FILE = "../../implement/results/routed.sdf.X",
+SCOPE = clk_wiz_v3_6_tb.dut;

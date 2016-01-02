@@ -1,0 +1,1 @@
+-d "SIMULATION=1" -d "debug=1" -d "FAKE_SDRAM=1" -timescale "1ns/1ns" -override_timeunit -override_timeprecision -lib "unisims_ver" -lib "unimacro_ver" -lib "xilinxcorelib_ver" -lib "secureip" -o "/files/code/cpus/caddr/ise-lx45/run_top_isim_beh.exe" -prj "/files/code/cpus/caddr/ise-lx45/run_top_beh.prj" "work.run_top" "work.glbl" 

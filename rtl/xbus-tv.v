@@ -75,10 +75,10 @@ module xbus_tv(
    reg [2:0] 	 fb_state;
    wire [2:0] 	 fb_state_next;
 
-   parameter 	 FB_IDLE = 0,
-		   FB_WRITE = 1,
-		   FB_READ = 2,
-		   FB_DONE = 3;
+   parameter 	 FB_IDLE = 3'd0,
+		   FB_WRITE = 3'd1,
+		   FB_READ  = 3'd2,
+		   FB_DONE  = 3'd3;
 
    wire 	 in_fb;
    wire 	 in_reg;
@@ -148,10 +148,11 @@ module xbus_tv(
 		if (vram_ready)
 		  begin
 		     dataout <= vram_data_in;
-//`ifdef debug
-//		     $display("tv: read @%o out -> %o; %t",
-//			      addr, vram_data_in, $time);
-//`endif
+`ifdef debug
+		     if (fb_read_req)
+		     $display("tv: read @%o out -> %o; %t",
+			      addr, vram_data_in, $time);
+`endif
 		  end
 
 `ifdef debug

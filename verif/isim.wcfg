@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="./run_top_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="run_top" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="136" />
+   <wvobject fp_name="/run_top/rs232_txd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rs232_txd</obj_property>
+      <obj_property name="ObjectShortName">rs232_txd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/led" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">led[4:0]</obj_property>
+      <obj_property name="ObjectShortName">led[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/vga_out" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_out</obj_property>
+      <obj_property name="ObjectShortName">vga_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/vga_hsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_hsync</obj_property>
+      <obj_property name="ObjectShortName">vga_hsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/vga_vsync" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vga_vsync</obj_property>
+      <obj_property name="ObjectShortName">vga_vsync</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_dq" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dq[15:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dq[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_a[12:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_a[12:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_ba" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ba[1:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ba[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_cke" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_cke</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_cke</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_ras_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ras_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ras_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_cas_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_cas_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_cas_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_we_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_we_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_we_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_dm" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dm</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dm</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_udqs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_udqs</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_udqs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_rzq" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_rzq</obj_property>
+      <obj_property name="ObjectShortName">mcb3_rzq</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_udm" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_udm</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_udm</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_dqs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dqs</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dqs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_ck" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ck</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ck</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mcb3_dram_ck_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ck_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ck_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mmc_cs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_cs</obj_property>
+      <obj_property name="ObjectShortName">mmc_cs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mmc_di" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_di</obj_property>
+      <obj_property name="ObjectShortName">mmc_di</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mmc_do" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_do</obj_property>
+      <obj_property name="ObjectShortName">mmc_do</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/mmc_sclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_sclk</obj_property>
+      <obj_property name="ObjectShortName">mmc_sclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/rs232_rxd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rs232_rxd</obj_property>
+      <obj_property name="ObjectShortName">rs232_rxd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/sysclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sysclk</obj_property>
+      <obj_property name="ObjectShortName">sysclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/ps2_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ps2_clk</obj_property>
+      <obj_property name="ObjectShortName">ps2_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/ps2_data" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ps2_data</obj_property>
+      <obj_property name="ObjectShortName">ps2_data</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/switch" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">switch</obj_property>
+      <obj_property name="ObjectShortName">switch</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/cycles" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cycles[31:0]</obj_property>
+      <obj_property name="ObjectShortName">cycles[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/faults" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">faults[31:0]</obj_property>
+      <obj_property name="ObjectShortName">faults[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider31" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/sys_medevent" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sys_medevent</obj_property>
+      <obj_property name="ObjectShortName">sys_medevent</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/sys_slowevent" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sys_slowevent</obj_property>
+      <obj_property name="ObjectShortName">sys_slowevent</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/cpu_slowevent" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cpu_slowevent</obj_property>
+      <obj_property name="ObjectShortName">cpu_slowevent</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/reset_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">reset_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">reset_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/cpu_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cpu_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cpu_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/dcm_reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dcm_reset</obj_property>
+      <obj_property name="ObjectShortName">dcm_reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/interrupt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">interrupt</obj_property>
+      <obj_property name="ObjectShortName">interrupt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/boot" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">boot</obj_property>
+      <obj_property name="ObjectShortName">boot</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/halt" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">halt</obj_property>
+      <obj_property name="ObjectShortName">halt</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/support/cpuclk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cpuclk</obj_property>
+      <obj_property name="ObjectShortName">cpuclk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider75" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider84" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_addr[21:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_addr[21:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_data_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_data_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_data_out[31:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_data_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_data_in[31:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_data_in[31:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_req</obj_property>
+      <obj_property name="ObjectShortName">sdram_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_ready</obj_property>
+      <obj_property name="ObjectShortName">sdram_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_write" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_write</obj_property>
+      <obj_property name="ObjectShortName">sdram_write</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/sdram_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_done</obj_property>
+      <obj_property name="ObjectShortName">sdram_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/pc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">pc[13:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/lpc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">lpc[13:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmem0_adr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vmem0_adr[10:0]</obj_property>
+      <obj_property name="ObjectShortName">vmem0_adr[10:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmaenb" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vmaenb</obj_property>
+      <obj_property name="ObjectShortName">vmaenb</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmasel" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vmasel</obj_property>
+      <obj_property name="ObjectShortName">vmasel</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/memwr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">memwr</obj_property>
+      <obj_property name="ObjectShortName">memwr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/memrd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">memrd</obj_property>
+      <obj_property name="ObjectShortName">memrd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/wmap" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wmap</obj_property>
+      <obj_property name="ObjectShortName">wmap</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmadrive" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vmadrive</obj_property>
+      <obj_property name="ObjectShortName">vmadrive</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmap" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vmap[4:0]</obj_property>
+      <obj_property name="ObjectShortName">vmap[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmo" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vmo[23:0]</obj_property>
+      <obj_property name="ObjectShortName">vmo[23:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmem1_adr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vmem1_adr[9:0]</obj_property>
+      <obj_property name="ObjectShortName">vmem1_adr[9:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vma" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">vma[31:0]</obj_property>
+      <obj_property name="ObjectShortName">vma[31:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/vmaok" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">vmaok</obj_property>
+      <obj_property name="ObjectShortName">vmaok</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/wrcyc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wrcyc</obj_property>
+      <obj_property name="ObjectShortName">wrcyc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/mbusy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mbusy</obj_property>
+      <obj_property name="ObjectShortName">mbusy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/rdcyc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdcyc</obj_property>
+      <obj_property name="ObjectShortName">rdcyc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/memcheck" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">memcheck</obj_property>
+      <obj_property name="ObjectShortName">memcheck</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/memstart" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">memstart</obj_property>
+      <obj_property name="ObjectShortName">memstart</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/memprepare" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">memprepare</obj_property>
+      <obj_property name="ObjectShortName">memprepare</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/lpddr_rd_rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_rdy</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/lpddr_rd_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_done</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/lpddr_wr_rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_rdy</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/lpddr_wr_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_done</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/i_sdram_req" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">i_sdram_req</obj_property>
+      <obj_property name="ObjectShortName">i_sdram_req</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/i_sdram_write" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">i_sdram_write</obj_property>
+      <obj_property name="ObjectShortName">i_sdram_write</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/int_sdram_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">int_sdram_ready</obj_property>
+      <obj_property name="ObjectShortName">int_sdram_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/int_sdram_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">int_sdram_done</obj_property>
+      <obj_property name="ObjectShortName">int_sdram_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/sdram_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_state[6:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_state[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/sdram_state_next" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_state_next[6:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_state_next[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider141" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/rc/sdram_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sdram_state[6:0]</obj_property>
+      <obj_property name="ObjectShortName">sdram_state[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider167" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider187" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider138" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/addrin" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">addrin[21:0]</obj_property>
+      <obj_property name="ObjectShortName">addrin[21:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/datain" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">datain[31:0]</obj_property>
+      <obj_property name="ObjectShortName">datain[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/busgrantin" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">busgrantin</obj_property>
+      <obj_property name="ObjectShortName">busgrantin</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/inc_wc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">inc_wc</obj_property>
+      <obj_property name="ObjectShortName">inc_wc</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider159" type="divider">
+      <obj_property name="label">New Divider</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/pc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">pc[13:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/lpc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">lpc[13:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/ir" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ir[48:0]</obj_property>
+      <obj_property name="ObjectShortName">ir[48:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/npc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">npc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">npc[13:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/trap" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">trap</obj_property>
+      <obj_property name="ObjectShortName">trap</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/pcs1" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pcs1</obj_property>
+      <obj_property name="ObjectShortName">pcs1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/pcs0" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pcs0</obj_property>
+      <obj_property name="ObjectShortName">pcs0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/popj" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">popj</obj_property>
+      <obj_property name="ObjectShortName">popj</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/ignpopj" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ignpopj</obj_property>
+      <obj_property name="ObjectShortName">ignpopj</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/jfalse" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">jfalse</obj_property>
+      <obj_property name="ObjectShortName">jfalse</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/jcond" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">jcond</obj_property>
+      <obj_property name="ObjectShortName">jcond</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/irjump" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">irjump</obj_property>
+      <obj_property name="ObjectShortName">irjump</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dispenb" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dispenb</obj_property>
+      <obj_property name="ObjectShortName">dispenb</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dfall" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dfall</obj_property>
+      <obj_property name="ObjectShortName">dfall</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/jret" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">jret</obj_property>
+      <obj_property name="ObjectShortName">jret</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/jretf" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">jretf</obj_property>
+      <obj_property name="ObjectShortName">jretf</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dr</obj_property>
+      <obj_property name="ObjectShortName">dr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dp</obj_property>
+      <obj_property name="ObjectShortName">dp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dn" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dn</obj_property>
+      <obj_property name="ObjectShortName">dn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dpc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dpc[13:0]</obj_property>
+      <obj_property name="ObjectShortName">dpc[13:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/state_prefetch" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">state_prefetch</obj_property>
+      <obj_property name="ObjectShortName">state_prefetch</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dwe" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dwe</obj_property>
+      <obj_property name="ObjectShortName">dwe</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dadr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dadr[10:0]</obj_property>
+      <obj_property name="ObjectShortName">dadr[10:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/dmask" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dmask[6:0]</obj_property>
+      <obj_property name="ObjectShortName">dmask[6:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/r" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">r[31:0]</obj_property>
+      <obj_property name="ObjectShortName">r[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[31:0]</obj_property>
+      <obj_property name="ObjectShortName">a[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[4:0]</obj_property>
+      <obj_property name="ObjectShortName">state[4:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/wc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wc[7:0]</obj_property>
+      <obj_property name="ObjectShortName">wc[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/cpu/busint/disk/disk_cmd" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">disk_cmd[9:0]</obj_property>
+      <obj_property name="ObjectShortName">disk_cmd[9:0]</obj_property>
+      <obj_property name="Radix">OCTALRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/bd_rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bd_rdy</obj_property>
+      <obj_property name="ObjectShortName">bd_rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/bd_bsy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bd_bsy</obj_property>
+      <obj_property name="ObjectShortName">bd_bsy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/bd_rd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bd_rd</obj_property>
+      <obj_property name="ObjectShortName">bd_rd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/bd_wr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bd_wr</obj_property>
+      <obj_property name="ObjectShortName">bd_wr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/bd_iordy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bd_iordy</obj_property>
+      <obj_property name="ObjectShortName">bd_iordy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[5:0]</obj_property>
+      <obj_property name="ObjectShortName">state[5:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/wc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wc[7:0]</obj_property>
+      <obj_property name="ObjectShortName">wc[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/mmc/init" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">init</obj_property>
+      <obj_property name="ObjectShortName">init</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/mmc/rd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd</obj_property>
+      <obj_property name="ObjectShortName">rd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/mmc/wr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr</obj_property>
+      <obj_property name="ObjectShortName">wr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/mmc/done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">done</obj_property>
+      <obj_property name="ObjectShortName">done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/run_top/uut/mmc_bd/mmc_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mmc_out[7:0]</obj_property>
+      <obj_property name="ObjectShortName">mmc_out[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+</wave_config>

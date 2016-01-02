@@ -57,6 +57,14 @@ module part_21kx32dpram(reset,
 `endif // QUARTUS
 
 `ifdef ISE
+ `define ISE_MODEL
+`endif
+
+`ifdef XILINX_ISIM
+ `define ISE_MODEL
+`endif
+   
+`ifdef ISE_MODEL
    wire ena_a = rden_a | wren_a;
    wire ena_b = rden_b | wren_b;
    
@@ -77,17 +85,27 @@ module part_21kx32dpram(reset,
       );
 `endif
 
-`ifdef SIMULATION
+`ifdef SIMULATION_XXX
    reg [31:0] 	 ram [0:IRAM_SIZE-1];
 
    reg [31:0] 	 q_a;
    reg [31:0] 	 q_b;
-   
+
+   integer i;
+   initial
+     begin
+//	for (i = 0; i < IRAM_SIZE-1; i = i + 1)
+//	  ram[i] = 0;
+     end
+	   
    always @(posedge clk_a)
      if (reset)
        q_a <= 0;
      else
        begin
+ `ifdef debug_rw
+	  $display("part_21kx32dpram: read @ %x", address_a);
+ `endif
 	  q_a <= ram[ address_a ];
 	  if (wren_a)
 	    begin
@@ -101,6 +119,9 @@ module part_21kx32dpram(reset,
        q_b <= 0;
      else
        begin
+ `ifdef debug_rw
+	  $display("part_21kx32dpram: read @ %x", address_b);
+ `endif
 	  q_b <= ram[ address_b ];
 	  if (wren_b)
 	    begin
@@ -113,3 +134,8 @@ module part_21kx32dpram(reset,
    
 endmodule
 
+`ifdef SIMULATION
+`ifdef ISE_MODEL
+ `include "../ise-lx45/ipcore_dir/ise_21kx32_dpram.v"
+`endif
+`endif
